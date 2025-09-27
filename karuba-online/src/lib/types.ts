@@ -28,5 +28,6 @@ export interface Game {
   temples: Record<Color, Pos>
   explorersStart: Record<Color, Pos>
   templeTokens: Record<Color, number[]>
+  rewards: Record<number, "gold" | "crystal" | null>
   players: Record<string, Player>
 }

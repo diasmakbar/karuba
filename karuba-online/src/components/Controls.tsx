@@ -8,7 +8,7 @@ export default function Controls({
   onEndRound
 }: {
   isHost: boolean
-  status: "lobby" | "playing"
+  status: "lobby" | "active" | "ended"
   isMyTurn: boolean
   currentTile: number | null
   onStart: () => void

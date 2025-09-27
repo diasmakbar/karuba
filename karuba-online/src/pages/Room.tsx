@@ -10,7 +10,10 @@ export default function Room({ gameId }: { gameId: string }) {
   const [game, setGame] = useState<Game | null>(null)
   const [players, setPlayers] = useState<Record<string, Player>>({})
   const [error, setError] = useState<string | null>(null)
-  const playerId = getPlayerId()
+  const playerName = (history.state as any)?.playerName || "Unknown"
+  const playerId = getPlayerId(playerName)
+
+
 
   useEffect(() => {
     const off1 = onValue(ref(db, `games/karuba/${gameId}`), s => setGame(s.val()))
@@ -24,7 +27,7 @@ export default function Room({ gameId }: { gameId: string }) {
   }, [gameId])
 
 //   const me = players[playerId]
-  const me = players[getPlayerId(meName)]
+  const me = players[playerId]
 
   // Start game by host
   const onStartGame = async () => {
@@ -32,7 +35,7 @@ export default function Room({ gameId }: { gameId: string }) {
     if (game.status !== "lobby") return
     if (game.shuffleTurnUid !== playerId) return // hanya host
     await update(ref(db, `games/karuba/${gameId}`), {
-      status: "playing",
+      status: "active",
       round: 1,
       currentTile: game.deck[0]
     })
@@ -103,7 +106,7 @@ export default function Room({ gameId }: { gameId: string }) {
     return <div style={{ padding: 16, color: "red" }}>{error}</div>
   if (!game || !me) return <div style={{ padding: 16 }}>Loading game...</div>
 
-  const isMyTurn = game.shuffleTurnUid === playerId && game.status === "playing"
+  const isMyTurn = game.shuffleTurnUid === playerId && game.status === "active"
 
   return (
     <div style={{ padding: 16 }}>

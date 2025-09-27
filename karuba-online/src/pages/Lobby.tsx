@@ -8,7 +8,7 @@ import type { Game, Player, Board } from "../lib/types"
 export default function Lobby() {
   const [name, setName] = useState("")
   const [joinId, setJoinId] = useState("")
-  const playerId = getPlayerId()
+  const playerId = getPlayerId(name)
   
   const createGame = async () => {
     if (!name.trim()) {
@@ -54,7 +54,7 @@ export default function Lobby() {
       },
       rewards,
       players: {}
-    } as Partial<Game>)
+    } as Game)
   
     // tambahkan host
     await set(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
@@ -66,8 +66,8 @@ export default function Lobby() {
       score: 0,
       doneForRound: false
     } as Player)
-  
-    history.pushState({}, "", `/room/${gameId}`)
+
+    history.pushState({ playerName: name }, "", `/room/${gameId}`)
     dispatchEvent(new PopStateEvent("popstate"))
   }
   
@@ -78,16 +78,24 @@ export default function Lobby() {
     }
     const playerId = getPlayerId(name)
     const gid = joinId.trim().toUpperCase()
-  
+
     const snap = await get(ref(db, `games/karuba/${gid}`))
     if (!snap.exists()) {
       alert("Game not found")
       return
     }
-  
+
     const g = snap.val() as Game
+
+    // Check if player name already exists
+    const existingPlayer = Object.values(g.players).find(p => p.name.toLowerCase() === name.toLowerCase())
+    if (existingPlayer) {
+      alert("Player name already exists in this game. Please choose a different name.")
+      return
+    }
+
     const board: Board = Array.from({ length: 6 }, () => Array(6).fill(-1))
-  
+
     await set(ref(db, `games/karuba/${gid}/players/${playerId}`), {
       name,
       joinedAt: Date.now(),
@@ -97,8 +105,8 @@ export default function Lobby() {
       score: 0,
       doneForRound: false
     } as Player)
-  
-    history.pushState({}, "", `/room/${gid}`)
+
+    history.pushState({ playerName: name }, "", `/room/${gid}`)
     dispatchEvent(new PopStateEvent("popstate"))
   }
   

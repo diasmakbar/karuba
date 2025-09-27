@@ -1,0 +1,6 @@
+Sprint – Explorer jalan x2 langkah ekstra sekali pakai.
+Teleport Hut – Explorer boleh lompat ke tile mana aja yang sudah pernah lo taruh.
+Rebuilder – Ambil 1 tile dari papan lo, taruh ulang di posisi lain (orientasi sama).
+Rotator – Pasang tile dengan orientasi bebas, meskipun biasanya nggak bisa.
+Fast Hand – Kalau lo tercepat taruh tile ronde itu, dapet +2 poin (bukan +1).
+Explorer Armor – Hapus 1 tile buntu di papan lo, meskipun biasanya nggak bisa.
