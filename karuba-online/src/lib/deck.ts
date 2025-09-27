@@ -1,12 +1,21 @@
-// Simple Fisher-Yates shuffle untuk 1..36
-export function makeDeck(): number[] {
-  const arr = Array.from({ length: 36 }, (_, i) => i + 1)
+// Kalau butuh konstanta semua tiles (1–36)
+export const TILES: number[] = Array.from({ length: 36 }, (_, i) => i + 1)
+
+// Fisher-Yates shuffle untuk bikin deck baru
+export function shuffle<T>(array: T[]): T[] {
+  const arr = [...array]
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
   return arr
 }
+
+// Deck final untuk game (shuffle dari TILES)
+export function makeDeck(): number[] {
+  return shuffle(TILES)
+}
+
 
 
 // export const TILES: number[] = Array.from({ length: 36 }, (_, i) => i + 1)

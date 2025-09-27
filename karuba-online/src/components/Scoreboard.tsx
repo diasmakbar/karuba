@@ -7,28 +7,31 @@ export default function Scoreboard({
   players: Record<string, Player>
   shuffleTurnUid: string
 }) {
-  const sorted = Object.values(players).sort(
+  const list = Object.values(players).sort(
     (a, b) => a.joinedAt - b.joinedAt
   )
 
   return (
     <div>
-      <h3>Scoreboard</h3>
-      <ul>
-        {sorted.map(p => (
-          <li
-            key={p.name}
-            style={{
-              fontWeight: p.id === shuffleTurnUid ? "bold" : "normal",
-              color: p.id === shuffleTurnUid ? "#1d4ed8" : "#000",
-              listStyle: "none",
-              margin: "4px 0"
-            }}
-          >
-            {p.name}: {p.score}
-            {p.id === shuffleTurnUid && " 🔄"} {/* ikon giliran */}
-          </li>
-        ))}
+      <h3>Players</h3>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {list.map((p) => {
+          const isHost = p.id === shuffleTurnUid
+          return (
+            <li
+              key={p.id}
+              style={{
+                marginBottom: 4,
+                fontWeight: isHost ? "bold" : "normal",
+                color: isHost ? "blue" : "black",
+              }}
+            >
+              {p.name} — Score: {p.score}{" "}
+              {p.doneForRound ? <span style={{ color: "green" }}>✔ done</span> : ""}
+              {isHost ? " (Host)" : ""}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
