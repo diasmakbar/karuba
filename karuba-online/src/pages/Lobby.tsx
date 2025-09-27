@@ -127,7 +127,7 @@ export default function Lobby() {
           value={joinId}
           onChange={e => setJoinId(e.target.value)}
         />
-        <button onClick={joinGame}>Join</button>
+        <button onClick={joinGame}>Join Game</button>
       </div>
     </div>
   )
