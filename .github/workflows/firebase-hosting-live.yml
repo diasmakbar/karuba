@@ -27,7 +27,9 @@ jobs:
         working-directory: ./karuba-online
 
       - name: Deploy to Firebase Hosting
-        run: bunx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
-        working-directory: ./karuba-online
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
+          channelId: live
+          projectId: decryptor-game
