@@ -1,13 +1,13 @@
 export type Status = "waiting" | "playing" | "ended"
 export type Branch = "N" | "E" | "S" | "W"
-export type Board = number[][] // 6x6, -1 = empty, >0 = tileId (1..36)
+export type Board = number[][] // 6x6, -1 = empty, >0 = tileId
 
 export type ExplorerColor = "blue" | "yellow" | "brown" | "red"
 
 export interface TileMeta {
   branches: Branch[] // e.g. ["N","S"] or ["N","E","W"]
 }
-export type TilesMetaMap = Record<string, TileMeta> // key = tileId as string
+export type TilesMetaMap = Record<string, TileMeta>
 
 export interface ExplorerEdge {
   side: Branch // "W"=A2..A7, "S"=B8..G8, "E"=H2..H7, "N"=B1..G1
@@ -17,7 +17,7 @@ export interface ExplorerEdge {
 export interface ExplorerOnBoard {
   r: number
   c: number
-  entry: Branch
+  entry: Branch // sisi dari mana dia MASUK ke tile ini
 }
 
 export interface ExplorerState {
@@ -35,9 +35,9 @@ export interface Player {
   board: Board
   score: number
 
-  // NEW: flow round
-  actedForRound: boolean   // sudah place ATAU discard
-  doneForRound: boolean    // sudah klik "Ready for Next Round"
+  actedForRound: boolean     // sudah place/discard
+  doneForRound: boolean      // sudah klik "Ready"
+  lastAction: "placed" | "discarded" | null
 
   moves: number
   lastDiscardDirs?: Branch[]
@@ -51,21 +51,29 @@ export interface GameLayout {
   temples: { side: Branch; index: number; color: ExplorerColor }[] // 2 di E + 2 di N
 }
 
+export interface TempleWin {
+  side: Branch // "N" (top) atau "E" (right)
+  index: number // 0..5
+  color: ExplorerColor
+  playerId: string
+  order: number // 1=pertama, 2,3,4
+}
+
 export interface Game {
   id: string
   status: Status
   statusText: string
   createdAt: number
 
-  round: number          // 0 saat belum mulai, lalu 1..36
+  round: number          // 0 saat belum mulai
   currentTile: number    // 0 artinya belum ditampilkan di round tsb
   deck: number[]
 
-  generateTurnIndex: number // 0..(players-1)
+  generateTurnIndex: number
   generateTurnUid: string
   shuffleTurnUid: string
 
-  boardSize: number // 6
+  boardSize: number
   rules: { noRotation: boolean; infiniteRewards: boolean }
 
   layout: GameLayout
@@ -73,5 +81,6 @@ export interface Game {
   rewards: Record<number, "gold" | "crystal" | null>
   playersCount: number
 
+  templeWins?: TempleWin[] // siapa yg sudah "menang" di temple (ubah asset)
   players?: Record<string, Player>
 }
