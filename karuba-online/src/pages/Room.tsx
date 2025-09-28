@@ -5,7 +5,7 @@ import Board from "../components/Board"
 import Controls from "../components/Controls"
 import Scoreboard from "../components/Scoreboard"
 import type { Game, Player, Branch, ExplorerColor, TilesMetaMap } from "../lib/types"
-import tilesMetaJson from "../lib/tiles.json" assert { type: "json" }
+import tilesMetaJson from "../lib/tiles.json" // <-- no `assert`
 
 const tilesMeta = tilesMetaJson as TilesMetaMap
 
@@ -104,7 +104,7 @@ export default function Room({ gameId }: { gameId: string }) {
     game.status === "waiting"
       ? "Waiting host to start the game"
       : game.round === 1
-      ? "Place or discard your tile"
+      ? "Place or discard your tile, then move explorers if any"
       : isGenerateTurnOwner
       ? "You can generate now"
       : `Waiting for ${players[game.generateTurnUid]?.name || "player"} to generate tile`
@@ -120,7 +120,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
         board,
-        actedForRound: true, // hanya menandai sudah bertindak
+        actedForRound: true,
         usedTiles: { ...(me.usedTiles || {}), [game.currentTile]: true },
       })
     } catch (e: any) {
@@ -136,20 +136,19 @@ export default function Room({ gameId }: { gameId: string }) {
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
         moves: (me.moves || 0) + gain,
         lastDiscardDirs: branches,
-        actedForRound: true, // sudah bertindak (discard)
+        actedForRound: true,
         discardedTiles: [...(me.discardedTiles || []), tileId],
         usedTiles: { ...(me.usedTiles || {}), [tileId]: true },
       })
-      // NOTE: tidak auto ready; user masih bisa pakai moves dulu
+      // NOTE: moves langsung bisa dipakai; lanjut round setelah "Ready for Next Round"
     } catch (e: any) {
       setError("Discard error: " + e.message)
     }
   }
 
-  // === Ready for next round ===
   const onReadyNextRound = async () => {
     try {
-      if (!me.actedForRound) return // belum place/discard
+      if (!me.actedForRound) return
       if (me.doneForRound) return
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
         doneForRound: true,
@@ -191,19 +190,18 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
-  // === Explorer step 1 grid (moves--) ===
+  // === Explorer step 1 grid ===
   const stepExplorer = async (color: ExplorerColor) => {
     try {
       if (me.moves <= 0) return
       const ex = me.explorers[color]
       if (!ex) return
 
-      // masuk dari tepi?
       if (ex.onEdge) {
         const { side, index } = ex.onEdge
         let r = -1,
           c = -1,
-          needBranch: Branch = opposite(side)
+          needBranch: Branch = side === "N" ? "S" : side === "S" ? "N" : side === "E" ? "W" : "E"
         if (side === "W") {
           r = index
           c = 0
@@ -229,7 +227,6 @@ export default function Room({ gameId }: { gameId: string }) {
         return
       }
 
-      // lanjut di dalam board
       if (ex.onBoard) {
         const { r, c, entry } = ex.onBoard
         const tid = me.board[r][c]
@@ -253,9 +250,10 @@ export default function Room({ gameId }: { gameId: string }) {
         const nextTid = me.board[nr][nc]
         if (nextTid === -1) return
         const nextMeta = tilesMeta[String(nextTid)]
-        if (!nextMeta?.branches?.includes(opposite(chosen))) return
+        const need = chosen === "N" ? "S" : chosen === "S" ? "N" : chosen === "E" ? "W" : "E"
+        if (!nextMeta?.branches?.includes(need)) return
 
-        const nextOnBoard = { r: nr, c: nc, entry: opposite(chosen) }
+        const nextOnBoard = { r: nr, c: nc, entry: need }
         await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
           moves: me.moves - 1,
           explorers: { ...me.explorers, [color]: { color, onBoard: nextOnBoard } },
@@ -268,7 +266,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
   const canPlace =
     game.status === "playing" && game.currentTile > 0 && !me.actedForRound
-  const canDiscard = canPlace // discard juga cuma boleh sebelum bertindak
+  const canDiscard = canPlace
 
   return (
     <div style={{ padding: 16 }}>
@@ -294,7 +292,6 @@ export default function Room({ gameId }: { gameId: string }) {
             {me.doneForRound ? "(✔ ready)" : me.actedForRound ? "(acted)" : ""}
           </h3>
 
-          {/* current tile preview */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <span>Current Tile:</span>
             {game.currentTile > 0 ? (
@@ -315,13 +312,12 @@ export default function Room({ gameId }: { gameId: string }) {
             currentTile={game.currentTile}
             myMoves={me.moves}
             myExplorers={me.explorers}
-            layoutExplorers={game.layout.explorersStart}
-            temples={game.layout.temples}
+            layoutExplorers={game.layout?.explorersStart || []}
+            temples={game.layout?.temples || []}
             onExplorerStep={(color) => stepExplorer(color)}
             discardedTiles={me.discardedTiles || []}
           />
 
-          {/* Ready button */}
           <div style={{ marginTop: 12 }}>
             <button
               onClick={onReadyNextRound}

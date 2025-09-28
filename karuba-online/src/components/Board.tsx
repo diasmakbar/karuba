@@ -1,4 +1,4 @@
-import { useState } from "react"
+import React, { useState, Fragment } from "react"
 import type {
   Board,
   Branch,
@@ -13,8 +13,10 @@ function opposite(b: Branch): Branch {
   return b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E"
 }
 
-const colorIdx = (color: ExplorerColor) =>
-  ["blue", "yellow", "brown", "red"].indexOf(color) + 1
+// Mapping warna -> index file explorers_{idx}.svg
+// 1=merah, 2=biru, 3=coklat, 4=kuning
+const explorerIdx = (color: ExplorerColor) =>
+  ({ red: 1, blue: 2, brown: 3, yellow: 4 } as const)[color]
 
 export default function Board({
   board,
@@ -96,7 +98,7 @@ export default function Board({
     if (!canDiscard || currentTile <= 0) return
     const meta = tilesMeta[String(currentTile)]
     const branches = meta?.branches || []
-    onDiscard(currentTile, branches) // confirm handled upstream or immediate
+    onDiscard(currentTile, branches)
   }
 
   return (
@@ -109,7 +111,7 @@ export default function Board({
               const t = temples.find((t) => t.side === "N" && t.index === c - 1)
               return t ? (
                 <img
-                  src={`/temples/temples_${colorIdx(t.color)}_top.svg`}
+                  src={`/temples/temples_${explorerIdx(t.color)}_top.svg`}
                   alt={`Temple ${t.color}`}
                   style={{ position: "absolute", inset: 0, objectFit: "contain" }}
                 />
@@ -121,19 +123,18 @@ export default function Board({
 
       {/* Row 2..7 */}
       {Array.from({ length: 6 }).map((_, r) => (
-        <>
+        <Fragment key={`row-${r}`}>
           {/* A2..A7 explorers W */}
-          <div key={`edgeW-${r}`} style={{ width: CELL, height: CELL, position: "relative" }}>
+          <div style={{ width: CELL, height: CELL, position: "relative" }}>
             {layoutExplorers.some((e) => e.onEdge?.side === "W" && e.onEdge.index === r) ? (
               (() => {
                 const color =
                   layoutExplorers.find((e) => e.onEdge?.side === "W" && e.onEdge.index === r)!.color
                 const meState = myExplorers[color]
                 const highlighted = canExplorerEnter(meState)
-                const idx = colorIdx(color)
+                const idx = explorerIdx(color)
                 return (
                   <>
-                    {/* highlight di bawah pion */}
                     {highlighted && (
                       <img
                         src="/highlight.gif"
@@ -143,7 +144,9 @@ export default function Board({
                     )}
                     <img
                       onClick={() => highlighted && myMoves > 0 && handleExplorerClick(color)}
-                      src={`/explorers/explorers_${idx}${meState.frame && meState.frame > 0 ? `_${meState.frame}` : ""}.svg`}
+                      src={`/explorers/explorers_${idx}${
+                        meState.frame && meState.frame > 0 ? `_${meState.frame}` : ""
+                      }.svg`}
                       alt={`${color} explorer`}
                       style={{
                         position: "absolute",
@@ -187,7 +190,7 @@ export default function Board({
                       inset: 0,
                       width: "100%",
                       height: "100%",
-                      objectFit: "contain", // <= memastikan nge-fit ke kotak
+                      objectFit: "contain", // fit ke kotak
                       display: "block",
                       zIndex: 1,
                     }}
@@ -228,21 +231,20 @@ export default function Board({
                 {Object.values(myExplorers).map((ex) => {
                   if (!ex.onBoard) return null
                   if (ex.onBoard.r !== r || ex.onBoard.c !== c) return null
-                  const idx = colorIdx(ex.color)
+                  const idx = explorerIdx(ex.color)
                   return (
-                    <>
-                      {/* highlight di bawah pion */}
+                    <React.Fragment key={`ex-${ex.color}-${r}-${c}`}>
                       {myMoves > 0 && (
                         <img
-                          key={`hl-${ex.color}-${r}-${c}`}
                           src="/highlight.gif"
                           alt="highlight"
                           style={{ position: "absolute", inset: 0, objectFit: "contain", zIndex: 3 }}
                         />
                       )}
                       <img
-                        key={`ex-${ex.color}-${r}-${c}`}
-                        src={`/explorers/explorers_${idx}${ex.frame && ex.frame > 0 ? `_${ex.frame}` : ""}.svg`}
+                        src={`/explorers/explorers_${idx}${
+                          ex.frame && ex.frame > 0 ? `_${ex.frame}` : ""
+                        }.svg`}
                         alt={`${ex.color} explorer`}
                         style={{
                           position: "absolute",
@@ -253,7 +255,7 @@ export default function Board({
                         }}
                         onClick={() => myMoves > 0 && setConfirmMove(ex.color)}
                       />
-                    </>
+                    </React.Fragment>
                   )
                 })}
               </div>
@@ -261,13 +263,13 @@ export default function Board({
           })}
 
           {/* H2..H7 temples E */}
-          <div key={`edgeE-${r}`} style={{ width: CELL, height: CELL, position: "relative" }}>
+          <div style={{ width: CELL, height: CELL, position: "relative" }}>
             {temples.some((t) => t.side === "E" && t.index === r) ? (
               (() => {
                 const t = temples.find((t) => t.side === "E" && t.index === r)!
                 return (
                   <img
-                    src={`/temples/temples_${colorIdx(t.color)}_side.svg`}
+                    src={`/temples/temples_${explorerIdx(t.color)}_side.svg`}
                     alt={`Temple ${t.color}`}
                     style={{ position: "absolute", inset: 0, objectFit: "contain" }}
                   />
@@ -275,7 +277,7 @@ export default function Board({
               })()
             ) : null}
           </div>
-        </>
+        </Fragment>
       ))}
 
       {/* Row 8: B8..G8 explorers S, I2 trash & moves */}
@@ -288,7 +290,7 @@ export default function Board({
                   layoutExplorers.find((e) => e.onEdge?.side === "S" && e.onEdge.index === c - 1)!.color
                 const meState = myExplorers[color]
                 const highlighted = canExplorerEnter(meState)
-                const idx = colorIdx(color)
+                const idx = explorerIdx(color)
                 return (
                   <>
                     {highlighted && (
@@ -300,7 +302,9 @@ export default function Board({
                     )}
                     <img
                       onClick={() => highlighted && myMoves > 0 && handleExplorerClick(color)}
-                      src={`/explorers/explorers_${idx}${meState.frame && meState.frame > 0 ? `_${meState.frame}` : ""}.svg`}
+                      src={`/explorers/explorers_${idx}${
+                        meState.frame && meState.frame > 0 ? `_${meState.frame}` : ""
+                      }.svg`}
                       alt={`${color} explorer`}
                       style={{
                         position: "absolute",
