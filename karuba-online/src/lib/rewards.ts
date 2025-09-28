@@ -22,7 +22,7 @@ export function makeRewards(): RewardsMap {
 
   const rewards: RewardsMap = {}
   for (const b of batches) {
-    const hits = pickFrom(b, 5)
+    const hits = pickFrom(b, 3)
     for (const id of b) rewards[id] = null
     for (const id of hits) {
       rewards[id] = Math.random() < 0.5 ? "crystal" : "gold"

@@ -1,215 +1,159 @@
+// src/pages/Lobby.tsx
 import { useState } from "react"
-import { db, ref, set, get } from "../firebase"
+import { db, ref, set, get, update } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
-import { makeDeck } from "../lib/deck"
-import { makeRewards } from "../lib/rewards"
-import type { Game, Player, Board, ExplorerState, ExplorerColor, Branch } from "../lib/types"
-
-const COLORS: ExplorerColor[] = ["blue", "yellow", "brown", "red"] // urutan bebas; warna ke file di Board.tsx
-
-function pickKDistinct(nums: number[], k: number) {
-  const pool = [...nums]
-  const out: number[] = []
-  for (let i = 0; i < k; i++) {
-    const j = Math.floor(Math.random() * pool.length)
-    out.push(pool[j])
-    pool.splice(j, 1)
-  }
-  return out
-}
+import { makeRewards } from "../lib/rewards" // ✅ pakai makeRewards (named export, no args)
+import type { Game, Player, Board } from "../lib/types"
 
 export default function Lobby() {
   const [name, setName] = useState("")
   const [joinId, setJoinId] = useState("")
   const playerId = getPlayerId(name)
 
-  const buildRandomLayout = (): GameLayout => {
-    // ===== Temples (atas=N index 0..5 = B1..G1) & (kanan=E index 0..5 = H2..H7)
-    // Rule: G1 (top index 5) dan H2 (right index 0) tidak boleh keduanya terisi.
-    // Kita isi 2 top + 2 right dengan warna berbeda.
-    let topIdxCandidates = [0, 1, 2, 3, 4, 5]
-    let rightIdxCandidates = [0, 1, 2, 3, 4, 5]
+  // util
+  const newGameId = () => Math.random().toString(36).slice(2, 7).toUpperCase()
 
-    // sementara draft
-    let topIdx = pickKDistinct(topIdxCandidates, 2)
-    let rightIdx = pickKDistinct(rightIdxCandidates, 2)
+  const emptyBoard = (): Board =>
+    Array.from({ length: 6 }, () => Array.from({ length: 6 }, () => -1 as const))
 
-    // enforce G1 & H2 constraint
-    const bothConflict = topIdx.includes(5) && rightIdx.includes(0)
-    if (bothConflict) {
-      // ganti salah satu secara acak
-      if (Math.random() < 0.5) {
-        topIdx = pickKDistinct([0, 1, 2, 3, 4], 2) // hindari 5
-      } else {
-        rightIdx = pickKDistinct([1, 2, 3, 4, 5], 2) // hindari 0
-      }
-    }
+  // explorers & temples default (dipakai semua pemain; simple, konsisten)
+  const defaultLayout = () => ({
+    explorers: {
+      red: { side: "W" as const, index: 1 },
+      blue: { side: "W" as const, index: 3 },
+      brown: { side: "S" as const, index: 2 },
+      yellow: { side: "S" as const, index: 4 },
+    },
+    temples: [
+      { side: "N" as const, index: 1, color: "red" as const },
+      { side: "N" as const, index: 4, color: "yellow" as const },
+      { side: "E" as const, index: 1, color: "blue" as const },
+      { side: "E" as const, index: 4, color: "brown" as const },
+    ],
+  })
 
-    // assign warna unik untuk 4 temples
-    const shuffledColors = [...COLORS].sort(() => Math.random() - 0.5)
-    const temples = [
-      { side: "N" as Branch, index: topIdx[0], color: shuffledColors[0] },
-      { side: "N" as Branch, index: topIdx[1], color: shuffledColors[1] },
-      { side: "E" as Branch, index: rightIdx[0], color: shuffledColors[2] },
-      { side: "E" as Branch, index: rightIdx[1], color: shuffledColors[3] },
-    ]
+  const createPlayerPayload = (
+    id: string,
+    pname: string,
+    layout: ReturnType<typeof defaultLayout>
+  ): Player & { id: string } => {
+    const explorers = {
+      red: { color: "red", onEdge: layout.explorers.red },
+      blue: { color: "blue", onEdge: layout.explorers.blue },
+      brown: { color: "brown", onEdge: layout.explorers.brown },
+      yellow: { color: "yellow", onEdge: layout.explorers.yellow },
+    } as any
 
-    // ===== Explorers (kiri=W index 0..5 = A2..A7) & (bawah=S index 0..5 = B8..G8)
-    // Rule: A7 (W idx 5) dan B8 (S idx 0) tidak boleh keduanya ada.
-    let leftIdx = pickKDistinct([0, 1, 2, 3, 4, 5], 2)
-    let bottomIdx = pickKDistinct([0, 1, 2, 3, 4, 5], 2)
-    if (leftIdx.includes(5) && bottomIdx.includes(0)) {
-      if (Math.random() < 0.5) leftIdx = pickKDistinct([0, 1, 2, 3, 4], 2)
-      else bottomIdx = pickKDistinct([1, 2, 3, 4, 5], 2)
-    }
-
-    // Map explorers ke warna tetap: kiri dapat 2 warna, bawah dapat 2 warna
-    // biar warna sebar: ambil 2 warna pertama untuk kiri, 2 berikutnya ke bawah
-    const eColors = [...COLORS].sort(() => Math.random() - 0.5)
-    const explorers: ExplorerState[] = [
-      { color: eColors[0], onEdge: { side: "W", index: leftIdx[0] } },
-      { color: eColors[1], onEdge: { side: "W", index: leftIdx[1] } },
-      { color: eColors[2], onEdge: { side: "S", index: bottomIdx[0] } },
-      { color: eColors[3], onEdge: { side: "S", index: bottomIdx[1] } },
-    ]
-
-    // Rule 3:
-    // - explorers di A2/A3 (W idx 0/1) → temples warna tsb JANGAN di B1/C1 (N idx 0/1)
-    // - explorers di F8/G8 (S idx 4/5) → temples warna tsb JANGAN di H6/H7 (E idx 4/5)
-    const templesBySide = {
-      N: temples.filter(t => t.side === "N"),
-      E: temples.filter(t => t.side === "E"),
-    }
-
-    const violatesNorth = (color: ExplorerColor) =>
-      explorers.some(e => e.color === color && e.onEdge?.side === "W" && [0,1].includes(e.onEdge.index)) &&
-      templesBySide.N.some(t => t.color === color && [0,1].includes(t.index))
-
-    const violatesEast = (color: ExplorerColor) =>
-      explorers.some(e => e.color === color && e.onEdge?.side === "S" && [4,5].includes(e.onEdge.index)) &&
-      templesBySide.E.some(t => t.color === color && [4,5].includes(t.index))
-
-    // If violation, reshuffle temples positions for that color
-    for (const color of COLORS) {
-      if (violatesNorth(color)) {
-        // move that color's N temple away from idx 0/1 (if exists)
-        const tn = temples.find(t => t.side === "N" && t.color === color)
-        if (tn) {
-          const choices = [2,3,4,5].filter(i => !templesBySide.N.some(t => t.index === i))
-          if (choices.length) tn.index = choices[Math.floor(Math.random()*choices.length)]
-        }
-      }
-      if (violatesEast(color)) {
-        const te = temples.find(t => t.side === "E" && t.color === color)
-        if (te) {
-          const choices = [0,1,2,3].filter(i => !templesBySide.E.some(t => t.index === i))
-          if (choices.length) te.index = choices[Math.floor(Math.random()*choices.length)]
-        }
-      }
-    }
-
-    return { explorersStart: explorers, temples }
+    return {
+      id,
+      name: pname,
+      joinedAt: Date.now(),
+      board: emptyBoard(),
+      usedTiles: {},
+      discardedTiles: [],
+      explorers,
+      moves: 0,
+      score: 0,
+      actedForRound: false,
+      doneForRound: false,
+      lastAction: null,
+    } as any
   }
 
   const createGame = async () => {
-    if (!name.trim()) { alert("Masukkan nama dulu"); return }
-    const gid = Math.random().toString(36).slice(2, 7).toUpperCase()
-    const deck = makeDeck()
-    const rewards = makeRewards()
-    const board: Board = Array.from({ length: 6 }, () => Array(6).fill(-1))
-    const layout = buildRandomLayout()
+    if (!name.trim()) {
+      alert("Masukkan nama dulu")
+      return
+    }
 
-    const game: Game = {
-      id: gid,
+    const gameId = newGameId()
+    const layout = defaultLayout()
+    const rewards = makeRewards() // ✅ build rewards untuk 36 tile
+
+    // init game node (tilesMeta akan di-set saat host klik Start di Room)
+    const gamePayload: Partial<Game> & any = {
       status: "waiting",
       statusText: "Waiting host to start the game",
-      createdAt: Date.now(),
-      deck,
       round: 0,
       currentTile: 0,
-      shuffleTurnUid: playerId,
-      boardSize: 6,
-      rules: { noRotation: true, infiniteRewards: true },
+      playersCount: 1,
+      shuffleTurnUid: playerId, // host
+      generateTurnIndex: 0,
+      generateTurnUid: "", // diisi saat masuk Round 2
       layout,
       rewards,
-      playersCount: 1,
-      generateTurnIndex: 0,
-      generateTurnUid: playerId,
+      templeWins: [],
+      players: {},
     }
 
-    await set(ref(db, `games/karuba/${gid}`), game)
+    await set(ref(db, `games/karuba/${gameId}`), gamePayload)
+    await set(
+      ref(db, `games/karuba/${gameId}/players/${playerId}`),
+      createPlayerPayload(playerId, name.trim(), layout)
+    )
 
-    // player init (copy explorers from layout)
-    const explorers: Record<ExplorerColor, ExplorerState> = {} as any
-    for (const e of layout.explorersStart) explorers[e.color] = { color: e.color, onEdge: { ...e.onEdge! } }
-
-    const me: Player = {
-      id: playerId,
-      name,
-      joinedAt: Date.now(),
-      board,
-      usedTiles: {},
-      explorers,
-      score: 0,
-      actedForRound: false,
-      doneForRound: false,
-      moves: 0,
-      discardedTiles: []
-    }
-
-    await set(ref(db, `games/karuba/${gid}/players/${playerId}`), me)
-    history.pushState({ playerName: name }, "", `/room/${gid}`); dispatchEvent(new PopStateEvent("popstate"))
+    history.pushState({ playerName: name.trim() }, "", `/room/${gameId}`)
+    dispatchEvent(new PopStateEvent("popstate"))
   }
 
   const joinGame = async () => {
-    if (!name.trim()) { alert("Masukkan nama dulu"); return }
-    const gid = joinId.trim().toUpperCase()
-
-    const snap = await get(ref(db, `games/karuba/${gid}`))
-    if (!snap.exists()) { alert("Game not found"); return }
-    const g = snap.val() as Game
-
-    // duplicate name check
-    const exists = Object.values(g.players || {}).find((p: any) => p.name.toLowerCase() === name.toLowerCase())
-    if (exists) { alert("Player name already exists in this game. Please choose a different name."); return }
-
-    const board: Board = Array.from({ length: 6 }, () => Array(6).fill(-1))
-    const explorers: Record<ExplorerColor, ExplorerState> = {} as any
-    for (const e of g.layout.explorersStart) explorers[e.color] = { color: e.color, onEdge: { ...e.onEdge! } }
-
-    const me: Player = {
-      id: playerId,
-      name,
-      joinedAt: Date.now(),
-      board,
-      usedTiles: {},
-      explorers,
-      score: 0,
-      actedForRound: false,
-      doneForRound: false,
-      moves: 0,
-      discardedTiles: []
+    if (!name.trim()) {
+      alert("Masukkan nama dulu")
+      return
+    }
+    const gameId = joinId.trim().toUpperCase()
+    if (!gameId) {
+      alert("Masukkan Game ID")
+      return
     }
 
-    await set(ref(db, `games/karuba/${gid}/players/${playerId}`), me)
-    const newCount = (g.players ? Object.keys(g.players).length : 0) + 1
-    await set(ref(db, `games/karuba/${gid}/playersCount`), newCount)
+    const gSnap = await get(ref(db, `games/karuba/${gameId}`))
+    if (!gSnap.exists()) {
+      alert("Game tidak ditemukan")
+      return
+    }
+    const game = gSnap.val() || {}
+    const layout = game.layout || defaultLayout()
 
-    history.pushState({ playerName: name }, "", `/room/${gid}`); dispatchEvent(new PopStateEvent("popstate"))
+    // kalau belum terdaftar, daftarkan player
+    const pSnap = await get(ref(db, `games/karuba/${gameId}/players/${playerId}`))
+    if (!pSnap.exists()) {
+      await set(
+        ref(db, `games/karuba/${gameId}/players/${playerId}`),
+        createPlayerPayload(playerId, name.trim(), layout)
+      )
+      const playersSnap = await get(ref(db, `games/karuba/${gameId}/players`))
+      const count = playersSnap.exists() ? Object.keys(playersSnap.val() || {}).length : 1
+      await update(ref(db, `games/karuba/${gameId}`), { playersCount: count })
+    }
+
+    history.pushState({ playerName: name.trim() }, "", `/room/${gameId}`)
+    dispatchEvent(new PopStateEvent("popstate"))
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Karuba Lobby</h2>
-      <input placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} />
-      <button onClick={createGame}>Create Game</button>
+    <div style={{ padding: 16, maxWidth: 420 }}>
+      <h2>Karuba Online — Lobby</h2>
 
-      <div style={{ marginTop: 8 }}>
-        <input placeholder="Game ID" value={joinId} onChange={e=>setJoinId(e.target.value)} />
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <input
+          placeholder="Nama kamu"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        <button onClick={createGame}>Create Game</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          placeholder="Game ID"
+          value={joinId}
+          onChange={(e) => setJoinId(e.target.value)}
+          style={{ flex: 1 }}
+        />
         <button onClick={joinGame}>Join Game</button>
       </div>
     </div>
   )
 }
-
-type GameLayout = Game["layout"]

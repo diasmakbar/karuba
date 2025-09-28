@@ -8,6 +8,7 @@ export interface TileMeta {
   branches: Branch[] // e.g. ["N","S"] or ["N","E","W"]
 }
 export type TilesMetaMap = Record<string, TileMeta>
+export type RewardsMap = Record<number, "gold" | "crystal" | null>
 
 export interface ExplorerEdge {
   side: Branch // "W"=A2..A7, "S"=B8..G8, "E"=H2..H7, "N"=B1..G1
