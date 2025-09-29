@@ -162,7 +162,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
   const isOccupiedByOther = (r: number, c: number, exceptColor?: ExplorerColor) => {
     if (!me) return false
-    return Object.values(me.explorers).some(
+    return Object.values(me.explorers || {}).some(
       (ex) => ex.onBoard && ex.onBoard.r === r && ex.onBoard.c === c && ex.color !== exceptColor
     )
   }
@@ -171,7 +171,7 @@ export default function Room({ gameId }: { gameId: string }) {
   const computeEveryoneFinished = async (): Promise<boolean> => {
     const plist = await get(ref(db, `games/karuba/${gameId}/players`))
     const pObj: Record<string, Player> = (plist.val() || {}) as any
-    return Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+    return Object.values(pObj || {}).every((p) => Object.keys(p.explorers || {}).length === 0)
   }
   const endGame = async () => {
     await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
@@ -275,7 +275,7 @@ export default function Room({ gameId }: { gameId: string }) {
     if (!game) return
     const plist = await get(ref(db, `games/karuba/${gameId}/players`))
     const pObj: Record<string, Player> = (plist.val() || {}) as any
-    const allReady = Object.values(pObj).every((p) => p.doneForRound)
+    const allReady = Object.values(pObj || {}).every((p) => p.doneForRound)
     if (!allReady) return
 
     const pids = order
