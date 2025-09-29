@@ -469,7 +469,8 @@ export default function Room({ gameId }: { gameId: string }) {
       const wins = (game.templeWins || []) as any[]
       const sameColorWins = wins.filter((w) => w.color === color).length
       const orderReach = sameColorWins + 1
-      const nPlayers = game.playersCount || Object.keys(players).length || 1
+      // const nPlayers = game.playersCount || Object.keys(players).length || 1
+      const nPlayers = game.playersCount || Object.keys(players || {}).length || 1
       const gain = Math.max(0, nPlayers + 2 - orderReach)
 
       const newWins = [...wins, { side, index, color, playerId, order: orderReach }]
