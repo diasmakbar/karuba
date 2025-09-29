@@ -1,3 +1,4 @@
+// src/pages/Room.tsx
 import { useEffect, useMemo, useState } from "react"
 import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
@@ -7,6 +8,7 @@ import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
 import { generateTilesMeta } from "../lib/deck"
 
 const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
+const dirName = (b: Branch) => (b === "N" ? "top" : b === "E" ? "right" : b === "S" ? "down" : "left")
 
 function TileIcon({
   id,
@@ -46,36 +48,32 @@ function TileIcon({
 }
 
 export default function Room({ gameId }: { gameId: string }) {
+  // --- STATE HOOKS (urutan fix) ---
   const [game, setGame] = useState<Game | null>(null)
   const [players, setPlayers] = useState<Record<string, Player>>({})
   const [error, setError] = useState<string | null>(null)
   const [showDiscardList, setShowDiscardList] = useState(false)
-
-  // animasi ghost explorer
+  const [showResult, setShowResult] = useState(false)
   const [animGhost, setAnimGhost] = useState<{
     color: ExplorerColor
     from8: { r: number; c: number }
     to8: { r: number; c: number }
     stage: 1 | 2 | 3
   } | null>(null)
-
-  // preview placement (klik cell kosong → tile “nempel” sementara)
   const [previewAt, setPreviewAt] = useState<{ r: number; c: number } | null>(null)
 
+  // --- NON-HOOK VARS ---
   const playerName = (history.state as any)?.playerName || "Unknown"
   const playerId = getPlayerId(playerName)
 
-  // subscribe game & players
+  // --- EFFECT: subscribe game & players ---
   useEffect(() => {
     const off1 = onValue(ref(db, `games/karuba/${gameId}`), (s) => setGame(s.val()))
     const off2 = onValue(ref(db, `games/karuba/${gameId}/players`), (s) => setPlayers(s.val() || {}))
-    return () => {
-      off1()
-      off2()
-    }
+    return () => { off1(); off2() }
   }, [gameId])
 
-  // bootstrap defaults
+  // --- EFFECT: bootstrap defaults ---
   useEffect(() => {
     const boot = async () => {
       const gRef = ref(db, `games/karuba/${gameId}`)
@@ -97,21 +95,28 @@ export default function Room({ gameId }: { gameId: string }) {
     boot().catch(() => {})
   }, [db, gameId])
 
+  // --- EFFECT: open result modal when ended ---
+  useEffect(() => {
+    if (game?.status === "ended") setShowResult(true)
+  }, [game?.status])
+
+  // --- DERIVED: me, order ---
   const me: Player | undefined = players[playerId]
   const order: string[] = useMemo(
     () => Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt).map((p) => p.id),
     [players]
   )
 
-  // canPlace: lagi pegang currentTile dan belum act di ronde ini
+  // --- DERIVED: canPlace ---
   const canPlace = !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
 
-  // auto clear preview kalau udah ga relevan
+  // --- EFFECT: clear preview when invalid ---
   useEffect(() => {
     if (!canPlace) setPreviewAt(null)
     if (canPlace && previewAt && me?.board?.[previewAt.r]?.[previewAt.c] !== -1) setPreviewAt(null)
   }, [canPlace, me?.board, previewAt])
 
+  // --- DERIVED: generate perms & labels ---
   const isHost = !!game && game.shuffleTurnUid === playerId
   const isGenerateTurnOwner = !!game && game.generateTurnUid === playerId
 
@@ -131,9 +136,9 @@ export default function Room({ gameId }: { gameId: string }) {
       ? "Place or discard your tile, then move explorers if any"
       : isGenerateTurnOwner
       ? "You can generate now"
-      : `Waiting for ${playerNameById(game.generateTurnUid)} to generate tile`
+      : `Waiting for ${playerNameById(game.generateTurnUid!)} to generate tile`
 
-  // helper
+  // --- HELPERS (no hooks) ---
   const rewardGain = (tileId: number | null | undefined) => {
     if (!tileId || !game?.rewards) return 0
     const r = game.rewards[tileId]
@@ -141,6 +146,9 @@ export default function Room({ gameId }: { gameId: string }) {
     if (r === "crystal") return 1
     return 0
   }
+  const rewardKind = (tileId: number | null | undefined) =>
+    tileId && game?.rewards ? game.rewards[tileId] : null
+
   const isOccupiedByOther = (r: number, c: number, exceptColor?: ExplorerColor) => {
     if (!me) return false
     return Object.values(me.explorers).some(
@@ -148,14 +156,29 @@ export default function Room({ gameId }: { gameId: string }) {
     )
   }
 
-  // Start/Generate handler
+  // --- STATS HOOKS (pindah KE ATAS, sebelum early return) ---
+  const allPlayers = useMemo(
+    () => Object.values(players).sort((a, b) => b.score - a.score),
+    [players]
+  )
+  const myRank = Math.max(1, allPlayers.findIndex((p) => p.id === playerId) + 1)
+  const nPlayers = allPlayers.length || 1
+  const title =
+    myRank === 1 ? "Victory!" :
+    myRank === nPlayers ? "Game Over!" : "Game Result"
+
+  const wins = (game?.templeWins || []) as any[]
+  const myWins = wins.filter((w) => w.playerId === playerId)
+  const orderCount: Record<number, number> = {}
+  for (const w of myWins) orderCount[w.order] = (orderCount[w.order] || 0) + 1
+  const orders = Array.from({ length: nPlayers }, (_, i) => i + 1)
+
+  // --- ACTIONS ---
   const onStartOrGenerate = async () => {
     try {
       if (!game) return
       if (game.status === "waiting") {
         if (!isHost) return
-
-        // Build deck meta (36 tiles dari aset 1..11) SEKALI di awal
         const tilesMeta = generateTilesMeta()
 
         const pids = order
@@ -169,6 +192,7 @@ export default function Room({ gameId }: { gameId: string }) {
           generateTurnUid: pids[idxForRound2] || playerId,
           templeWins: game.templeWins || [],
           tilesMeta,
+          lastEvent: null,
         })
         for (const pid of pids) {
           await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
@@ -191,7 +215,6 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
-  // Place / Discard / Ready
   const placeTile = async (r: number, c: number) => {
     try {
       if (!game || !me) return
@@ -253,10 +276,13 @@ export default function Room({ gameId }: { gameId: string }) {
 
     const pids = order
     const nextRound = game.round + 1
-    if (nextRound > 36) {
+
+    const everyoneFinished = Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+    if (nextRound > 36 || everyoneFinished) {
       await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
       return
     }
+
     let nextIdx = game.generateTurnIndex
     if (nextRound !== 2) nextIdx = (game.generateTurnIndex + 1) % pids.length
 
@@ -276,7 +302,31 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
-  // Move 1 grid (tambahkan reward point + blok overlap)
+  const maybeAutoFinishMe = async (newExplorers: any) => {
+    try {
+      if (!game || !me) return
+      if (game.status !== "playing") return
+      const noneLeft = !newExplorers || Object.keys(newExplorers).length === 0
+      if (!noneLeft) return
+      const pRef = ref(db, `games/karuba/${gameId}/players/${playerId}`)
+      const updates: any = { doneForRound: true }
+      if (game.currentTile > 0 && !me.actedForRound) {
+        updates.actedForRound = true
+        updates.lastAction = "auto"
+      }
+      await update(pRef, updates)
+
+      const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+      const pObj: Record<string, Player> = (plist.val() || {}) as any
+      const everyoneFinished = Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+      if (everyoneFinished) {
+        await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
+      } else {
+        await maybeAdvanceRound()
+      }
+    } catch {}
+  }
+
   const moveOne = async (color: ExplorerColor, dir: Branch) => {
     try {
       if (!game || !me) return
@@ -300,7 +350,6 @@ export default function Room({ gameId }: { gameId: string }) {
         if (nextTid === -1) return null
         const nextMeta = tilesMeta[String(nextTid)]
         if (!nextMeta?.branches?.includes(opp(d))) return null
-        // blok: tile tujuan sedang ditempati explorer lain
         if (isOccupiedByOther(nr, nc, color)) return null
         return { nr, nc, nextTid }
       }
@@ -317,7 +366,6 @@ export default function Room({ gameId }: { gameId: string }) {
         setAnimGhost(null)
       }
 
-      // Masuk dari edge ke tile pertama
       if (ex.onEdge) {
         const { side, index } = ex.onEdge
         let r = -1, c = -1
@@ -330,7 +378,6 @@ export default function Room({ gameId }: { gameId: string }) {
         if (tid === -1) return
         const meta = (game.tilesMeta || {})[String(tid)] as any
         if (!meta?.branches?.includes(side)) return
-        // blok overlap
         if (isOccupiedByOther(r, c, color)) return
 
         const from8 =
@@ -340,18 +387,22 @@ export default function Room({ gameId }: { gameId: string }) {
                          { r: 0, c: c + 1 }
         const to8 = { r: r + 1, c: c + 1 }
         const gain = rewardGain(tid)
+        const kind = rewardKind(tid)
 
         await setGhostStagesAndCommit(from8, to8, async () => {
+          const addGold = kind === "gold" ? 1 : 0
+          const addCrystal = kind === "crystal" ? 1 : 0
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: me.moves - 1,
             score: me.score + gain,
+            goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
+            crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
             explorers: { ...me.explorers, [color]: { color, onBoard: { r, c, entry: side } } },
           })
         })
         return
       }
 
-      // Pindah antar tile di dalam board
       if (ex.onBoard) {
         const { r, c, entry } = ex.onBoard
         const res = validateInternalMove(r, c, entry, dir)
@@ -361,12 +412,17 @@ export default function Room({ gameId }: { gameId: string }) {
         const from8 = { r: r + 1, c: c + 1 }
         const to8 = { r: nr + 1, c: nc + 1 }
         const gain = rewardGain(nextTid)
+        const kind = rewardKind(nextTid)
 
         await setGhostStagesAndCommit(from8, to8, async () => {
           const nextOnBoard = { r: nr, c: nc, entry: opp(dir) }
+          const addGold = kind === "gold" ? 1 : 0
+          const addCrystal = kind === "crystal" ? 1 : 0
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: me.moves - 1,
             score: me.score + gain,
+            goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
+            crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
             explorers: { ...me.explorers, [color]: { color, onBoard: nextOnBoard } },
           })
         })
@@ -376,7 +432,6 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
-  // Masuk temple (poin dinamis: playersCount + 2 - order)
   const enterTemple = async (color: ExplorerColor, side: Branch, index: number) => {
     try {
       if (!game || !me) return
@@ -393,38 +448,34 @@ export default function Room({ gameId }: { gameId: string }) {
       const neededDir: Branch = side === "N" ? "N" : "E"
       if (!meta?.branches?.includes(neededDir) || neededDir === entry) return
 
-      const wins = game.templeWins || []
-      const already = wins.filter((w: any) => w.side === side && w.index === index)
-      if (already.length > 0) return
-
-      const from8 = { r: r + 1, c: c + 1 }
-      const to8 = side === "N" ? { r: 0, c: c + 1 } : { r: r + 1, c: 7 }
-
-      setAnimGhost({ color, from8, to8, stage: 1 }); await new Promise((r) => setTimeout(r, 150))
-      setAnimGhost({ color, from8, to8, stage: 2 }); await new Promise((r) => setTimeout(r, 150))
-      setAnimGhost({ color, from8, to8, stage: 3 }); await new Promise((r) => setTimeout(r, 200))
-
-      const sameColorWins = wins.filter((w: any) => w.color === color).length
+      const wins = (game.templeWins || []) as any[]
+      const sameColorWins = wins.filter((w) => w.color === color).length
       const orderReach = sameColorWins + 1
       const nPlayers = game.playersCount || Object.keys(players).length || 1
-      const gain = Math.max(0, nPlayers + 2 - orderReach) // ex: 4 players -> 5,4,3,2
+      const gain = Math.max(0, nPlayers + 2 - orderReach)
 
       const newWins = [...wins, { side, index, color, playerId, order: orderReach }]
       const newExplorers = { ...me.explorers }
       delete newExplorers[color]
 
-      await update(ref(db, `games/karuba/${gameId}`), { templeWins: newWins })
+      await update(ref(db, `games/karuba/${gameId}`), {
+        templeWins: newWins,
+        lastEvent: `${players[playerId]?.name || "Player"} sudah sampai temple ${color} dan dapat ${gain} point!`,
+      })
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
         moves: me.moves - 1,
         explorers: newExplorers,
         score: me.score + gain,
       })
       setAnimGhost(null)
+
+      await maybeAutoFinishMe(newExplorers)
     } catch (e: any) {
       setError("Explorer step error: " + e.message)
     }
   }
 
+  // --- EARLY RETURNS (SETELAH SEMUA HOOKS) ---
   if (error) return <div style={{ padding: 16, color: "red" }}>{error}</div>
   if (!game || !me) return <div style={{ padding: 16 }}>Loading game...</div>
 
@@ -437,149 +488,231 @@ export default function Room({ gameId }: { gameId: string }) {
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Game {gameId}</h2>
-      <p>
-        Status: {game.statusText} | Round: {game.round} | Current Tile:{" "}
-        {me.actedForRound
-          ? me.lastAction === "placed"
-            ? "Placed!"
-            : me.lastAction === "discarded"
-            ? "Discarded!"
-            : "-"
-          : game.currentTile || "-"}
-      </p>
+    <main className="page">
+      <div className="page-inner">
+        {/* Header / status */}
+        <div className="card">
+          <h2 style={{ margin: "4px 0" }} className="font-display">Game {gameId}</h2>
+          <p style={{ margin: 0 }}>
+            Status: {game.statusText} | Round: {game.round} | Current Tile:{" "}
+            {me.actedForRound
+              ? me.lastAction === "placed"
+                ? "Placed!"
+                : me.lastAction === "discarded"
+                ? "Discarded!"
+                : "—"
+              : game.currentTile || "—"}
+          </p>
+        </div>
 
-      {/* Scoreboard */}
-      <div style={{ margin: "8px 0 12px" }}>
-        <h3>Players</h3>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {Object.values(players)
-            .sort((a, b) => a.joinedAt - b.joinedAt)
-            .map((p) => {
-              const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
-              const state = p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
-              return (
-                <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400, color: "#111" }}>
-                  {p.name} — Score: {p.score} ({state})
-                </li>
-              )
-            })}
-        </ul>
-      </div>
+        {/* Controls + scoreboard */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <div className="card">
+            <Controls
+              isHost={isHost}
+              status={game.status}
+              round={game.round}
+              canGenerate={!!canGenerate}
+              onStartOrGenerate={onStartOrGenerate}
+              onReady={onReadyNextRound}
+              readyDisabled={!me.actedForRound || me.doneForRound}
+              waitingLabel={(() => {
+                if (game.status === "waiting") return "Waiting host to start the game"
+                if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+                  return game.generateTurnUid === playerId
+                    ? "You can generate now"
+                    : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+                }
+                return `Round ${game.round}`
+              })()}
+            />
 
-      {/* Controls */}
-      <Controls
-        isHost={isHost}
-        status={game.status}
-        round={game.round}
-        canGenerate={!!canGenerate}
-        onStartOrGenerate={onStartOrGenerate}
-        onReady={onReadyNextRound}
-        readyDisabled={!me.actedForRound || me.doneForRound}
-        waitingLabel={(() => {
-          if (game.status === "waiting") return "Waiting host to start the game"
-          if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
-            return game.generateTurnUid === playerId
-              ? "You can generate now"
-              : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
-          }
-          return `Round ${game.round}`
-        })()}
-      />
-
-      {/* Current Tile bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0" }}>
-        <strong>Current Tile:</strong>
-        {me.actedForRound ? (
-          <span>{me.lastAction === "placed" ? "Placed!" : "Discarded!"}</span>
-        ) : game.currentTile > 0 ? (
-          <TileIcon
-            id={game.currentTile}
-            tilesMeta={(game.tilesMeta || {}) as any}
-            size={40}
-            reward={game.rewards?.[game.currentTile]}
-          />
-        ) : (
-          <span>-</span>
-        )}
-        <span style={{ marginLeft: 8 }}>|</span>
-        <span>Moves: {me.moves}</span>
-        <img
-          src="/trash.svg"
-          alt="Trash"
-          title={game.currentTile > 0 && canPlace ? "Discard tile" : "No tile to discard"}
-          onClick={handleTrash}
-          style={{
-            width: 28,
-            height: 28,
-            cursor: game.currentTile > 0 && canPlace ? "pointer" : "default",
-            opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
-          }}
-        />
-        <button onClick={() => setShowDiscardList(true)} style={{ marginLeft: 4 }}>
-          Discarded Tiles
-        </button>
-      </div>
-
-      {/* Board */}
-      <Board
-        board={me.board}
-        tilesMeta={(game.tilesMeta || {}) as any}
-        rewards={game.rewards || {}}
-        canPlace={canPlace}
-        onPlace={placeTile}
-        previewTileId={canPlace ? game.currentTile : null}
-        previewAt={previewAt}
-        onPreview={(r, c) => setPreviewAt({ r, c })}  // penting: {r,c}
-        myMoves={me.moves}
-        myExplorers={me.explorers}
-        temples={game.layout?.temples || []}
-        templeWins={game.templeWins || []}
-        onMoveOne={moveOne}
-        onEnterTemple={enterTemple}
-        animGhost={animGhost}
-      />
-
-      {/* Discarded list modal */}
-      {showDiscardList && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={() => setShowDiscardList(false)}
-        >
-          <div style={{ background: "#fff", padding: 16, borderRadius: 10, width: 360 }} onClick={(e) => e.stopPropagation()}>
-            <h4 style={{ marginTop: 0 }}>Discarded Tiles</h4>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {me.discardedTiles?.length ? (
-                me.discardedTiles.map((tid, i) => (
-                  <TileIcon
-                    key={`${tid}-${i}`}
-                    id={tid}
-                    tilesMeta={(game.tilesMeta || {}) as any}
-                    size={42}
-                    reward={game.rewards?.[tid]}
-                  />
-                ))
+            {/* Current Tile bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+              <strong>Current Tile:</strong>
+              {me.actedForRound ? (
+                <span>{me.lastAction === "placed" ? "Placed!" : "Discarded!"}</span>
+              ) : game.currentTile > 0 ? (
+                <TileIcon
+                  id={game.currentTile}
+                  tilesMeta={(game.tilesMeta || {}) as any}
+                  size={40}
+                  reward={game.rewards?.[game.currentTile]}
+                />
               ) : (
-                <div>No discarded tiles</div>
+                <span>-</span>
               )}
-            </div>
-            <div style={{ marginTop: 10, textAlign: "center" }}>
-              <button onClick={() => setShowDiscardList(false)}>Close</button>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <span>Moves: {me.moves}</span>
+              <img
+                src="/trash.svg"
+                alt="Trash"
+                title={game.currentTile > 0 && canPlace ? "Discard tile" : "No tile to discard"}
+                onClick={handleTrash}
+                style={{
+                  width: 28,
+                  height: 28,
+                  cursor: game.currentTile > 0 && canPlace ? "pointer" : "default",
+                  opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
+                }}
+              />
+              <button onClick={() => setShowDiscardList(true)} style={{ marginLeft: 4 }}>
+                Discarded Tiles
+              </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
-    </div>
+          <div className="card">
+            <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {Object.values(players)
+                .sort((a, b) => a.joinedAt - b.joinedAt)
+                .map((p) => {
+                  const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
+                  const state = p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
+                  return (
+                    <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
+                      {p.name} — Score: {p.score} ({state})
+                    </li>
+                  )
+                })}
+            </ul>
+
+            {/* Announcement */}
+            {game.lastEvent && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
+                <em>{game.lastEvent}</em>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Board — scrollable & framed */}
+        <div className="board-scroll">
+          <div className="board-frame">
+            <Board
+              myPlayerId={playerId}
+              board={me.board}
+              tilesMeta={(game.tilesMeta || {}) as any}
+              rewards={game.rewards || {}}
+              canPlace={canPlace}
+              onPlace={placeTile}
+              previewTileId={canPlace ? game.currentTile : null}
+              previewAt={previewAt}
+              onPreview={(r, c) => setPreviewAt({ r, c })}
+              myMoves={me.moves}
+              myExplorers={me.explorers}
+              temples={game.layout?.temples || []}
+              templeWins={game.templeWins || []}
+              onMoveOne={async (color, dir) => {
+                await moveOne(color, dir)
+              }}
+              onEnterTemple={enterTemple}
+              animGhost={animGhost}
+            />
+          </div>
+        </div>
+
+        {/* Discard list modal */}
+        {showDiscardList && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+            onClick={() => setShowDiscardList(false)}
+          >
+            <div style={{ background: "#fff", padding: 16, borderRadius: 10, width: 360 }} onClick={(e) => e.stopPropagation()}>
+              <h4 style={{ marginTop: 0 }} className="font-display">Discarded Tiles</h4>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {me.discardedTiles?.length ? (
+                  me.discardedTiles.map((tid, i) => (
+                    <TileIcon
+                      key={`${tid}-${i}`}
+                      id={tid}
+                      tilesMeta={(game.tilesMeta || {}) as any}
+                      size={42}
+                      reward={game.rewards?.[tid]}
+                    />
+                  ))
+                ) : (
+                  <div>No discarded tiles</div>
+                )}
+              </div>
+              <div style={{ marginTop: 10, textAlign: "center" }}>
+                <button onClick={() => setShowDiscardList(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* RESULT MODAL */}
+        {showResult && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1200,
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                padding: 20,
+                borderRadius: 12,
+                width: 420,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+              }}
+            >
+              <h2 className="font-display" style={{ marginTop: 0, marginBottom: 4 }}>{title}</h2>
+
+              <div style={{ marginBottom: 10 }}>
+                <strong>Total Points (Rank):</strong><br/>
+                {me.score} (#{myRank})
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <strong>Total Temple Finishing order:</strong>
+                <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
+                  {orders.map((o) => (
+                    <li key={o}>
+                      {o === 1 ? "1st" : o === 2 ? "2nd" : o === 3 ? "3rd" : `${o}th`}: {orderCount[o] || 0}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <strong>Total Coins:</strong><br/>
+                {(me as any).goldCount || 0} Gold & {(me as any).crystalCount || 0} Crystal
+              </div>
+
+              <div style={{ textAlign: "center" }}>
+                <button
+                  onClick={() => {
+                    setShowResult(false)
+                    history.pushState({}, "", "/")
+                    dispatchEvent(new PopStateEvent("popstate"))
+                  }}
+                >
+                  Back to Lobby
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && <div style={{ color: "red" }}>{error}</div>}
+      </div>
+    </main>
   )
 }

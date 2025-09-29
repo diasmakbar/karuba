@@ -1,0 +1,104 @@
+/* ==== RESET & ROOT ==== */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+:root {
+  --page-max: 1200px;
+  --page-padding: 16px;
+  --frame-pad: 24px;                 /* padding di luar grid (frame) */
+  --cell-border: rgba(17,24,39,0.18);/* #111827 @18% */
+  --text: #0f172a;
+
+  --font-body: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-display: "Rubik Dirt", var(--font-body);
+}
+
+/* ==== FONTS ==== */
+/* 1) Plus Jakarta Sans (TTF single) */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 2) Rubik Dirt (TTF single) */
+@font-face {
+  font-family: "Rubik Dirt";
+  src: url("/fonts/RubikDirt.ttf") format("truetype");
+  font-weight: 400; /* heading akan tetap bisa dibold (sintetik) */
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==== GLOBAL ==== */
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  background: #0b1020 url("/bg/page.png") center/cover no-repeat fixed; /* optional */
+}
+
+/* Heading pakai RubikDirt */
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.2px;
+}
+
+/* Halaman center */
+.page {
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--page-padding);
+}
+.page-inner {
+  width: 100%;
+  max-width: var(--page-max);
+  display: grid;
+  gap: 16px;
+}
+
+/* Panel/kartu */
+.card {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  padding: 12px;
+  backdrop-filter: blur(4px);
+}
+
+/* Board scrollable (mobile bisa geser) */
+.board-scroll {
+  width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Frame besar di luar grid 8x8 (buat /public/board/frame.svg 550x550 atau @2x 1100) */
+.board-frame {
+  position: relative;
+  display: inline-block;
+  padding: var(--frame-pad);
+  background: url("/board/frame.svg") center/100% 100% no-repeat;
+  border-radius: 16px;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.18);
+}
+
+/* Form & tombol pakai PlusJakarta */
+input, button, select, textarea {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.2;
+}
+button {
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  padding: 8px 12px;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }

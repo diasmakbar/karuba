@@ -8,7 +8,7 @@ import type {
   TempleWin,
 } from "../lib/types"
 
-const DEBUG = true
+const DEBUG = false
 const dlog = (...args: any[]) => { if (DEBUG) console.log("[Board]", ...args) }
 
 const CELL = 56
@@ -55,6 +55,7 @@ const BLINK_KEYFRAMES = `
 }`
 
 export default function Board({
+  myPlayerId,
   board,
   tilesMeta,
   rewards,
@@ -71,6 +72,7 @@ export default function Board({
   onEnterTemple,
   animGhost,
 }: {
+  myPlayerId: string
   board: BoardGrid
   tilesMeta: TilesMetaMap | Record<string, { branches: Branch[]; image?: number }>
   rewards: Record<number, "gold" | "crystal" | null>
@@ -109,19 +111,22 @@ export default function Board({
     })
   }, [canPlace, previewTileId, previewAt, tilesMeta, rewards, animGhost])
 
-  const winKey = (side: Branch, index: number) => `${side}:${index}`
-  const winMap = useMemo(() => {
+  // wins milik SAYA untuk menentukan temple pake win_*.svg atau tetap temples_*.svg di board ini
+  const winByMe = useMemo(() => {
     const m = new Map<string, TempleWin>()
-    for (const w of templeWins) m.set(winKey(w.side, w.index), w)
+    for (const w of templeWins) {
+      if (w.playerId === myPlayerId) {
+        m.set(`${w.side}:${w.index}`, w)
+      }
+    }
     return m
-  }, [templeWins])
+  }, [templeWins, myPlayerId])
 
   const findTemple = (side: Branch, index: number) =>
     temples.find((t) => t.side === side && t.index === index)
 
   const doPlace = () => {
     if (confirmPlace) {
-      dlog("PLACE confirmed", confirmPlace)
       onPlace(confirmPlace.r, confirmPlace.c)
       setConfirmPlace(null)
     }
@@ -231,6 +236,14 @@ export default function Board({
     myExplorers, // supaya re-calc saat posisi explorer lain berubah
   ])
 
+  // Set panah → dir lookup biar cell click bisa buka confirm
+  const arrowsMap = useMemo(() => {
+    const m = new Map<string, Dir>()
+    for (const a of arrows) m.set(`${a.r},${a.c}`, a.dir)
+    return m
+  }, [arrows])
+
+  // Temple target (tidak diblok oleh kemenangan pemain lain; hanya kalau SAYA sudah win temple itu)
   const templeTargets: TempleTarget[] = useMemo(() => {
     if (isAnimating) return []
     const t: TempleTarget[] = []
@@ -243,16 +256,12 @@ export default function Board({
 
     for (const dir of exits) {
       if (dir === "N" && r === 0) {
-        const temp = findTemple("N", c)
-        if (temp && temp.color === selectedColor && !winMap.get(winKey("N", c))) {
-          t.push({ side: "N", index: c, dir })
-        }
+        const winMine = winByMe.get(`N:${c}`) // kalau saya sudah win, jangan highlight
+        if (!winMine) t.push({ side: "N", index: c, dir })
       }
       if (dir === "E" && c === 5) {
-        const temp = findTemple("E", r)
-        if (temp && temp.color === selectedColor && !winMap.get(winKey("E", r))) {
-          t.push({ side: "E", index: r, dir })
-        }
+        const winMine = winByMe.get(`E:${r}`)
+        if (!winMine) t.push({ side: "E", index: r, dir })
       }
     }
     return t
@@ -264,9 +273,8 @@ export default function Board({
     selected?.onBoard?.c,
     selected?.onBoard?.entry,
     board,
-    temples,
     myMoves,
-    templeWins,
+    templeWins, // kalau saya baru win, targets berubah
   ])
 
   const cellPx = (gr: number, gc: number) => ({
@@ -299,14 +307,22 @@ export default function Board({
     }, [isPreviewHere, r6, c6])
 
     const handleCellClick = () => {
-      dlog("CELL CLICK", { r6, c6, canPlace, tileId, previewAt, previewTileId })
+      // PRIORITAS: kalau lagi memilih explorer → klik cell tujuan buat gerak
+      if (selectedColor && myMoves > 0) {
+        const k = `${r6},${c6}`
+        const dir = arrowsMap.get(k)
+        if (dir) {
+          setConfirmMove({ color: selectedColor, dir })
+          return
+        }
+      }
+
+      // kalau nggak sedang gerak, baru urusan place tile
       if (!canPlace) return
       if (tileId !== -1) return
       if (isPreviewHere) {
-        dlog("CONFIRM PLACE open", { r6, c6 })
         setConfirmPlace({ r: r6, c: c6 })
       } else {
-        dlog("SET PREVIEW", { r6, c6, previewTileId })
         onPreview?.(r6, c6)
       }
     }
@@ -318,24 +334,19 @@ export default function Board({
         ? (tilesMeta as any)[String(previewTileId)]?.image ?? previewTileId
         : null
 
-    useEffect(() => {
-      if (tileId !== -1) {
-        const meta = (tilesMeta as any)[String(tileId)]
-        dlog("TILE @ cell", { r6, c6, tileId, imgId, meta })
-      }
-    }, [tileId, imgId, r6, c6])
-
     return (
       <div
         style={{
           width: CELL,
           height: CELL,
           position: "relative",
-          border: "1px solid #e5e7eb",
-          background: "#fff",
+          border: `3px solid var(--cell-border)`,
+          background: "transparent",
           borderRadius: 6,
           overflow: "hidden",
-          cursor: canPlace && tileId === -1 ? "pointer" : "default",
+          cursor: (selectedColor && myMoves > 0 && arrowsMap.has(`${r6},${c6}`))
+            ? "pointer"
+            : (canPlace && tileId === -1 ? "pointer" : "default"),
         }}
         onClick={handleCellClick}
         data-cell={`${r6},${c6}`}
@@ -345,7 +356,6 @@ export default function Board({
             src={`/tiles/${imgId}.png`}
             alt={`Tile ${tileId}`}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1 }}
-            onError={() => dlog("IMG ERROR (perm)", { r6, c6, img: `/tiles/${imgId}.png` })}
           />
         )}
 
@@ -354,7 +364,6 @@ export default function Board({
             src="/tiles/gold.png"
             alt="Gold"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
-            onError={() => dlog("IMG ERROR reward gold", { r6, c6 })}
           />
         )}
         {reward === "crystal" && (
@@ -362,7 +371,6 @@ export default function Board({
             src="/tiles/crystal.png"
             alt="Crystal"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
-            onError={() => dlog("IMG ERROR reward crystal", { r6, c6 })}
           />
         )}
 
@@ -372,7 +380,6 @@ export default function Board({
               src={`/tiles/${previewImgId}.png`}
               alt={`Preview tile ${previewTileId}`}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1, opacity: 0.95 }}
-              onError={() => dlog("IMG ERROR (preview)", { r6, c6, img: `/tiles/${previewImgId}.png`, previewTileId })}
             />
             {(() => {
               const rw = rewards[previewTileId!]
@@ -382,7 +389,6 @@ export default function Board({
                   src={`/tiles/${rw}.png`}
                   alt={`${rw}`}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2, opacity: 0.95 }}
-                  onError={() => dlog("IMG ERROR (preview reward)", { r6, c6, rw })}
                 />
               )
             })()}
@@ -391,7 +397,6 @@ export default function Board({
               src="/tiles/confirm.png"
               alt="confirm border"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 8, pointerEvents: "none", animation: "confirmBlink 1s ease-in-out infinite" }}
-              onError={() => dlog("IMG ERROR confirm border", { r6, c6 })}
             />
           </>
         )}
@@ -406,7 +411,7 @@ export default function Board({
           return (
             <React.Fragment key={`ex-${ex.color}-${r6}-${c6}`}>
               {canStep && isSelected && (
-                <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} onError={() => dlog("IMG ERROR highlight", { r6, c6 })} />
+                <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} />
               )}
               <img
                 src={`/explorers/explorers_${idx}${frameSuffix}.svg`}
@@ -420,10 +425,8 @@ export default function Board({
                 onClick={(e) => {
                   e.stopPropagation()
                   if (!canStep || isAnimating) return
-                  dlog("SELECT explorer", { color: ex.color, wasSelected: isSelected })
                   setSelectedColor(isSelected ? null : ex.color)
                 }}
-                onError={() => dlog("IMG ERROR explorer", { r6, c6, idx, frameSuffix })}
               />
             </React.Fragment>
           )
@@ -441,41 +444,47 @@ export default function Board({
         gridTemplateRows: `repeat(8, ${CELL}px)`,
         gap: GAP,
         padding: GAP,
-        background: "#fafafa",
-        border: "1px solid #e5e7eb",
+        background: "transparent",       // transparan (frame kelihatan)
+        // border: "1px solid #e5e7eb",
         borderRadius: 10,
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
         width: 8 * CELL + 7 * GAP + 2 * GAP,
       }}
       onClick={() => setSelectedColor(null)}
     >
-      <style dangerouslySetInnerHTML={{ __html: `
-        ${BLINK_KEYFRAMES}
-      ` }} />
+      <style dangerouslySetInnerHTML={{ __html: `${BLINK_KEYFRAMES}` }} />
 
       {Array.from({ length: 8 }).map((_, r) =>
         Array.from({ length: 8 }).map((_, c) => {
           if ((r === 0 || r === 7) && (c === 0 || c === 7))
             return <div key={`g-${r}-${c}`} style={{ width: CELL, height: CELL }} />
 
+          // TOP temples (N)
           if (r === 0 && c >= 1 && c <= 6) {
-            const t = temples.find((t) => t.side === "N" && t.index === c - 1)
-            const win = winMap.get(`${"N"}:${c - 1}`)
-            const color = win ? win.color : t?.color
+            const t = findTemple("N", c - 1)
+            const winMine = winByMe.get(`N:${c - 1}`)
+            const color = winMine ? winMine.color : t?.color
             const idx = color ? colorIdx(color) : 0
             const showHighlight =
               selectedColor &&
-              !win &&
-              templeTargets.some(
-                (tt) => tt.side === "N" && tt.index === c - 1 && myExplorers[selectedColor!]?.onBoard
-              )
+              !winMine &&
+              templeTargets.some((tt) => tt.side === "N" && tt.index === c - 1)
+
             return (
               <div key={`top-${c}`} style={{ width: CELL, height: CELL, position: "relative" }}>
                 {t && showHighlight && (
-                  <img src="/highlight.gif" alt="Temple highlight" style={highlightBottomCenterStyle}
-                       onError={() => dlog("IMG ERROR temple highlight N", { r, c })} />
+                  <img src="/highlight.gif" alt="Temple highlight" style={highlightBottomCenterStyle} />
                 )}
-                {t && !win && (
+
+                {t && winMine && (
+                  <img
+                    src={`/temples/win_${idx}_top.svg`}
+                    alt={`Temple win ${color}`}
+                    style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5 }}
+                  />
+                )}
+
+                {t && !winMine && (
                   <img
                     src={`/temples/temples_${idx}_top.svg`}
                     alt={`Temple ${color}`}
@@ -483,43 +492,41 @@ export default function Board({
                       if (!showHighlight) return
                       e.stopPropagation()
                       if (!selectedColor || isAnimating) return
-                      dlog("CLICK temple N", { index: c - 1 })
                       setConfirmTemple({ color: selectedColor, side: "N", index: c - 1 })
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5, cursor: showHighlight ? "pointer" : "default" }}
-                    onError={() => dlog("IMG ERROR temple N", { idx, r, c })}
-                  />
-                )}
-                {win && (
-                  <img
-                    src={`/temples/win_${idx}_top.svg`}
-                    alt={`Temple win ${color}`}
-                    style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5 }}
-                    onError={() => dlog("IMG ERROR temple win N", { idx, r, c })}
                   />
                 )}
               </div>
             )
           }
 
+          // RIGHT temples (E)
           if (c === 7 && r >= 1 && r <= 6) {
-            const t = temples.find((t) => t.side === "E" && t.index === r - 1)
-            const win = winMap.get(`${"E"}:${r - 1}`)
-            const color = win ? win.color : t?.color
+            const t = findTemple("E", r - 1)
+            const winMine = winByMe.get(`E:${r - 1}`)
+            const color = winMine ? winMine.color : t?.color
             const idx = color ? colorIdx(color) : 0
             const showHighlight =
               selectedColor &&
-              !win &&
-              templeTargets.some(
-                (tt) => tt.side === "E" && tt.index === r - 1 && myExplorers[selectedColor!]?.onBoard
-              )
+              !winMine &&
+              templeTargets.some((tt) => tt.side === "E" && tt.index === r - 1)
+
             return (
               <div key={`right-${r}`} style={{ width: CELL, height: CELL, position: "relative" }}>
                 {t && showHighlight && (
-                  <img src="/highlight.gif" alt="Temple highlight" style={highlightBottomCenterStyle}
-                       onError={() => dlog("IMG ERROR temple highlight E", { r, c })} />
+                  <img src="/highlight.gif" alt="Temple highlight" style={highlightBottomCenterStyle} />
                 )}
-                {t && !win && (
+
+                {t && winMine && (
+                  <img
+                    src={`/temples/win_${idx}_side.svg`}
+                    alt={`Temple win ${color}`}
+                    style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5 }}
+                  />
+                )}
+
+                {t && !winMine && (
                   <img
                     src={`/temples/temples_${idx}_side.svg`}
                     alt={`Temple ${color}`}
@@ -527,25 +534,16 @@ export default function Board({
                       if (!showHighlight) return
                       e.stopPropagation()
                       if (!selectedColor || isAnimating) return
-                      dlog("CLICK temple E", { index: r - 1 })
                       setConfirmTemple({ color: selectedColor, side: "E", index: r - 1 })
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5, cursor: showHighlight ? "pointer" : "default" }}
-                    onError={() => dlog("IMG ERROR temple E", { idx, r, c })}
-                  />
-                )}
-                {win && (
-                  <img
-                    src={`/temples/win_${idx}_side.svg`}
-                    alt={`Temple win ${color}`}
-                    style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5 }}
-                    onError={() => dlog("IMG ERROR temple win E", { idx, r, c })}
                   />
                 )}
               </div>
             )
           }
 
+          // LEFT edge explorers (W)
           if (c === 0 && r >= 1 && r <= 6) {
             const ex = edgeExplorerAt("W", r - 1)
             if (!ex) return <div key={`left-${r}`} style={{ width: CELL, height: CELL }} />
@@ -555,8 +553,7 @@ export default function Board({
             return (
               <div key={`left-${r}`} style={{ width: CELL, height: CELL, position: "relative" }}>
                 {highlighted && isSelected && (
-                  <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle}
-                       onError={() => dlog("IMG ERROR highlight edge W", { r, c })} />
+                  <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} />
                 )}
                 {!isAnimating && (
                   <img
@@ -565,17 +562,16 @@ export default function Board({
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!myMoves || !highlighted) return
-                      dlog("SELECT edge explorer W", { color: ex.color, r, c })
                       setSelectedColor(isSelected ? null : ex.color)
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", transform: "scale(0.85)", transformOrigin: "center", zIndex: 5, cursor: highlighted ? "pointer" : "default" }}
-                    onError={() => dlog("IMG ERROR explorer edge W", { idx, r, c })}
                   />
                 )}
               </div>
             )
           }
 
+          // BOTTOM edge explorers (S)
           if (r === 7 && c >= 1 && c <= 6) {
             const ex = edgeExplorerAt("S", c - 1)
             if (!ex) return <div key={`bottom-${c}`} style={{ width: CELL, height: CELL }} />
@@ -585,8 +581,7 @@ export default function Board({
             return (
               <div key={`bottom-${c}`} style={{ width: CELL, height: CELL, position: "relative" }}>
                 {highlighted && isSelected && (
-                  <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle}
-                       onError={() => dlog("IMG ERROR highlight edge S", { r, c })} />
+                  <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} />
                 )}
                 {!isAnimating && (
                   <img
@@ -595,17 +590,16 @@ export default function Board({
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!myMoves || !highlighted) return
-                      dlog("SELECT edge explorer S", { color: ex.color, r, c })
                       setSelectedColor(isSelected ? null : ex.color)
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", transform: "scale(0.85)", transformOrigin: "center", zIndex: 5, cursor: highlighted ? "pointer" : "default" }}
-                    onError={() => dlog("IMG ERROR explorer edge S", { idx, r, c })}
                   />
                 )}
               </div>
             )
           }
 
+          // playable cells
           const r6 = r - 1, c6 = c - 1
           return <BoardCell key={`cell-${r}-${c}`} r6={r6} c6={c6} />
         })
@@ -642,7 +636,6 @@ export default function Board({
                     alt={`arrow ${dirToName(a.dir)}`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      dlog("CLICK arrow", { dir: a.dir, to: { r: a.r, c: a.c } })
                       setConfirmMove({ color: selectedColor, dir: a.dir })
                     }}
                     style={{
@@ -655,7 +648,6 @@ export default function Board({
                       cursor: "pointer",
                       filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
                     }}
-                    onError={() => dlog("IMG ERROR arrow", { dir: a.dir })}
                   />
                 )
               })}
@@ -697,7 +689,6 @@ export default function Board({
                 zIndex: 10,
                 pointerEvents: "none",
               }}
-              onError={() => dlog("IMG ERROR ghost", { src })}
             />
           )
         })()}
@@ -710,15 +701,11 @@ export default function Board({
           </p>
           <ModalButtons
             onYes={() => {
-              dlog("CONFIRM move", confirmMove)
               onMoveOne(confirmMove.color, confirmMove.dir)
               setConfirmMove(null)
               setSelectedColor(null)
             }}
-            onCancel={() => {
-              dlog("CANCEL move")
-              setConfirmMove(null)
-            }}
+            onCancel={() => setConfirmMove(null)}
           />
         </Modal>
       )}
@@ -730,15 +717,11 @@ export default function Board({
           </p>
           <ModalButtons
             onYes={() => {
-              dlog("CONFIRM temple", confirmTemple)
               onEnterTemple(confirmTemple.color, confirmTemple.side, confirmTemple.index)
               setConfirmTemple(null)
               setSelectedColor(null)
             }}
-            onCancel={() => {
-              dlog("CANCEL temple")
-              setConfirmTemple(null)
-            }}
+            onCancel={() => setConfirmTemple(null)}
           />
         </Modal>
       )}
@@ -748,10 +731,7 @@ export default function Board({
           <p>Place tile here?</p>
           <ModalButtons
             onYes={doPlace}
-            onCancel={() => {
-              dlog("CANCEL place")
-              setConfirmPlace(null)
-            }}
+            onCancel={() => setConfirmPlace(null)}
           />
         </Modal>
       )}
