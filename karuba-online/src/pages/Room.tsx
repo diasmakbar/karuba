@@ -168,10 +168,18 @@ export default function Room({ gameId }: { gameId: string }) {
   }
 
   // === End conditions helper ===
+  // const computeEveryoneFinished = async (): Promise<boolean> => {
+  //   const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+  //   const pObj: Record<string, Player> = (plist.val() || {}) as any
+  //   return Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+  // }
   const computeEveryoneFinished = async (): Promise<boolean> => {
     const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-    const pObj: Record<string, Player> = (plist.val() || {}) as any
-    return Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+    const pObj = plist.val() as Record<string, Player> | null
+    if (!pObj) return false
+    return Object.values(pObj).every(
+      (p) => !p.explorers || Object.keys(p.explorers).length === 0
+    )
   }
   const endGame = async () => {
     await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
