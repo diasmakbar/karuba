@@ -340,22 +340,31 @@ export default function Room({ gameId }: { gameId: string }) {
       if (!ex) return
       const tilesMeta = (game.tilesMeta || {}) as Record<string, { branches: Branch[] }>
 
+      // const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
       const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
         const tid = me.board[r][c]
-        if (tid === -1) return null
+        // if (tid === -1) return null
+        if (tid === -1) { console.warn("[MOVE] no tile at", r, c); return null }
         const meta = tilesMeta[String(tid)]
-        if (!meta?.branches?.includes(d) || d === entry) return null
+        // if (!meta?.branches?.includes(d) || d === entry) return null
+        // Backtrack: hapus larangan d === entry
+        if (!meta?.branches?.includes(d)) { console.warn("[MOVE] current tile has no branch", d, "at", r, c, "meta:", meta); return null }
+
         let nr = r, nc = c
         if (d === "N") nr = r - 1
         if (d === "S") nr = r + 1
         if (d === "E") nc = c + 1
         if (d === "W") nc = c - 1
-        if (nr < 0 || nr > 5 || nc < 0 || nc > 5) return null
+        // if (nr < 0 || nr > 5 || nc < 0 || nc > 5) return null
+        if (nr < 0 || nr > 5 || nc < 0 || nc > 5) { console.warn("[MOVE] out of bounds to", nr, nc); return null }
         const nextTid = me.board[nr][nc]
-        if (nextTid === -1) return null
+        // if (nextTid === -1) return null
+        if (nextTid === -1) { console.warn("[MOVE] next tile empty at", nr, nc); return null }
         const nextMeta = tilesMeta[String(nextTid)]
-        if (!nextMeta?.branches?.includes(opp(d))) return null
-        if (isOccupiedByOther(nr, nc, color)) return null
+        // if (!nextMeta?.branches?.includes(opp(d))) return null
+        // if (isOccupiedByOther(nr, nc, color)) return null
+        if (!nextMeta?.branches?.includes(opp(d))) { console.warn("[MOVE] next tile missing opp", opp(d), "at", nr, nc, "meta:", nextMeta); return null }
+        if (isOccupiedByOther(nr, nc, color)) { console.warn("[MOVE] occupied by other at", nr, nc); return null }
         return { nr, nc, nextTid }
       }
 
@@ -454,7 +463,8 @@ export default function Room({ gameId }: { gameId: string }) {
       if (tid === -1) return
       const meta = tilesMeta[String(tid)]
       const neededDir: Branch = side === "N" ? "N" : "E"
-      if (!meta?.branches?.includes(neededDir) || neededDir === entry) return
+      // if (!meta?.branches?.includes(neededDir) || neededDir === entry) return
+      if (!meta?.branches?.includes(neededDir)) { console.warn("[TEMPLE] current tile missing", neededDir, "meta:", meta); return }
 
       const wins = (game.templeWins || []) as any[]
       const sameColorWins = wins.filter((w) => w.color === color).length
