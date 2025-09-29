@@ -1,4 +1,3 @@
-// src/pages/Room.tsx
 import { useEffect, useMemo, useState } from "react"
 import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
@@ -8,7 +7,6 @@ import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
 import { generateTilesMeta } from "../lib/deck"
 
 const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
-const dirName = (b: Branch) => (b === "N" ? "top" : b === "E" ? "right" : b === "S" ? "down" : "left")
 
 function TileIcon({
   id,
@@ -48,32 +46,30 @@ function TileIcon({
 }
 
 export default function Room({ gameId }: { gameId: string }) {
-  // --- STATE HOOKS (urutan fix) ---
   const [game, setGame] = useState<Game | null>(null)
   const [players, setPlayers] = useState<Record<string, Player>>({})
   const [error, setError] = useState<string | null>(null)
   const [showDiscardList, setShowDiscardList] = useState(false)
   const [showResult, setShowResult] = useState(false)
+
   const [animGhost, setAnimGhost] = useState<{
     color: ExplorerColor
     from8: { r: number; c: number }
     to8: { r: number; c: number }
     stage: 1 | 2 | 3
   } | null>(null)
+
   const [previewAt, setPreviewAt] = useState<{ r: number; c: number } | null>(null)
 
-  // --- NON-HOOK VARS ---
   const playerName = (history.state as any)?.playerName || "Unknown"
   const playerId = getPlayerId(playerName)
 
-  // --- EFFECT: subscribe game & players ---
   useEffect(() => {
     const off1 = onValue(ref(db, `games/karuba/${gameId}`), (s) => setGame(s.val()))
     const off2 = onValue(ref(db, `games/karuba/${gameId}/players`), (s) => setPlayers(s.val() || {}))
     return () => { off1(); off2() }
   }, [gameId])
 
-  // --- EFFECT: bootstrap defaults ---
   useEffect(() => {
     const boot = async () => {
       const gRef = ref(db, `games/karuba/${gameId}`)
@@ -95,28 +91,23 @@ export default function Room({ gameId }: { gameId: string }) {
     boot().catch(() => {})
   }, [db, gameId])
 
-  // --- EFFECT: open result modal when ended ---
   useEffect(() => {
     if (game?.status === "ended") setShowResult(true)
   }, [game?.status])
 
-  // --- DERIVED: me, order ---
   const me: Player | undefined = players[playerId]
   const order: string[] = useMemo(
     () => Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt).map((p) => p.id),
     [players]
   )
 
-  // --- DERIVED: canPlace ---
   const canPlace = !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
 
-  // --- EFFECT: clear preview when invalid ---
   useEffect(() => {
     if (!canPlace) setPreviewAt(null)
     if (canPlace && previewAt && me?.board?.[previewAt.r]?.[previewAt.c] !== -1) setPreviewAt(null)
   }, [canPlace, me?.board, previewAt])
 
-  // --- DERIVED: generate perms & labels ---
   const isHost = !!game && game.shuffleTurnUid === playerId
   const isGenerateTurnOwner = !!game && game.generateTurnUid === playerId
 
@@ -138,7 +129,6 @@ export default function Room({ gameId }: { gameId: string }) {
       ? "You can generate now"
       : `Waiting for ${playerNameById(game.generateTurnUid!)} to generate tile`
 
-  // --- HELPERS (no hooks) ---
   const rewardGain = (tileId: number | null | undefined) => {
     if (!tileId || !game?.rewards) return 0
     const r = game.rewards[tileId]
@@ -156,31 +146,23 @@ export default function Room({ gameId }: { gameId: string }) {
     )
   }
 
-  // --- STATS HOOKS (pindah KE ATAS, sebelum early return) ---
-  const allPlayers = useMemo(
-    () => Object.values(players).sort((a, b) => b.score - a.score),
-    [players]
-  )
-  const myRank = Math.max(1, allPlayers.findIndex((p) => p.id === playerId) + 1)
-  const nPlayers = allPlayers.length || 1
-  const title =
-    myRank === 1 ? "Victory!" :
-    myRank === nPlayers ? "Game Over!" : "Game Result"
+  // === End conditions helper ===
+  const computeEveryoneFinished = async (): Promise<boolean> => {
+    const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+    const pObj: Record<string, Player> = (plist.val() || {}) as any
+    return Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+  }
+  const endGame = async () => {
+    await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
+  }
 
-  const wins = (game?.templeWins || []) as any[]
-  const myWins = wins.filter((w) => w.playerId === playerId)
-  const orderCount: Record<number, number> = {}
-  for (const w of myWins) orderCount[w.order] = (orderCount[w.order] || 0) + 1
-  const orders = Array.from({ length: nPlayers }, (_, i) => i + 1)
-
-  // --- ACTIONS ---
+  // === Start / Generate ===
   const onStartOrGenerate = async () => {
     try {
       if (!game) return
       if (game.status === "waiting") {
         if (!isHost) return
         const tilesMeta = generateTilesMeta()
-
         const pids = order
         const idxForRound2 = pids.length > 1 ? 1 : 0
         await update(ref(db, `games/karuba/${gameId}`), {
@@ -215,6 +197,7 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
+  // === Place / Discard / Ready ===
   const placeTile = async (r: number, c: number) => {
     try {
       if (!game || !me) return
@@ -277,9 +260,12 @@ export default function Room({ gameId }: { gameId: string }) {
     const pids = order
     const nextRound = game.round + 1
 
+    // End if:
+    // - nextRound > 36  (artinya round 36 sudah selesai)
+    // - OR everyone finished (semua players explorers habis)
     const everyoneFinished = Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
     if (nextRound > 36 || everyoneFinished) {
-      await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
+      await endGame()
       return
     }
 
@@ -316,17 +302,15 @@ export default function Room({ gameId }: { gameId: string }) {
       }
       await update(pRef, updates)
 
-      const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-      const pObj: Record<string, Player> = (plist.val() || {}) as any
-      const everyoneFinished = Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
+      // Jika semua pemain selesai total → end
+      const everyoneFinished = await computeEveryoneFinished()
       if (everyoneFinished) {
-        await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
-      } else {
-        await maybeAdvanceRound()
+        await endGame()
       }
     } catch {}
   }
 
+  // === Move 1 grid ===
   const moveOne = async (color: ExplorerColor, dir: Branch) => {
     try {
       if (!game || !me) return
@@ -366,6 +350,7 @@ export default function Room({ gameId }: { gameId: string }) {
         setAnimGhost(null)
       }
 
+      // from edge
       if (ex.onEdge) {
         const { side, index } = ex.onEdge
         let r = -1, c = -1
@@ -403,6 +388,7 @@ export default function Room({ gameId }: { gameId: string }) {
         return
       }
 
+      // inside board
       if (ex.onBoard) {
         const { r, c, entry } = ex.onBoard
         const res = validateInternalMove(r, c, entry, dir)
@@ -432,6 +418,7 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
+  // === Enter Temple ===
   const enterTemple = async (color: ExplorerColor, side: Branch, index: number) => {
     try {
       if (!game || !me) return
@@ -469,13 +456,23 @@ export default function Room({ gameId }: { gameId: string }) {
       })
       setAnimGhost(null)
 
+      // auto-finish jika explorer saya habis
       await maybeAutoFinishMe(newExplorers)
+
+      // cek end juga di sini:
+      const everyoneFinished = await computeEveryoneFinished()
+      // kalau semua selesai → end
+      if (everyoneFinished) {
+        await endGame()
+        return
+      }
+      // kalau sudah round 36 dan semua pemain "doneForRound" di ronde ini → end saat advance (ditangani maybeAdvanceRound)
     } catch (e: any) {
       setError("Explorer step error: " + e.message)
     }
   }
 
-  // --- EARLY RETURNS (SETELAH SEMUA HOOKS) ---
+  // EARLY
   if (error) return <div style={{ padding: 16, color: "red" }}>{error}</div>
   if (!game || !me) return <div style={{ padding: 16 }}>Loading game...</div>
 
@@ -487,10 +484,31 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
+  // === Result stats ===
+  const allPlayers = useMemo(
+    () => Object.values(players).sort((a, b) => b.score - a.score),
+    [players]
+  )
+  const myRank = Math.max(1, allPlayers.findIndex((p) => p.id === playerId) + 1)
+  const nPlayers = allPlayers.length
+  const title =
+    game.status !== "ended"
+      ? "Game"
+      : myRank === 1
+      ? "Victory!"
+      : myRank === nPlayers
+      ? "Game Over!"
+      : "Game Result"
+
+  const winsArr = (game.templeWins || []) as any[]
+  const myWins = winsArr.filter((w) => w.playerId === playerId)
+  const orderCount: Record<number, number> = {}
+  for (const w of myWins) orderCount[w.order] = (orderCount[w.order] || 0) + 1
+  const orders = Array.from({ length: nPlayers }, (_, i) => i + 1)
+
   return (
     <main className="page">
       <div className="page-inner">
-        {/* Header / status */}
         <div className="card">
           <h2 style={{ margin: "4px 0" }} className="font-display">Game {gameId}</h2>
           <p style={{ margin: 0 }}>
@@ -505,7 +523,6 @@ export default function Room({ gameId }: { gameId: string }) {
           </p>
         </div>
 
-        {/* Controls + scoreboard */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           <div className="card">
             <Controls
@@ -527,7 +544,6 @@ export default function Room({ gameId }: { gameId: string }) {
               })()}
             />
 
-            {/* Current Tile bar */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
               <strong>Current Tile:</strong>
               {me.actedForRound ? (
@@ -577,8 +593,6 @@ export default function Room({ gameId }: { gameId: string }) {
                   )
                 })}
             </ul>
-
-            {/* Announcement */}
             {game.lastEvent && (
               <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
                 <em>{game.lastEvent}</em>
@@ -587,7 +601,6 @@ export default function Room({ gameId }: { gameId: string }) {
           </div>
         </div>
 
-        {/* Board — scrollable & framed */}
         <div className="board-scroll">
           <div className="board-frame">
             <Board
@@ -604,16 +617,13 @@ export default function Room({ gameId }: { gameId: string }) {
               myExplorers={me.explorers}
               temples={game.layout?.temples || []}
               templeWins={game.templeWins || []}
-              onMoveOne={async (color, dir) => {
-                await moveOne(color, dir)
-              }}
+              onMoveOne={async (color, dir) => { await moveOne(color, dir) }}
               onEnterTemple={enterTemple}
               animGhost={animGhost}
             />
           </div>
         </div>
 
-        {/* Discard list modal */}
         {showDiscardList && (
           <div
             style={{
@@ -651,7 +661,7 @@ export default function Room({ gameId }: { gameId: string }) {
           </div>
         )}
 
-        {/* RESULT MODAL */}
+        {/* Result Modal */}
         {showResult && (
           <div
             style={{
@@ -673,27 +683,44 @@ export default function Room({ gameId }: { gameId: string }) {
                 boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
               }}
             >
-              <h2 className="font-display" style={{ marginTop: 0, marginBottom: 4 }}>{title}</h2>
+              <h2 className="font-display" style={{ marginTop: 0, marginBottom: 4 }}>
+                {(() => {
+                  const myPos = Math.max(1, Object.values(players).sort((a,b)=>b.score-a.score).findIndex(p=>p.id===playerId)+1)
+                  if (myPos === 1) return "Victory!"
+                  if (myPos === Object.keys(players).length) return "Game Over!"
+                  return "Game Result"
+                })()}
+              </h2>
 
               <div style={{ marginBottom: 10 }}>
                 <strong>Total Points (Rank):</strong><br/>
-                {me.score} (#{myRank})
+                {(() => {
+                  const sorted = Object.values(players).sort((a,b)=>b.score-a.score)
+                  const rank = Math.max(1, sorted.findIndex(p=>p.id===playerId)+1)
+                  return `${players[playerId].score} (#${rank})`
+                })()}
               </div>
 
               <div style={{ marginBottom: 10 }}>
                 <strong>Total Temple Finishing order:</strong>
                 <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
-                  {orders.map((o) => (
-                    <li key={o}>
-                      {o === 1 ? "1st" : o === 2 ? "2nd" : o === 3 ? "3rd" : `${o}th`}: {orderCount[o] || 0}
-                    </li>
-                  ))}
+                  {(() => {
+                    const sorted = Object.values(players).sort((a,b)=>b.score-a.score)
+                    const n = sorted.length
+                    const wins = (game.templeWins || []) as any[]
+                    const mine = wins.filter(w => w.playerId === playerId)
+                    const perOrder: Record<number, number> = {}
+                    for (const w of mine) perOrder[w.order] = (perOrder[w.order]||0)+1
+                    return Array.from({length:n}, (_,i)=>i+1).map(o=>(
+                      <li key={o}>{o===1?"1st":o===2?"2nd":o===3?"3rd":`${o}th`}: {perOrder[o]||0}</li>
+                    ))
+                  })()}
                 </ul>
               </div>
 
               <div style={{ marginBottom: 12 }}>
                 <strong>Total Coins:</strong><br/>
-                {(me as any).goldCount || 0} Gold & {(me as any).crystalCount || 0} Crystal
+                {(players[playerId] as any).goldCount || 0} Gold & {(players[playerId] as any).crystalCount || 0} Crystal
               </div>
 
               <div style={{ textAlign: "center" }}>
