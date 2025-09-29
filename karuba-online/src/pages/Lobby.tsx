@@ -152,7 +152,7 @@ export default function Lobby() {
   }
 
   const createGame = async () => {
-    if (!name.trim()) { alert("Masukkan nama dulu"); return }
+    if (!name.trim()) { alert("Enter your name!"); return }
     const gameId = newGameId()
     const rewards = makeRewards()
     const layout = makeRandomLayout()
@@ -183,12 +183,12 @@ export default function Lobby() {
   }
 
   const joinGame = async () => {
-    if (!name.trim()) { alert("Masukkan nama dulu"); return }
+    if (!name.trim()) { alert("Enter your name!"); return }
     const gameId = joinId.trim().toUpperCase()
-    if (!gameId) { alert("Masukkan Game ID"); return }
+    if (!gameId) { alert("Enter Game ID!"); return }
 
     const gSnap = await get(ref(db, `games/karuba/${gameId}`))
-    if (!gSnap.exists()) { alert("Game tidak ditemukan"); return }
+    if (!gSnap.exists()) { alert("Game not found!"); return }
 
     const layout: Layout = gSnap.val()?.layout
     const pSnap = await get(ref(db, `games/karuba/${gameId}/players/${playerId}`))
@@ -214,7 +214,7 @@ export default function Lobby() {
 
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
             <input
-              placeholder="Nama kamu"
+              placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{ flex: 1 }}

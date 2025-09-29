@@ -478,7 +478,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
       await update(ref(db, `games/karuba/${gameId}`), {
         templeWins: newWins,
-        lastEvent: `${players[playerId]?.name || "Player"} sudah sampai temple ${color} dan dapat ${gain} point!`,
+        lastEvent: `${players[playerId]?.name || "Player"} reached the ${color} temple and got ${gain} points!`,
       })
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
         moves: me.moves - 1,
@@ -551,7 +551,8 @@ export default function Room({ gameId }: { gameId: string }) {
     <main className="page">
       <div className="page-inner">
         <div className="card">
-          <h2 style={{ margin: "4px 0" }} className="font-display">Game {gameId}</h2>
+          <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2>
+          <p style={{ margin: "4px 0" }}>Game ID: {gameId}</p>
           <p style={{ margin: 0 }}>
             Status: {game.statusText} | Round: {game.round} | Current Tile:{" "}
             {me.actedForRound

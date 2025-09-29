@@ -205,7 +205,8 @@ export default function Board({
     const tid = board[r][c]
     if (tid === -1) return out
     const meta = (tilesMeta as any)[String(tid)]
-    const exits = (meta?.branches || []).filter((b: Branch) => b !== entry)
+    // const exits = (meta?.branches || []).filter((b: Branch) => b !== entry)
+    const exits = (meta?.branches || [])
     for (const dir of exits) {
       let nr = r, nc = c
       if (dir === "N") nr = r - 1
