@@ -356,7 +356,7 @@ export default function Board({
       >
         {tileId !== -1 && imgId != null && (
           <img
-            src={`/tiles/${imgId}.png`}
+            src={`/tiles/${imgId}.webp`}
             alt={`Tile ${tileId}`}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1 }}
           />
@@ -380,7 +380,7 @@ export default function Board({
         {isPreviewHere && (previewImgId != null) && (
           <>
             <img
-              src={`/tiles/${previewImgId}.png`}
+              src={`/tiles/${previewImgId}.webp`}
               alt={`Preview tile ${previewTileId}`}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1, opacity: 0.95 }}
             />
@@ -389,7 +389,7 @@ export default function Board({
               if (!rw) return null
               return (
                 <img
-                  src={`/tiles/${rw}.png`}
+                  src={`/tiles/${rw}.webp`}
                   alt={`${rw}`}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2, opacity: 0.95 }}
                 />

@@ -23,7 +23,7 @@ function TileIcon({
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <img
-        src={`/tiles/${img}.png`}
+        src={`/tiles/${img}.webp`}
         alt={`Tile ${id}`}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
       />
