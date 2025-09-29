@@ -56,7 +56,7 @@ export default function Room({ gameId }: { gameId: string }) {
     color: ExplorerColor
     from8: { r: number; c: number }
     to8: { r: number; c: number }
-    stage: 1 | 2 | 3
+    stage: 0 | 1 | 2 | 3 | 4 | 5
   } | null>(null)
 
   const [previewAt, setPreviewAt] = useState<{ r: number; c: number } | null>(null)
@@ -98,12 +98,12 @@ export default function Room({ gameId }: { gameId: string }) {
   // Memoized data derived from players/game
   const me: Player | undefined = players[playerId]
   const order: string[] = useMemo(() => {
-    return Object.values(players)
+    return Object.values(players || {})
       .sort((a, b) => a.joinedAt - b.joinedAt)
       .map((p) => p.id)
   }, [players])
    const allPlayers = useMemo(() => {
-    return Object.values(players).sort((a, b) => b.score - a.score)
+    return Object.values(players || {}).sort((a, b) => b.score - a.score)
   }, [players])
    const canPlace =
     !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
@@ -373,9 +373,12 @@ export default function Room({ gameId }: { gameId: string }) {
         to8: { r: number; c: number },
         afterCommit: () => Promise<void>
       ) => {
-        setAnimGhost({ color, from8, to8, stage: 1 }); await new Promise((r) => setTimeout(r, 150))
-        setAnimGhost({ color, from8, to8, stage: 2 }); await new Promise((r) => setTimeout(r, 150))
+        setAnimGhost({ color, from8, to8, stage: 0 }); await new Promise((r) => setTimeout(r, 100))
+        setAnimGhost({ color, from8, to8, stage: 1 }); await new Promise((r) => setTimeout(r, 200))
+        setAnimGhost({ color, from8, to8, stage: 2 }); await new Promise((r) => setTimeout(r, 200))
         setAnimGhost({ color, from8, to8, stage: 3 }); await new Promise((r) => setTimeout(r, 200))
+        setAnimGhost({ color, from8, to8, stage: 4 }); await new Promise((r) => setTimeout(r, 50))
+        setAnimGhost({ color, from8, to8, stage: 5 }); await new Promise((r) => setTimeout(r, 100))
         await afterCommit()
         setAnimGhost(null)
       }
@@ -627,7 +630,7 @@ export default function Room({ gameId }: { gameId: string }) {
           <div className="card">
             <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {Object.values(players)
+              {Object.values(players || {})
                 .sort((a, b) => a.joinedAt - b.joinedAt)
                 .map((p) => {
                   const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
@@ -731,9 +734,9 @@ export default function Room({ gameId }: { gameId: string }) {
             >
               <h2 className="font-display" style={{ marginTop: 0, marginBottom: 4 }}>
                 {(() => {
-                  const myPos = Math.max(1, Object.values(players).sort((a,b)=>b.score-a.score).findIndex(p=>p.id===playerId)+1)
+                  const myPos = Math.max(1, Object.values(players || {}).sort((a,b)=>b.score-a.score).findIndex(p=>p.id===playerId)+1)
                   if (myPos === 1) return "Victory!"
-                  if (myPos === Object.keys(players).length) return "Game Over!"
+                  if (myPos === Object.keys(players || {}).length) return "Game Over!"
                   return "Game Result"
                 })()}
               </h2>
@@ -751,7 +754,7 @@ export default function Room({ gameId }: { gameId: string }) {
                 <strong>Total Temple Finishing order:</strong>
                 <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
                   {(() => {
-                    const sorted = Object.values(players).sort((a,b)=>b.score-a.score)
+                    const sorted = Object.values(players || {}).sort((a,b)=>b.score-a.score)
                     const n = sorted.length
                     const wins = (game.templeWins || []) as any[]
                     const mine = wins.filter(w => w.playerId === playerId)

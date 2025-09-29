@@ -91,7 +91,7 @@ export default function Board({
     color: ExplorerColor
     from8: { r: number; c: number }
     to8: { r: number; c: number }
-    stage: 1 | 2 | 3
+    stage: 0 | 1 | 2 | 3 | 4 | 5
   } | null
 }) {
   const [confirmPlace, setConfirmPlace] = useState<{ r: number; c: number } | null>(null)
@@ -665,15 +665,19 @@ export default function Board({
           const from = cellPx(animGhost.from8.r, animGhost.from8.c)
           const to = cellPx(animGhost.to8.r, animGhost.to8.c)
           const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-          const t = animGhost.stage === 1 ? 0 : animGhost.stage === 2 ? 0.5 : 1
-          const left = lerp(from.left, to.left, t) + 4
-          const top = lerp(from.top, to.top, t) + 4
+          const isAtTo = animGhost.stage >= 4
+          const t = animGhost.stage === 1 ? 0 : animGhost.stage === 2 ? 0.5 : animGhost.stage === 3 ? 1 : 0
+          const pos = isAtTo ? to : from
+          const left = lerp(pos.left, isAtTo ? pos.left : to.left, t) + 4
+          const top = lerp(pos.top, isAtTo ? pos.top : to.top, t) + 4
           const src =
-            animGhost.stage === 1
+            animGhost.stage === 0
               ? `/explorers/explorers_${idx}_1.svg`
-              : animGhost.stage === 2
+              : animGhost.stage <= 3
               ? `/explorers/explorers_${idx}_2.svg`
-              : `/explorers/explorers_${idx}_3.svg`
+              : animGhost.stage === 4
+              ? `/explorers/explorers_${idx}_3.svg`
+              : `/explorers/explorers_${idx}.svg`
 
           return (
             <img
