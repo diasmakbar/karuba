@@ -455,6 +455,10 @@ export default function Room({ gameId }: { gameId: string }) {
       if (me.moves <= 0) return
       if (!["N", "E"].includes(side)) return
 
+      // Check temple color match
+      const temple = game.layout?.temples?.find((t) => t.side === side && t.index === index)
+      if (!temple || temple.color !== color) return
+
       const tilesMeta = (game.tilesMeta || {}) as Record<string, { branches: Branch[] }>
       const ex = me.explorers[color]
       if (!ex?.onBoard) return
@@ -737,7 +741,7 @@ export default function Room({ gameId }: { gameId: string }) {
               <div style={{ marginBottom: 10 }}>
                 <strong>Total Points (Rank):</strong><br/>
                 {(() => {
-                  const sorted = Object.values(players).sort((a,b)=>b.score-a.score)
+                  const sorted = Object.values(players || {}).sort((a,b)=>b.score-a.score)
                   const rank = Math.max(1, sorted.findIndex(p=>p.id===playerId)+1)
                   return `${players[playerId].score} (#${rank})`
                 })()}

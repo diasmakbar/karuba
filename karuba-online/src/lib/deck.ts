@@ -35,11 +35,17 @@ export function generateTilesMeta(): TilesMetaMap {
   const [nsCount, ewCount] = straightSplits[Math.floor(Math.random() * straightSplits.length)]
 
   // --- Corner split (NE, ES, SW, NW) total 6
+  // const cornerDirs: Array<["N" | "E" | "S" | "W", "N" | "E" | "S" | "W"]> = [
+  //   ["N", "E"], // NE
+  //   ["E", "S"], // ES
+  //   ["S", "W"], // SW
+  //   ["N", "W"], // NW
+  // ]
   const cornerDirs: Array<["N" | "E" | "S" | "W", "N" | "E" | "S" | "W"]> = [
-    ["N", "E"], // NE
-    ["E", "S"], // ES
-    ["S", "W"], // SW
-    ["N", "W"], // NW
+    ["N", "E"], // NE image 3
+    ["S", "W"], // SW image 4
+    ["N", "W"], // NW image 5  
+    ["E", "S"], // ES image 6
   ]
   const cornerPick2 = pick([0, 1, 2, 3], 2) // these get 2 each, the others get 1
   const cornerCounts = [0, 0, 0, 0]

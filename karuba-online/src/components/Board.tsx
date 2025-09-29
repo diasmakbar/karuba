@@ -244,7 +244,7 @@ export default function Board({
     return m
   }, [arrows])
 
-  // Temple target (tidak diblok oleh kemenangan pemain lain; hanya kalau SAYA sudah win temple itu)
+  // Temple target (tidak diblok oleh kemenangan pemain lain; hanya kalau SAYA sudah win temple itu, dan warna match)
   const templeTargets: TempleTarget[] = useMemo(() => {
     if (isAnimating) return []
     const t: TempleTarget[] = []
@@ -257,12 +257,14 @@ export default function Board({
 
     for (const dir of exits) {
       if (dir === "N" && r === 0) {
+        const temple = findTemple("N", c)
         const winMine = winByMe.get(`N:${c}`) // kalau saya sudah win, jangan highlight
-        if (!winMine) t.push({ side: "N", index: c, dir })
+        if (!winMine && temple?.color === selectedColor) t.push({ side: "N", index: c, dir })
       }
       if (dir === "E" && c === 5) {
+        const temple = findTemple("E", r)
         const winMine = winByMe.get(`E:${r}`)
-        if (!winMine) t.push({ side: "E", index: r, dir })
+        if (!winMine && temple?.color === selectedColor) t.push({ side: "E", index: r, dir })
       }
     }
     return t
