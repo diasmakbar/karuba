@@ -497,8 +497,13 @@ export default function Room({ gameId }: { gameId: string }) {
       setAnimGhost(null)
 
       // global check after entering temple
-      const everyoneFinished = await computeEveryoneFinished()
-      if (everyoneFinished) {
+      // const everyoneFinished = await computeEveryoneFinished()
+      // if (everyoneFinished) {
+      //  await endGame()
+      //  return
+      // }
+      // global check after entering temple
+      if (await computeEveryoneFinished()) {
         await endGame()
         return
       }
