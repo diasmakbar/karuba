@@ -95,18 +95,39 @@ export default function Room({ gameId }: { gameId: string }) {
     if (game?.status === "ended") setShowResult(true)
   }, [game?.status])
 
+  // Memoized data derived from players/game
   const me: Player | undefined = players[playerId]
-  const order: string[] = useMemo(
-    () => Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt).map((p) => p.id),
-    [players]
-  )
-
-  const canPlace = !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
-
-  useEffect(() => {
-    if (!canPlace) setPreviewAt(null)
-    if (canPlace && previewAt && me?.board?.[previewAt.r]?.[previewAt.c] !== -1) setPreviewAt(null)
+  const order: string[] = useMemo(() => {
+    return Object.values(players)
+      .sort((a, b) => a.joinedAt - b.joinedAt)
+      .map((p) => p.id)
+  }, [players])
+   const allPlayers = useMemo(() => {
+    return Object.values(players).sort((a, b) => b.score - a.score)
+  }, [players])
+   const canPlace =
+    !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
+   useEffect(() => {
+    if (!canPlace) {
+      setPreviewAt(null)
+      return
+    }
+    if (previewAt && me?.board?.[previewAt.r]?.[previewAt.c] !== -1) {
+      setPreviewAt(null)
+    }
   }, [canPlace, me?.board, previewAt])
+  // const me: Player | undefined = players[playerId]
+  // const order: string[] = useMemo(
+  //   () => Object.values(players).sort((a, b) => a.joinedAt - b.joinedAt).map((p) => p.id),
+  //   [players]
+  // )
+
+  // const canPlace = !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
+
+  // useEffect(() => {
+  //   if (!canPlace) setPreviewAt(null)
+  //   if (canPlace && previewAt && me?.board?.[previewAt.r]?.[previewAt.c] !== -1) setPreviewAt(null)
+  // }, [canPlace, me?.board, previewAt])
 
   const isHost = !!game && game.shuffleTurnUid === playerId
   const isGenerateTurnOwner = !!game && game.generateTurnUid === playerId
@@ -485,10 +506,20 @@ export default function Room({ gameId }: { gameId: string }) {
   }
 
   // === Result stats ===
-  const allPlayers = useMemo(
-    () => Object.values(players).sort((a, b) => b.score - a.score),
-    [players]
-  )
+  // const allPlayers = useMemo(
+  //   () => Object.values(players).sort((a, b) => b.score - a.score),
+  //   [players]
+  // )
+  // const myRank = Math.max(1, allPlayers.findIndex((p) => p.id === playerId) + 1)
+  // const nPlayers = allPlayers.length
+  // const title =
+  //   game.status !== "ended"
+  //     ? "Game"
+  //     : myRank === 1
+  //     ? "Victory!"
+  //     : myRank === nPlayers
+  //     ? "Game Over!"
+  //     : "Game Result"
   const myRank = Math.max(1, allPlayers.findIndex((p) => p.id === playerId) + 1)
   const nPlayers = allPlayers.length
   const title =
