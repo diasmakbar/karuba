@@ -134,7 +134,7 @@ export default function Board({
 
   // occupancy helper
   const occupiedByOther = (r: number, c: number, except?: ExplorerColor) =>
-    Object.values(myExplorers).some(
+    Object.values(myExplorers || {}).some(
       (ex) => ex.onBoard && ex.onBoard.r === r && ex.onBoard.c === c && ex.color !== except
     )
 
@@ -166,7 +166,7 @@ export default function Board({
   }
 
   const edgeExplorerAt = (side: Branch, idx: number): ExplorerState | null => {
-    const ex = Object.values(myExplorers).find(
+    const ex = Object.values(myExplorers || {}).find(
       (e) => e.onEdge && e.onEdge.side === side && e.onEdge.index === idx
     )
     return ex || null
@@ -364,14 +364,14 @@ export default function Board({
 
         {reward === "gold" && (
           <img
-            src="/tiles/gold.png"
+            src="/tiles/gold.webp"
             alt="Gold"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
           />
         )}
         {reward === "crystal" && (
           <img
-            src="/tiles/crystal.png"
+            src="/tiles/crystal.webp"
             alt="Crystal"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
           />
@@ -404,7 +404,7 @@ export default function Board({
           </>
         )}
 
-        {Object.values(myExplorers).map((ex) => {
+        {Object.values(myExplorers || {}).map((ex) => {
           if (!ex.onBoard || ex.onBoard.r !== r6 || ex.onBoard.c !== c6) return null
           if (animGhost && ex.color === animGhost.color) return null
           const idx = colorIdx(ex.color)
