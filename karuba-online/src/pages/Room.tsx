@@ -29,14 +29,14 @@ function TileIcon({
       />
       {reward === "gold" && (
         <img
-          src="/tiles/gold.png"
+          src="/tiles/gold.webp"
           alt="Gold"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
         />
       )}
       {reward === "crystal" && (
         <img
-          src="/tiles/crystal.png"
+          src="/tiles/crystal.webp"
           alt="Crystal"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
         />
@@ -168,18 +168,10 @@ export default function Room({ gameId }: { gameId: string }) {
   }
 
   // === End conditions helper ===
-  // const computeEveryoneFinished = async (): Promise<boolean> => {
-  //   const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-  //   const pObj: Record<string, Player> = (plist.val() || {}) as any
-  //   return Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
-  // }
   const computeEveryoneFinished = async (): Promise<boolean> => {
     const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-    const pObj = plist.val() as Record<string, Player> | null
-    if (!pObj) return false
-    return Object.values(pObj).every(
-      (p) => !p.explorers || Object.keys(p.explorers).length === 0
-    )
+    const pObj: Record<string, Player> = (plist.val() || {}) as any
+    return Object.values(pObj).every((p) => Object.keys(p.explorers || {}).length === 0)
   }
   const endGame = async () => {
     await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
@@ -289,7 +281,7 @@ export default function Room({ gameId }: { gameId: string }) {
     const pids = order
     const nextRound = game.round + 1
 
-    // End if: round habis > 36
+    // End if: hanya jika round habis > 36
     if (nextRound > 36) {
       await endGame()
       return
@@ -328,9 +320,7 @@ export default function Room({ gameId }: { gameId: string }) {
       }
       await update(pRef, updates)
 
-      // Jika semua pemain selesai total → end
-      const everyoneFinished = await computeEveryoneFinished()
-      // removed endGame call here (moved to enterTemple)
+      // Tidak endGame lagi di sini, cukup auto-ready
     } catch {}
   }
 
@@ -384,13 +374,6 @@ export default function Room({ gameId }: { gameId: string }) {
         setAnimGhost({ color, from8, to8, stage: 5 }); await new Promise((r) => setTimeout(r, 100))
         await afterCommit()
         setAnimGhost(null)
-
-      // global check after entering temple
-      const everyoneFinished = await computeEveryoneFinished()
-      if (everyoneFinished) {
-        await endGame()
-        return
-      }
       }
 
       // from edge
@@ -503,18 +486,6 @@ export default function Room({ gameId }: { gameId: string }) {
         score: me.score + gain,
       })
       setAnimGhost(null)
-
-      // global check after entering temple
-      // const everyoneFinished = await computeEveryoneFinished()
-      // if (everyoneFinished) {
-      //  await endGame()
-      //  return
-      // }
-      // global check after entering temple
-      if (await computeEveryoneFinished()) {
-        await endGame()
-        return
-      }
 
       // auto-finish jika explorer saya habis
       await maybeAutoFinishMe(newExplorers)
