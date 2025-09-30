@@ -290,8 +290,8 @@ export default function Board({
     return { x: p.left + CELL / 2, y: p.top + CELL / 2 }
   }
 
-  const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
-  const BoardCell: React.FC<{ r6: number; c6: number }> = ({ r6, c6 }) => {
+  const BoardCell = ({ r6, c6 }: { r6: number; c6: number }) => {
+    const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
     const tileId = board[r6][c6]
     const reward = tileId !== -1 ? rewards[tileId] : null
 
@@ -446,17 +446,15 @@ export default function Board({
       style={{
         position: "relative",
         display: "grid",
-        gridTemplateColumns: `repeat(8, 1fr)`,
-        gridTemplateRows: `repeat(8, 1fr)`,
+        gridTemplateColumns: `repeat(8, ${CELL}px)`,
+        gridTemplateRows: `repeat(8, ${CELL}px)`,
         gap: GAP,
         padding: GAP,
         background: "transparent",       // transparan (frame kelihatan)
         // border: "1px solid #e5e7eb",
         borderRadius: 10,
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-        width: "100%",
-        maxWidth: 8 * CELL + 7 * GAP + 2 * GAP,
-        aspectRatio: "1", // biar square responsive
+        width: 8 * CELL + 7 * GAP + 2 * GAP,
       }}
       onClick={() => setSelectedColor(null)}
     >
