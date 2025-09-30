@@ -291,6 +291,7 @@ export default function Board({
   }
 
   const BoardCell = ({ r6, c6 }: { r6: number; c6: number }) => {
+    const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
     const tileId = board[r6][c6]
     const reward = tileId !== -1 ? rewards[tileId] : null
 
@@ -429,7 +430,7 @@ export default function Board({
                 }}
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (!canStep || isAnimating) return
+                  if (!canStep || isAnimating || isFinished) return
                   setSelectedColor(isSelected ? null : ex.color)
                 }}
               />
@@ -494,7 +495,7 @@ export default function Board({
                     src={`/temples/temples_${idx}_top.svg`}
                     alt={`Temple ${color}`}
                     onClick={(e) => {
-                      if (!showHighlight) return
+                      if (!showHighlight || isFinished) return
                       e.stopPropagation()
                       if (!selectedColor || isAnimating) return
                       setConfirmTemple({ color: selectedColor, side: "N", index: c - 1 })
@@ -536,7 +537,7 @@ export default function Board({
                     src={`/temples/temples_${idx}_side.svg`}
                     alt={`Temple ${color}`}
                     onClick={(e) => {
-                      if (!showHighlight) return
+                      if (!showHighlight || isFinished) return
                       e.stopPropagation()
                       if (!selectedColor || isAnimating) return
                       setConfirmTemple({ color: selectedColor, side: "E", index: r - 1 })
@@ -566,7 +567,7 @@ export default function Board({
                     alt={`${ex.color} explorer`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (!myMoves || !highlighted) return
+                      if (!myMoves || !highlighted || isFinished) return
                       setSelectedColor(isSelected ? null : ex.color)
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", transform: "scale(0.85)", transformOrigin: "center", zIndex: 5, cursor: highlighted ? "pointer" : "default" }}
@@ -594,7 +595,7 @@ export default function Board({
                     alt={`${ex.color} explorer`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (!myMoves || !highlighted) return
+                      if (!myMoves || !highlighted || isFinished) return
                       setSelectedColor(isSelected ? null : ex.color)
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", transform: "scale(0.85)", transformOrigin: "center", zIndex: 5, cursor: highlighted ? "pointer" : "default" }}
@@ -641,6 +642,7 @@ export default function Board({
                     alt={`arrow ${dirToName(a.dir)}`}
                     onClick={(e) => {
                       e.stopPropagation()
+                      if (isFinished) return
                       setConfirmMove({ color: selectedColor, dir: a.dir })
                     }}
                     style={{
