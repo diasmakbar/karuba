@@ -455,7 +455,7 @@ export default function Board({
         borderRadius: 10,
         boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
         width: "100%",
-        maxWidth: 8 * CELL + 7 * GAP + 2 * GAP,
+        // maxWidth: 8 * CELL + 7 * GAP + 2 * GAP,
         aspectRatio: "1", // biar square responsive
       }}
       onClick={() => setSelectedColor(null)}
