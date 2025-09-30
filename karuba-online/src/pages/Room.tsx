@@ -95,6 +95,30 @@ export default function Room({ gameId }: { gameId: string }) {
     if (game?.status === "ended") setShowResult(true)
   }, [game?.status])
 
+  // Skip generateTurnUid to unfinished player
+  useEffect(() => {
+    if (!game || !players) return
+    const currentGen = game.generateTurnUid
+    if (currentGen && players[currentGen]) {
+      const isFinished = !players[currentGen].explorers || Object.keys(players[currentGen].explorers || {}).length === 0
+      if (isFinished) {
+        const order = Object.values(players || {}).sort((a, b) => a.joinedAt - b.joinedAt).map(p => p.id)
+        const currentIdx = order.indexOf(currentGen)
+        let nextIdx = (currentIdx + 1) % order.length
+        while (nextIdx !== currentIdx) {
+          const nextId = order[nextIdx]
+          const nextPlayer = players[nextId]
+          const nextFinished = !nextPlayer?.explorers || Object.keys(nextPlayer.explorers || {}).length === 0
+          if (!nextFinished) {
+            update(ref(db, `games/karuba/${gameId}`), { generateTurnUid: nextId })
+            break
+          }
+          nextIdx = (nextIdx + 1) % order.length
+        }
+      }
+    }
+  }, [game?.generateTurnUid, players])
+
   // Memoized data derived from players/game
   const me: Player | undefined = players[playerId]
   const isFinished = !me?.explorers || Object.keys(me.explorers).length === 0
