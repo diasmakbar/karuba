@@ -93,6 +93,7 @@ export default function Board({
     to8: { r: number; c: number }
     stage: 0 | 1 | 2 | 3 | 4 | 5
   } | null
+  isFinished?: boolean
 }) {
   const [confirmPlace, setConfirmPlace] = useState<{ r: number; c: number } | null>(null)
   const [confirmMove, setConfirmMove] = useState<{ color: ExplorerColor; dir: Dir } | null>(null)
@@ -310,6 +311,7 @@ export default function Board({
     }, [isPreviewHere, r6, c6])
 
     const handleCellClick = () => {
+      if (isFinished) return
       // PRIORITAS: kalau lagi memilih explorer → klik cell tujuan buat gerak
       if (selectedColor && myMoves > 0) {
         const k = `${r6},${c6}`

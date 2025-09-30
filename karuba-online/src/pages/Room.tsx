@@ -97,6 +97,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
   // Memoized data derived from players/game
   const me: Player | undefined = players[playerId]
+  const isFinished = !me?.explorers || Object.keys(me.explorers).length === 0
   const order: string[] = useMemo(() => {
     return Object.values(players || {})
       .sort((a, b) => a.joinedAt - b.joinedAt)
@@ -106,7 +107,7 @@ export default function Room({ gameId }: { gameId: string }) {
     return Object.values(players || {}).sort((a, b) => b.score - a.score)
   }, [players])
    const canPlace =
-    !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound
+    !!game && !!me && game.status === "playing" && game.currentTile > 0 && !me.actedForRound && !isFinished
    useEffect(() => {
     if (!canPlace) {
       setPreviewAt(null)
@@ -136,7 +137,7 @@ export default function Room({ gameId }: { gameId: string }) {
     !!game &&
     (game.status === "waiting"
       ? isHost
-      : game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0)
+      : game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0 && !isFinished)
 
   const playerNameById = (pid: string) => players[pid]?.name || "player"
   const waitingLabel =
@@ -575,7 +576,7 @@ export default function Room({ gameId }: { gameId: string }) {
               canGenerate={!!canGenerate}
               onStartOrGenerate={onStartOrGenerate}
               onReady={onReadyNextRound}
-              readyDisabled={!me.actedForRound || me.doneForRound}
+              readyDisabled={!me.actedForRound || me.doneForRound || isFinished}
               waitingLabel={(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
                 if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
@@ -628,7 +629,8 @@ export default function Room({ gameId }: { gameId: string }) {
                 .sort((a, b) => a.joinedAt - b.joinedAt)
                 .map((p) => {
                   const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
-                  const state = p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
+                  const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
+                  const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
                   return (
                     <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
                       {p.name} — Score: {p.score} ({state})
@@ -663,6 +665,7 @@ export default function Room({ gameId }: { gameId: string }) {
               onMoveOne={async (color, dir) => { await moveOne(color, dir) }}
               onEnterTemple={enterTemple}
               animGhost={animGhost}
+              isFinished={isFinished}
             />
           </div>
         </div>
