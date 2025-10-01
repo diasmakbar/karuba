@@ -300,7 +300,8 @@ export default function Room({ gameId }: { gameId: string }) {
     if (!game) return
     const plist = await get(ref(db, `games/karuba/${gameId}/players`))
     const pObj: Record<string, Player> = (plist.val() || {}) as any
-    const allReady = Object.values(pObj || {}).every((p) => p.doneForRound)
+    const activePlayers = Object.values(pObj || {}).filter(p => Object.keys(p.explorers || {}).length > 0)
+    const allReady = activePlayers.every((p) => p.doneForRound)
     if (!allReady) return
 
     const pids = order
@@ -323,11 +324,14 @@ export default function Room({ gameId }: { gameId: string }) {
       statusText: `Round ${nextRound} (waiting generate)`,
     })
     for (const pid of pids) {
-      await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
-        actedForRound: false,
-        doneForRound: false,
-        lastAction: null,
-      })
+      const p = pObj[pid]
+      if (Object.keys(p.explorers || {}).length > 0) {
+        await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
+          actedForRound: false,
+          doneForRound: false,
+          lastAction: null,
+        })
+      }
     }
   }
 
@@ -606,7 +610,7 @@ export default function Room({ gameId }: { gameId: string }) {
               canGenerate={!!canGenerate}
               onStartOrGenerate={onStartOrGenerate}
               onReady={onReadyNextRound}
-              readyDisabled={!me.actedForRound || me.doneForRound}
+              readyDisabled={!isFinished ? (!me.actedForRound || me.doneForRound) : false}
               waitingLabel={(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
                 if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
