@@ -161,7 +161,7 @@ export default function Room({ gameId }: { gameId: string }) {
     !!game &&
     (game.status === "waiting"
       ? isHost
-      : game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0 && !isFinished)
+      : game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0)
 
   const playerNameById = (pid: string) => players[pid]?.name || "player"
   const waitingLabel =
@@ -606,7 +606,7 @@ export default function Room({ gameId }: { gameId: string }) {
               canGenerate={!!canGenerate}
               onStartOrGenerate={onStartOrGenerate}
               onReady={onReadyNextRound}
-              readyDisabled={!me.actedForRound || me.doneForRound || isFinished}
+              readyDisabled={!me.actedForRound || me.doneForRound}
               waitingLabel={(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
                 if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
