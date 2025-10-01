@@ -338,14 +338,20 @@ export default function Room({ gameId }: { gameId: string }) {
       const noneLeft = !newExplorers || Object.keys(newExplorers).length === 0
       if (!noneLeft) return
       const pRef = ref(db, `games/karuba/${gameId}/players/${playerId}`)
-      const updates: any = { doneForRound: true }
+      const updates: any = {}
       if (game.currentTile > 0 && !me.actedForRound) {
+        // Auto discard tile
+        const branches = ((game.tilesMeta || {}) as any)[String(game.currentTile)]?.branches || []
+        updates.moves = (me.moves || 0) + branches.length
+        updates.lastDiscardDirs = branches
         updates.actedForRound = true
         updates.lastAction = "auto"
+        updates.discardedTiles = [...(me.discardedTiles || []), game.currentTile]
+        updates.usedTiles = { ...(me.usedTiles || {}), [game.currentTile]: true }
       }
-      await update(pRef, updates)
-
-      // Tidak endGame lagi di sini, cukup auto-ready
+      if (Object.keys(updates).length > 0) {
+        await update(pRef, updates)
+      }
     } catch {}
   }
 

@@ -39,7 +39,7 @@ body {
   margin: 0;
   color: var(--text);
   font-family: var(--font-body);
-  background: #0b1020 url("/bg/page.png") center/cover no-repeat fixed; /* optional */
+  background: #0b1020 url("/bg/page.webp") center/cover no-repeat fixed; /* optional */
 }
 
 /* Heading pakai RubikDirt */
