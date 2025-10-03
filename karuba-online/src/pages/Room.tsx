@@ -1,14 +1,10 @@
-import { useEffect, useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
 import Board from "../components/Board"
 import Controls from "../components/Controls"
 import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
 import { generateTilesMeta } from "../lib/deck"
-import RoomHeaderCard from "./RoomHeaderCard"
-import RoomMainPanel from "./RoomMainPanel"
-import RoomPlayersCard from "./RoomPlayersCard"
-import RoomResultModal from "./RoomResultModal"
 
 const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
 
@@ -647,87 +643,335 @@ export default function Room({ gameId }: { gameId: string }) {
   return (
     <main className="page">
       <div className="page-inner">
-
-        {/* Header info */}
-        <RoomHeaderCard gameId={game.id} game={game} me={me} />
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
-          {/* Panel utama: controls + current tile */}
-          <RoomMainPanel
-            isHost={isHost}
-            game={game}
-            players={players}
-            playerId={playerId}
-            me={me}
-            canGenerate={!!canGenerate}
-            onStartOrGenerate={onStartOrGenerate}
-            onReadyNextRound={onReadyNextRound}
-            readyDisabled={
-              !isFinished ? (!me.actedForRound || me.doneForRound) : false
-            }
-            waitingLabel={(() => {
-              if (game.status === "waiting") return "Waiting host to start the game"
-              if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
-                return game.generateTurnUid === playerId
-                  ? "You can generate now"
-                  : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
-              }
-              return `Round ${game.round}`
-            })()}
-            canPlace={canPlace}
-            onTrash={handleTrash}
-            onOpenDiscard={() => setShowDiscardList(true)}
-          />
-
-          {/* Daftar player */}
-          <RoomPlayersCard game={game} players={players} playerId={playerId} />
+        <div className="card">
+          <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2>
+          <p style={{ margin: "4px 0" }}>Game ID: {gameId}. v1.1.</p>
+          <p style={{ margin: 0 }}>
+            Status: {game.statusText} | Round: {game.round} | Current Tile:{" "}
+            {me.actedForRound
+              ? me.lastAction === "placed"
+                ? "Placed!"
+                : me.lastAction === "discarded"
+                ? "Discarded!"
+                : "-"
+              : game.currentTile || "-"}
+          </p>
         </div>
 
-        {/* Modal result */}
-        {showResult && (
-          <RoomResultModal
-            open={showResult}
-            onClose={() => {
-              setShowResult(false)
-              history.pushState({}, "", "/")
-              dispatchEvent(new PopStateEvent("popstate"))
-            }}
-            game={game}
-            players={players}
-            currentPlayerId={playerId}
-          />
-        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <div className="card">
+            <Controls
+              isHost={isHost}
+              status={game.status}
+              round={game.round}
+              canGenerate={!!canGenerate}
+              onStartOrGenerate={onStartOrGenerate}
+              onReady={onReadyNextRound}
+              readyDisabled={!isFinished ? (!me.actedForRound || me.doneForRound) : false}
+              waitingLabel={(() => {
+                if (game.status === "waiting") return "Waiting host to start the game"
+                if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+                  return game.generateTurnUid === playerId
+                    ? "You can generate now"
+                    : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+                }
+                return `Round ${game.round}`
+              })()}
+            />
 
-        {/* Modal discard list */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+              <strong>Current Tile:</strong>
+              {me.actedForRound ? (
+                <span>{me.lastAction === "placed" ? "Placed!" : "Discarded!"}</span>
+              ) : game.currentTile > 0 ? (
+                <TileIcon
+                  id={game.currentTile}
+                  tilesMeta={(game.tilesMeta || {}) as any}
+                  size={40}
+                  reward={game.rewards?.[game.currentTile]}
+                />
+              ) : (
+                <span>-</span>
+              )}
+              <span style={{ opacity: 0.5 }}>|</span>
+              <span>Moves: {me.moves}</span>
+              <img
+                src="/trash.svg"
+                alt="Trash"
+                title={game.currentTile > 0 && canPlace ? "Discard tile" : "No tile to discard"}
+                onClick={handleTrash}
+                style={{
+                  width: 28,
+                  height: 28,
+                  cursor: game.currentTile > 0 && canPlace ? "pointer" : "default",
+                  opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
+                }}
+              />
+              <button onClick={() => setShowDiscardList(true)} style={{ marginLeft: 4 }}>
+                Discarded Tiles
+              </button>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {Object.values(players || {})
+                .sort((a, b) => a.joinedAt - b.joinedAt)
+                .map((p) => {
+                  const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
+                  const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
+                  const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
+                  return (
+                    <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
+                      {p.name} - Score: {p.score} ({state})
+                    </li>
+                  )
+                })}
+            </ul>
+            {game.lastEvent && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
+                <em>{game.lastEvent}</em>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="board-scroll">
+          <div className="board-frame">
+            <Board
+              myPlayerId={playerId}
+              board={me.board}
+              tilesMeta={(game.tilesMeta || {}) as any}
+              rewards={game.rewards || {}}
+              canPlace={canPlace}
+              onPlace={placeTile}
+              previewTileId={canPlace ? game.currentTile : null}
+              previewAt={previewAt}
+              onPreview={(r, c) => setPreviewAt({ r, c })}
+              myMoves={me.moves}
+              myExplorers={me.explorers}
+              temples={game.layout?.temples || []}
+              templeWins={game.templeWins || []}
+              onMoveOne={async (color, dir) => { await moveOne(color, dir) }}
+              onEnterTemple={enterTemple}
+              animGhost={animGhost}
+              isFinished={isFinished}
+            />
+          </div>
+        </div>
+
         {showDiscardList && (
           <div
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.6)",
+              background: "rgba(0,0,0,0.55)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 1200,
+              zIndex: 1000,
             }}
+            onClick={() => setShowDiscardList(false)}
           >
-            <div
-              style={{
-                background: "#fff",
-                padding: 20,
-                borderRadius: 12,
-                width: 400,
-                boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
-              }}
-            >
-              <h3 className="font-display">Discarded Tiles</h3>
-              {/* TODO: render daftar tile buangan */}
-              <div style={{ textAlign: "center", marginTop: 12 }}>
+            <div style={{ background: "#fff", padding: 16, borderRadius: 10, width: 360 }} onClick={(e) => e.stopPropagation()}>
+              <h4 style={{ marginTop: 0 }} className="font-display">Discarded Tiles</h4>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {me.discardedTiles?.length ? (
+                  me.discardedTiles.map((tid, i) => (
+                    <TileIcon
+                      key={`${tid}-${i}`}
+                      id={tid}
+                      tilesMeta={(game.tilesMeta || {}) as any}
+                      size={42}
+                      reward={game.rewards?.[tid]}
+                    />
+                  ))
+                ) : (
+                  <div>No discarded tiles</div>
+                )}
+              </div>
+              <div style={{ marginTop: 10, textAlign: "center" }}>
                 <button onClick={() => setShowDiscardList(false)}>Close</button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Result Modal */}
+        {showResult && (
+        <div
+        style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1200,
+        }}
+        >
+        <div
+        style={{
+        background: "#fff",
+        padding: 20,
+        borderRadius: 12,
+        width: 420,
+        maxHeight: "80vh",
+        overflowY: "auto",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+        }}
+        >
+        {(() => {
+        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+        const myPos = Math.max(1, sorted.findIndex(p => p.id === playerId) + 1)
+        return (
+        <h2
+        className="font-display"
+        style={{ marginTop: 0, marginBottom: 12, textAlign: "center" }}
+        >
+        {myPos === 1
+        ? "Victory! 🏆"
+        : myPos === sorted.length
+        ? "Game Over! ☠️"
+        : "Game Result 🎲"}
+        </h2>
+        )
+        })()}
+
+        {(() => {
+        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+        const wins = (game.templeWins || []) as any[]
+        return (
+        <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {sorted.map((p, i) => {
+        const rank = i + 1
+        const isExpanded = expandedPlayer === p.id
+        const mineWins = wins.filter(w => w.playerId === p.id)
+        const perOrder: Record<number, number> = {}
+        for (const w of mineWins) perOrder[w.order] = (perOrder[w.order] || 0) + 1
+        return (
+        <div
+        key={p.id}
+        style={{
+        border: "1px solid rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        padding: "8px 12px",
+        background: isExpanded ? "rgba(0,0,0,0.05)" : "#fafafa",
+        }}
+        >
+        <div
+        style={{
+        cursor: "pointer",
+        fontWeight: p.id === playerId ? 700 : 400,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        }}
+        onClick={() => setExpandedPlayer(expandedPlayer === p.id ? null : p.id)}
+        >
+        <span>
+        {`(#${rank}) | ${p.name} | ${p.score} pts`}
+        {rank === 1 ? " 👑" : ""}
+        </span>
+        <span>{isExpanded ? "⤵" : "↩"}</span>
+        </div>
+        {isExpanded && (() => {
+  try {
+    const mineWins = (wins || []).filter(w => w.playerId === p.id)
+    const perOrder: Record<number, number> = {}
+    mineWins.forEach(w => {
+      if (w.order != null) perOrder[w.order] = (perOrder[w.order] || 0) + 1
+    })
+    const templePoints = mineWins.reduce((sum, w) => sum + (w.points || 0), 0)
+
+    const goldCount = (p as any)?.goldCount || 0
+    const crystalCount = (p as any)?.crystalCount || 0
+    const finishedAt = (p as any)?.finishedAtRound || null
+    return (
+      <div style={{color:"red", fontSize:12}}>
+        mineWins: {JSON.stringify(mineWins)}<br/>
+        perOrder: {JSON.stringify(perOrder)}<br/>
+        finishedAt: {finishedAt?.toString() || "null"}
+      </div>
+    )
+    const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 8) : 0
+    const gameBonus = rank === 1 ? 2 : rank === 2 ? 1 : 0
+
+    return (
+      <div style={{ marginTop: 8, fontSize: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Finishing Order:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          {mineWins.length > 0 ? (
+            Object.entries(perOrder).map(([order, count]) => {
+              const pts = mineWins.filter(w => w.order === Number(order)).reduce((sum, w) => sum + (w.points || 0), 0)
+              const orderLabel =
+                Number(order) === 1 ? "1st" : Number(order) === 2 ? "2nd" : Number(order) === 3 ? "3rd" : `${order}th`
+              return (
+                <React.Fragment key={order}>
+                  <div>• {orderLabel}: {count}</div>
+                  <div>{pts} pts</div>
+                </React.Fragment>
+              )
+            })
+          ) : (
+            <>
+              <div>• Unfinished: 1</div>
+              <div>0 pts</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Rewards:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          <div>• Gold: {goldCount}</div>
+          <div>{goldCount} pts</div>
+          <div>• Crystal: {crystalCount}</div>
+          <div>{crystalCount} pts</div>
+          {finishedAt && finishedAt < 36 && (
+            <>
+              <div>• Round {finishedAt} /36</div>
+              <div>{roundBonus} pts</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Ranking bonus:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          <div>{gameBonus > 0 ? "• Placement bonus" : "• None"}</div>
+          <div>{gameBonus} pts</div>
+        </div>
+      </div>
+    )
+  } catch (err) {
+    console.error("Breakdown error:", err, p)
+    return <div style={{ color: "red" }}>⚠️ Error showing breakdown</div>
+  }
+})()}
+        </div>
+        )
+        })}
+        </div>
+        )
+        })()}
+
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+        <button
+        className="font-display"
+        onClick={() => {
+        setShowResult(false)
+        history.pushState({}, "", "/")
+        dispatchEvent(new PopStateEvent("popstate"))
+        }}
+        >
+        Back to Lobby
+        </button>
+        </div>
+        </div>
+        </div>
+        )}
+
+        {error && <div style={{ color: "red" }}>{error}</div>}
       </div>
     </main>
   )
