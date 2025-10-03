@@ -38,18 +38,17 @@ export interface Player {
 
   actedForRound: boolean     // sudah place/discard
   doneForRound: boolean      // sudah klik "Ready"
-  lastAction: "placed" | "discarded" | "auto" | null
+  lastAction: "placed" | "discarded" | null
 
   moves: number
   lastDiscardDirs?: Branch[]
   usedTiles?: Record<number, true>
   explorers: Record<ExplorerColor, ExplorerState>
   discardedTiles?: number[]
-
-  // Tambahan baru untuk fitur anti-abuse & bonus
-  claimedRewards?: Record<number, boolean>  // tileId → true jika sudah di-claim player ini
-  finishedAtRound?: number | null           // ronde ketika semua explorer player habis
-  bonusPoints?: number                      // finishing bonus yang ditambahkan di endgame
+  // === New fields ===
+  claimedRewards?: Record<number, boolean>
+  finishedAtRound?: number | null
+  bonusPoints?: number
 }
 
 export interface GameLayout {
@@ -87,6 +86,6 @@ export interface Game {
   rewards: Record<number, "gold" | "crystal" | null>
   playersCount: number
 
-  templeWins?: TempleWin[]
+  templeWins?: TempleWin[] // siapa yg sudah "menang" di temple (ubah asset)
   players?: Record<string, Player>
 }
