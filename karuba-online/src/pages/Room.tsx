@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
 import Board from "../components/Board"
