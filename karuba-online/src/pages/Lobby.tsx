@@ -83,7 +83,8 @@ export default function Lobby() {
       lastAction: null,
       goldCount: 0,
       crystalCount: 0,
-      claimedRewards: {},
+      // claimedRewards: {},
+      claimedRewards: { red: {}, blue: {}, brown: {}, yellow: {} },
       finishedAtRound: null,
       bonusPoints: 0,
     } as unknown as Player
