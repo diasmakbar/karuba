@@ -876,55 +876,71 @@ export default function Room({ gameId }: { gameId: string }) {
         </span>
         <span>{isExpanded ? "⤵" : "↩"}</span>
         </div>
-        {isExpanded && (
-        <div style={{ marginTop: 8, fontSize: 14 }}>
-          {/* Finishing Order */}
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Finishing Order:</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
-            {mineWins.length > 0 ? (
-              Array.from({ length: sorted.length }, (_, o) => o + 1).map(order => {
-                if (perOrder[order]) {
-                  const pts = mineWins.filter(w => w.order === order).reduce((sum, w) => sum + (w.points || 0), 0)
-                  return (
-                    <React.Fragment key={order}>
-                      <div>• {order === 1 ? "1st" : order === 2 ? "2nd" : order === 3 ? "3rd" : `${order}th`}: {perOrder[order]}</div>
-                      <div>{pts} pts</div>
-                    </React.Fragment>
-                  )
-                }
-                return null
-              })
-            ) : (
-              <>
-                <div>• Unfinished: 1</div>
-                <div>0 pts</div>
-              </>
-            )}
-          </div>
+        {isExpanded && (() => {
+  try {
+    const mineWins = (wins || []).filter(w => w.playerId === p.id)
+    const perOrder: Record<number, number> = {}
+    mineWins.forEach(w => {
+      if (w.order != null) perOrder[w.order] = (perOrder[w.order] || 0) + 1
+    })
+    const templePoints = mineWins.reduce((sum, w) => sum + (w.points || 0), 0)
 
-    {/* Rewards */}
-    <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Rewards:</div>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
-      <div>• Gold: {goldCount}</div>
-      <div>{goldCount} pts</div>
-      <div>• Crystal: {crystalCount}</div>
-      <div>{crystalCount} pts</div>
-      {finishedAt && finishedAt < 36 && (
-        <>
-          <div>• Round {finishedAt} /36</div>
-          <div>{roundBonus} pts</div>
-        </>
-      )}
-    </div>
+    const goldCount = (p as any)?.goldCount || 0
+    const crystalCount = (p as any)?.crystalCount || 0
+    const finishedAt = (p as any)?.finishedAtRound || null
+    const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 8) : 0
+    const gameBonus = rank === 1 ? 2 : rank === 2 ? 1 : 0
 
-    {/* Bonus */}
-    <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Ranking bonus:</div>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
-      <div>{gameBonus > 0 ? `• Placement bonus` : "• None"}</div>
-      <div>{gameBonus} pts</div>
-    </div>
-  </div>
-)}
+    return (
+      <div style={{ marginTop: 8, fontSize: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Finishing Order:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          {mineWins.length > 0 ? (
+            Object.entries(perOrder).map(([order, count]) => {
+              const pts = mineWins.filter(w => w.order === Number(order)).reduce((sum, w) => sum + (w.points || 0), 0)
+              const orderLabel =
+                Number(order) === 1 ? "1st" : Number(order) === 2 ? "2nd" : Number(order) === 3 ? "3rd" : `${order}th`
+              return (
+                <React.Fragment key={order}>
+                  <div>• {orderLabel}: {count}</div>
+                  <div>{pts} pts</div>
+                </React.Fragment>
+              )
+            })
+          ) : (
+            <>
+              <div>• Unfinished: 1</div>
+              <div>0 pts</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Rewards:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          <div>• Gold: {goldCount}</div>
+          <div>{goldCount} pts</div>
+          <div>• Crystal: {crystalCount}</div>
+          <div>{crystalCount} pts</div>
+          {finishedAt && finishedAt < 36 && (
+            <>
+              <div>• Round {finishedAt} /36</div>
+              <div>{roundBonus} pts</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Ranking bonus:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          <div>{gameBonus > 0 ? "• Placement bonus" : "• None"}</div>
+          <div>{gameBonus} pts</div>
+        </div>
+      </div>
+    )
+  } catch (err) {
+    console.error("Breakdown error:", err, p)
+    return <div style={{ color: "red" }}>⚠️ Error showing breakdown</div>
+  }
+})()}
         </div>
         )
         })}
