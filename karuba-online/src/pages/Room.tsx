@@ -453,7 +453,7 @@ export default function Room({ gameId }: { gameId: string }) {
         // const gain = rewardGain(tid)
         // const kind = rewardKind(tid)
         const kind = rewardKind(tid)
-        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards[tid])
+        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards?.[color]?.[tid])
         const gain = alreadyClaimed ? 0 : rewardGain(tid)
         
 
@@ -462,10 +462,21 @@ export default function Room({ gameId }: { gameId: string }) {
           // const addCrystal = kind === "crystal" ? 1 : 0
           const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
           const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0          
+          // const nextClaimed =
+          //   !alreadyClaimed && kind
+          //     ? { ...(me.claimedRewards || {}), [tid]: true }
+          //     : (me.claimedRewards || {})
           const nextClaimed =
-            !alreadyClaimed && kind
-              ? { ...(me.claimedRewards || {}), [tid]: true }
-              : (me.claimedRewards || {})
+               !alreadyClaimed && kind
+                 ? {
+                     ...(me.claimedRewards || {}),
+                     [color]: {
+                       ...(me.claimedRewards?.[color] || {}),
+                       [tid]: true,
+                     },
+                   }
+                 : (me.claimedRewards || {})
+                                      
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: me.moves - 1,
             score: me.score + gain,
@@ -492,7 +503,7 @@ export default function Room({ gameId }: { gameId: string }) {
         // const gain = rewardGain(nextTid)
         // const kind = rewardKind(nextTid)
         const kind = rewardKind(nextTid)
-        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards[nextTid])
+        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards?.[color]?.[nextTid])
         const gain = alreadyClaimed ? 0 : rewardGain(nextTid)
 
         await setGhostStagesAndCommit(from8, to8, async () => {
@@ -501,10 +512,20 @@ export default function Room({ gameId }: { gameId: string }) {
           // const addCrystal = kind === "crystal" ? 1 : 0
           const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
           const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
+          // const nextClaimed =
+          //   !alreadyClaimed && kind
+          //     ? { ...(me.claimedRewards || {}), [nextTid]: true }
+          //     : (me.claimedRewards || {})
           const nextClaimed =
-            !alreadyClaimed && kind
-              ? { ...(me.claimedRewards || {}), [nextTid]: true }
-              : (me.claimedRewards || {})
+               !alreadyClaimed && kind
+                 ? {
+                     ...(me.claimedRewards || {}),
+                     [color]: {
+                       ...(me.claimedRewards?.[color] || {}),
+                       [nextTid]: true,
+                     },
+                   }
+                 : (me.claimedRewards || {})
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: me.moves - 1,
             score: me.score + gain,
