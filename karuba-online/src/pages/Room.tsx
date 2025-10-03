@@ -467,15 +467,18 @@ export default function Room({ gameId }: { gameId: string }) {
           //     ? { ...(me.claimedRewards || {}), [tid]: true }
           //     : (me.claimedRewards || {})
           const nextClaimed =
-               !alreadyClaimed && kind
-                 ? {
-                     ...(me.claimedRewards || {}),
-                     [color]: {
-                       ...(me.claimedRewards?.[color] || {}),
-                       [tid]: true,
-                     },
-                   }
-                 : (me.claimedRewards || {})
+            !alreadyClaimed && kind
+                ? {
+                    red: me.claimedRewards?.red || {},
+                    blue: me.claimedRewards?.blue || {},
+                    brown: me.claimedRewards?.brown || {},
+                    yellow: me.claimedRewards?.yellow || {},
+                    [color]: {
+                      ...(me.claimedRewards?.[color] || {}),
+                      [tid]: true,
+                    },
+                  }
+                : (me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
                                       
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: me.moves - 1,
@@ -517,15 +520,19 @@ export default function Room({ gameId }: { gameId: string }) {
           //     ? { ...(me.claimedRewards || {}), [nextTid]: true }
           //     : (me.claimedRewards || {})
           const nextClaimed =
-               !alreadyClaimed && kind
-                 ? {
-                     ...(me.claimedRewards || {}),
-                     [color]: {
-                       ...(me.claimedRewards?.[color] || {}),
-                       [nextTid]: true,
-                     },
-                   }
-                 : (me.claimedRewards || {})
+            !alreadyClaimed && kind
+                ? {
+                    red: me.claimedRewards?.red || {},
+                    blue: me.claimedRewards?.blue || {},
+                    brown: me.claimedRewards?.brown || {},
+                    yellow: me.claimedRewards?.yellow || {},
+                    [color]: {
+                      ...(me.claimedRewards?.[color] || {}),
+                      [nextTid]: true,
+                    },
+                  }
+                : (me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: me.moves - 1,
             score: me.score + gain,
