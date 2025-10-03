@@ -599,12 +599,12 @@ export default function Room({ gameId }: { gameId: string }) {
 
       // cek end juga di sini:
       const everyoneFinished = await computeEveryoneFinished()
-      // kalau semua selesai 鈫� end
+      // kalau semua selesai - end
       if (everyoneFinished) {
         await endGame()
         return
       }
-      // kalau sudah round 36 dan semua pemain "doneForRound" di ronde ini 鈫� end saat advance (ditangani maybeAdvanceRound)
+      // kalau sudah round 36 dan semua pemain "doneForRound" di ronde ini - end saat advance (ditangani maybeAdvanceRound)
     } catch (e: any) {
       setError("Explorer step error: " + e.message)
     }
@@ -652,8 +652,8 @@ export default function Room({ gameId }: { gameId: string }) {
                 ? "Placed!"
                 : me.lastAction === "discarded"
                 ? "Discarded!"
-                : "鈥�"
-              : game.currentTile || "鈥�"}
+                : "-"
+              : game.currentTile || "-"}
           </p>
         </div>
 
@@ -720,10 +720,10 @@ export default function Room({ gameId }: { gameId: string }) {
                 .map((p) => {
                   const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
                   const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
-                  const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready 鉁�" : p.actedForRound ? "placed tile" : "playing"
+                  const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
                   return (
                     <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
-                      {p.name} 鈥� Score: {p.score} ({state})
+                      {p.name} - Score: {p.score} ({state})
                     </li>
                   )
                 })}
