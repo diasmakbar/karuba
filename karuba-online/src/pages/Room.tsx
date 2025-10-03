@@ -888,6 +888,13 @@ export default function Room({ gameId }: { gameId: string }) {
     const goldCount = (p as any)?.goldCount || 0
     const crystalCount = (p as any)?.crystalCount || 0
     const finishedAt = (p as any)?.finishedAtRound || null
+    return (
+      <div style={{color:"red", fontSize:12}}>
+        mineWins: {JSON.stringify(mineWins)}<br/>
+        perOrder: {JSON.stringify(perOrder)}<br/>
+        finishedAt: {finishedAt?.toString() || "null"}
+      </div>
+    )
     const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 8) : 0
     const gameBonus = rank === 1 ? 2 : rank === 2 ? 1 : 0
 
