@@ -158,6 +158,7 @@ export default function Lobby() {
             <div style={{ textAlign: "center" }}>
               <h2 className="font-display" style={{ marginBottom: 16 }}>Welcome to Karuba Online!</h2>
               <input
+                type="number"
                 placeholder="123 456"
                 value={gameId}
                 onChange={(e) => {
