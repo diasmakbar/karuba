@@ -647,108 +647,87 @@ export default function Room({ gameId }: { gameId: string }) {
   return (
     <main className="page">
       <div className="page-inner">
-        <RoomHeaderCard gameId={gameId} game={game} me={me} />
+
+        {/* Header info */}
+        <RoomHeaderCard gameId={game.id} game={game} me={me} />
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          {/* Panel utama: controls + current tile */}
           <RoomMainPanel
-  isHost={isHost}
-  game={game}
-  players={players}
-  playerId={playerId}
-  me={me}
-  canGenerate={!!canGenerate}
-  onStartOrGenerate={onStartOrGenerate}
-  onReadyNextRound={onReadyNextRound}
-  readyDisabled={!isFinished ? (!me.actedForRound || me.doneForRound) : false}
-  waitingLabel={(() => {
-    if (game.status === "waiting") return "Waiting host to start the game"
-    if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
-      return game.generateTurnUid === playerId
-        ? "You can generate now"
-        : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
-    }
-    return `Round ${game.round}`
-  })()}
-  canPlace={canPlace}
-  onTrash={handleTrash}
-  onOpenDiscard={() => setShowDiscardList(true)}
-/>
+            isHost={isHost}
+            game={game}
+            players={players}
+            playerId={playerId}
+            me={me}
+            canGenerate={!!canGenerate}
+            onStartOrGenerate={onStartOrGenerate}
+            onReadyNextRound={onReadyNextRound}
+            readyDisabled={
+              !isFinished ? (!me.actedForRound || me.doneForRound) : false
+            }
+            waitingLabel={(() => {
+              if (game.status === "waiting") return "Waiting host to start the game"
+              if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+                return game.generateTurnUid === playerId
+                  ? "You can generate now"
+                  : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+              }
+              return `Round ${game.round}`
+            })()}
+            canPlace={canPlace}
+            onTrash={handleTrash}
+            onOpenDiscard={() => setShowDiscardList(true)}
+          />
 
+          {/* Daftar player */}
           <RoomPlayersCard game={game} players={players} playerId={playerId} />
         </div>
 
-        <div className="board-scroll">
-          <div className="board-frame">
-            <Board
-              myPlayerId={playerId}
-              board={me.board}
-              tilesMeta={(game.tilesMeta || {}) as any}
-              rewards={game.rewards || {}}
-              canPlace={canPlace}
-              onPlace={placeTile}
-              previewTileId={canPlace ? game.currentTile : null}
-              previewAt={previewAt}
-              onPreview={(r, c) => setPreviewAt({ r, c })}
-              myMoves={me.moves}
-              myExplorers={me.explorers}
-              temples={game.layout?.temples || []}
-              templeWins={game.templeWins || []}
-              onMoveOne={async (color, dir) => { await moveOne(color, dir) }}
-              onEnterTemple={enterTemple}
-              animGhost={animGhost}
-              isFinished={isFinished}
-            />
-          </div>
-        </div>
+        {/* Modal result */}
+        {showResult && (
+          <RoomResultModal
+            open={showResult}
+            onClose={() => {
+              setShowResult(false)
+              history.pushState({}, "", "/")
+              dispatchEvent(new PopStateEvent("popstate"))
+            }}
+            game={game}
+            players={players}
+            currentPlayerId={playerId}
+          />
+        )}
 
+        {/* Modal discard list */}
         {showDiscardList && (
           <div
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.55)",
+              background: "rgba(0,0,0,0.6)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 1000,
+              zIndex: 1200,
             }}
-            onClick={() => setShowDiscardList(false)}
           >
-            <div style={{ background: "#fff", padding: 16, borderRadius: 10, width: 360 }} onClick={(e) => e.stopPropagation()}>
-              <h4 style={{ marginTop: 0 }} className="font-display">Discarded Tiles</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {me.discardedTiles?.length ? (
-                  me.discardedTiles.map((tid, i) => (
-                    <TileIcon
-                      key={`${tid}-${i}`}
-                      id={tid}
-                      tilesMeta={(game.tilesMeta || {}) as any}
-                      size={42}
-                      reward={game.rewards?.[tid]}
-                    />
-                  ))
-                ) : (
-                  <div>No discarded tiles</div>
-                )}
-              </div>
-              <div style={{ marginTop: 10, textAlign: "center" }}>
+            <div
+              style={{
+                background: "#fff",
+                padding: 20,
+                borderRadius: 12,
+                width: 400,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+              }}
+            >
+              <h3 className="font-display">Discarded Tiles</h3>
+              {/* TODO: render daftar tile buangan */}
+              <div style={{ textAlign: "center", marginTop: 12 }}>
                 <button onClick={() => setShowDiscardList(false)}>Close</button>
               </div>
             </div>
           </div>
         )}
-
-        {/* Result Modal */}
-        {showResult && (
-  <RoomResultModal
-    open={showResult}
-    onClose={() => {
-      setShowResult(false)
-      history.pushState({}, "", "/")
-      dispatchEvent(new PopStateEvent("popstate"))
-    }}
-    game={game}
-    players={players}
-    currentPlayerId={playerId}
-  />
-)}
+      </div>
+    </main>
+  )
