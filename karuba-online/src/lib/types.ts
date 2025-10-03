@@ -46,7 +46,8 @@ export interface Player {
   explorers: Record<ExplorerColor, ExplorerState>
   discardedTiles?: number[]
   // === New fields ===
-  claimedRewards?: Record<number, boolean>
+  // claimedRewards?: Record<number, boolean>
+  claimedRewards?: Record<ExplorerColor, Record<number, boolean>>
   finishedAtRound?: number | null
   bonusPoints?: number
 }
