@@ -895,7 +895,7 @@ export default function Room({ gameId }: { gameId: string }) {
         finishedAt: {finishedAt?.toString() || "null"}
       </div>
     )
-    const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 8) : 0
+    const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 4) : 0
     const gameBonus = rank === 1 ? 2 : rank === 2 ? 1 : 0
 
     return (
