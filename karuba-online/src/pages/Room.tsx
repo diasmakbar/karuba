@@ -51,7 +51,8 @@ export default function Room({ gameId }: { gameId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [showDiscardList, setShowDiscardList] = useState(false)
   const [showResult, setShowResult] = useState(false)
-
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
+  
   const [animGhost, setAnimGhost] = useState<{
     color: ExplorerColor
     from8: { r: number; c: number }
@@ -799,79 +800,119 @@ export default function Room({ gameId }: { gameId: string }) {
 
         {/* Result Modal */}
         {showResult && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1200,
-            }}
-          >
-            <div
-              style={{
-                background: "#fff",
-                padding: 20,
-                borderRadius: 12,
-                width: 420,
-                boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
-              }}
-            >
-              <h2 className="font-display" style={{ marginTop: 0, marginBottom: 4 }}>
-                {(() => {
-                  const myPos = Math.max(1, Object.values(players || {}).sort((a,b)=>b.score-a.score).findIndex(p=>p.id===playerId)+1)
-                  if (myPos === 1) return "Victory!"
-                  if (myPos === Object.keys(players || {}).length) return "Game Over!"
-                  return "Game Result"
-                })()}
-              </h2>
+        <div
+        style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1200,
+        }}
+        >
+        <div
+        style={{
+        background: "#fff",
+        padding: 20,
+        borderRadius: 12,
+        width: 420,
+        maxHeight: "80vh",
+        overflowY: "auto",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+        }}
+        >
+        {(() => {
+        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+        const myPos = Math.max(1, sorted.findIndex(p => p.id === playerId) + 1)
+        return (
+        <h2
+        className="font-display"
+        style={{ marginTop: 0, marginBottom: 12, textAlign: "center" }}
+        >
+        {myPos === 1
+        ? "Victory! 🏆"
+        : myPos === sorted.length
+        ? "Game Over! ☠️"
+        : "Game Result 🎲"}
+        </h2>
+        )
+        })()}
 
-              <div style={{ marginBottom: 10 }}>
-                <strong>Total Points (Rank):</strong><br/>
-                {(() => {
-                  const sorted = Object.values(players || {}).sort((a,b)=>b.score-a.score)
-                  const rank = Math.max(1, sorted.findIndex(p=>p.id===playerId)+1)
-                  return `${players[playerId].score} (#${rank})`
-                })()}
-              </div>
+        {(() => {
+        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+        const wins = (game.templeWins || []) as any[]
+        return (
+        <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {sorted.map((p, i) => {
+        const rank = i + 1
+        const isExpanded = expandedPlayer === p.id
+        const mineWins = wins.filter(w => w.playerId === p.id)
+        const perOrder: Record<number, number> = {}
+        for (const w of mineWins) perOrder[w.order] = (perOrder[w.order] || 0) + 1
+        return (
+        <div
+        key={p.id}
+        style={{
+        border: "1px solid rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        padding: "8px 12px",
+        background: isExpanded ? "rgba(0,0,0,0.05)" : "#fafafa",
+        }}
+        >
+        <div
+        style={{
+        cursor: "pointer",
+        fontWeight: p.id === playerId ? 700 : 400,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        }}
+        onClick={() => setExpandedPlayer(expandedPlayer === p.id ? null : p.id)}
+        >
+        <span>
+        {`(#${rank}) | ${p.name} | ${p.score} pts`}
+        {rank === 1 ? " 👑" : ""}
+        </span>
+        <span>{isExpanded ? "⤵" : "↩"}</span>
+        </div>
+        {isExpanded && (
+        <div style={{ marginTop: 8, fontSize: 14 }}>
+        <div style={{ marginBottom: 4, fontWeight: 600 }}>Temple Finishing Order:</div>
+        <ul style={{ margin: "4px 0 8px", paddingLeft: 16 }}>
+        {Array.from({ length: sorted.length }, (_, o) => o + 1).map(order => (
+        <li key={order}>
+        {order === 1 ? "1st" : order === 2 ? "2nd" : order === 3 ? "3rd" : `${order}th`}
+        : {perOrder[order] || 0}
+        </li>
+        ))}
+        </ul>
+        <div style={{ fontWeight: 600, marginTop: 4 }}>
+        Rewards: {(p as any).goldCount || 0} Gold & {(p as any).crystalCount || 0} Crystal
+        </div>
+        </div>
+        )}
+        </div>
+        )
+        })}
+        </div>
+        )
+        })()}
 
-              <div style={{ marginBottom: 10 }}>
-                <strong>Total Temple Finishing order:</strong>
-                <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
-                  {(() => {
-                    const sorted = Object.values(players || {}).sort((a,b)=>b.score-a.score)
-                    const n = sorted.length
-                    const wins = (game.templeWins || []) as any[]
-                    const mine = wins.filter(w => w.playerId === playerId)
-                    const perOrder: Record<number, number> = {}
-                    for (const w of mine) perOrder[w.order] = (perOrder[w.order]||0)+1
-                    return Array.from({length:n}, (_,i)=>i+1).map(o=>(
-                      <li key={o}>{o===1?"1st":o===2?"2nd":o===3?"3rd":`${o}th`}: {perOrder[o]||0}</li>
-                    ))
-                  })()}
-                </ul>
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <strong>Total Coins:</strong><br/>
-                {(players[playerId] as any).goldCount || 0} Gold & {(players[playerId] as any).crystalCount || 0} Crystal
-              </div>
-
-              <div style={{ textAlign: "center" }}>
-                <button
-                  onClick={() => {
-                    setShowResult(false)
-                    history.pushState({}, "", "/")
-                    dispatchEvent(new PopStateEvent("popstate"))
-                  }}
-                >
-                  Back to Lobby
-                </button>
-              </div>
-            </div>
-          </div>
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+        <button
+        className="font-display"
+        onClick={() => {
+        setShowResult(false)
+        history.pushState({}, "", "/")
+        dispatchEvent(new PopStateEvent("popstate"))
+        }}
+        >
+        Back to Lobby
+        </button>
+        </div>
+        </div>
+        </div>
         )}
 
         {error && <div style={{ color: "red" }}>{error}</div>}
