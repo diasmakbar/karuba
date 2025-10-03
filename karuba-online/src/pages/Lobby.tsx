@@ -179,17 +179,19 @@ export default function Lobby() {
               >
                 Join Game!
               </button>
-              <div style={{ margin: "12px 0" }}>... or create a</div>
-              <button
-                className="font-display"
-                style={{ width: "100%", padding: "10px", fontSize: 18, borderRadius: 6 }}
-                onClick={() => {
-                  setGameId(newGameId())
-                  setStep("name")
-                }}
-              >
-                New Game
-              </button>
+              <p style={{ marginTop: 12 }}>
+                ... or create a{" "}
+                <button
+                  className="font-display"
+                  style={{ padding: "4px 8px", fontSize: 16, borderRadius: 6 }}
+                  onClick={() => {
+                    setGameId(newGameId())
+                    setStep("name")
+                  }}
+                >
+                  New Game
+                </button>
+              </p>
             </div>
           )}
 
