@@ -157,17 +157,17 @@ export default function Lobby() {
           {step === "game" && (
             <div style={{ textAlign: "center" }}>
               <h2 className="font-display" style={{ marginBottom: 16 }}>Welcome to Karuba Online!</h2>
-              <input
-                type="number"
-                placeholder="123 456"
-                value={gameId}
-                onChange={(e) => {
-                  let val = e.target.value.replace(/\D/g, "").slice(0, 6)
-                  if (val.length > 3) val = val.slice(0, 3) + " " + val.slice(3)
-                  setGameId(val)
-                }}
-                style={{ width: "100%", padding: "8px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid #ccc", fontSize: 16 }}
-              />
+              // <input
+//                type="number"
+//                placeholder="123 456"
+//                value={gameId}
+//                onChange={(e) => {
+//                  let val = e.target.value.replace(/\D/g, "").slice(0, 6)
+//                  if (val.length > 3) val = val.slice(0, 3) + " " + val.slice(3)
+ //                 setGameId(val)
+  //              }}
+  //              style={{ width: "100%", padding: "8px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid #ccc", fontSize: 16 }}
+  //                />
  <input
    type="text"
    inputMode="numeric"
