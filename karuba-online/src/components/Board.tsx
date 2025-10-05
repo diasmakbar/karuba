@@ -96,7 +96,7 @@ export default function Board({
   isFinished?: boolean
 }) {
   const [confirmPlace, setConfirmPlace] = useState<{ r: number; c: number } | null>(null)
-  const [confirmMove, setConfirmMove] = useState<{ color: ExplorerColor; dir: Dir } | null>(null)
+  // const [confirmMove, setConfirmMove] = useState<{ color: ExplorerColor; dir: Dir } | null>(null)
   const [confirmTemple, setConfirmTemple] = useState<{
     color: ExplorerColor
     side: Branch
@@ -346,7 +346,8 @@ useEffect(() => {
         lastClick.key !== kKey ||
         Date.now() - lastClick.t >= 300
       ) {
-        setConfirmMove({ color: selectedColor, dir })
+        // setConfirmMove({ color: selectedColor, dir })
+        onMoveOne(selectedColor, dir)
       }
     }, 310)
   }
