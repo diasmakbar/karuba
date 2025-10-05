@@ -330,19 +330,28 @@ useEffect(() => {
         // }
         if (dir) {
   const now = Date.now()
-  const kKey = `${r6},${c6}`
+  const kKey = `${selectedColor}-${r6},${c6}`
 
-  // Double-click cepat (<300ms) pada cell yang sama → langsung gerak
   if (lastClick && lastClick.key === kKey && now - lastClick.t < 300) {
+    // 🚀 Double click cepat → langsung gerak explorer ke arah dir
     onMoveOne(selectedColor, dir)
     setLastClick(null)
   } else {
-    // Single click → flow lama (buka konfirmasi)
-    setConfirmMove({ color: selectedColor, dir })
+    // 👆 Single click → set timer dulu buat bedain dari double click
     setLastClick({ key: kKey, t: now })
+    setTimeout(() => {
+      // kalau setelah 300ms gak ada klik kedua, baru munculin confirm modal
+      if (
+        !lastClick ||
+        lastClick.key !== kKey ||
+        Date.now() - lastClick.t >= 300
+      ) {
+        setConfirmMove({ color: selectedColor, dir })
+      }
+    }, 310)
   }
   return
-}
+        }
       }
 
       // kalau nggak sedang gerak, baru urusan place tile
