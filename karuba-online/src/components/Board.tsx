@@ -104,6 +104,13 @@ export default function Board({
   } | null>(null)
   const [selectedColor, setSelectedColor] = useState<ExplorerColor | null>(null)
 
+  const [lastClick, setLastClick] = useState<{ key: string; t: number } | null>(null)
+
+// Kalau moves habis, auto-clear highlight
+useEffect(() => {
+  if (myMoves <= 0) setSelectedColor(null)
+}, [myMoves])
+  
   useEffect(() => {
     dlog("props", {
       canPlace, previewTileId, previewAt, animGhost: !!animGhost,
@@ -317,10 +324,25 @@ export default function Board({
       if (selectedColor && myMoves > 0) {
         const k = `${r6},${c6}`
         const dir = arrowsMap.get(k)
+        // if (dir) {
+        //   setConfirmMove({ color: selectedColor, dir })
+        //   return
+        // }
         if (dir) {
-          setConfirmMove({ color: selectedColor, dir })
-          return
-        }
+  const now = Date.now()
+  const kKey = `${r6},${c6}`
+
+  // Double-click cepat (<300ms) pada cell yang sama → langsung gerak
+  if (lastClick && lastClick.key === kKey && now - lastClick.t < 300) {
+    onMoveOne(selectedColor, dir)
+    setLastClick(null)
+  } else {
+    // Single click → flow lama (buka konfirmasi)
+    setConfirmMove({ color: selectedColor, dir })
+    setLastClick({ key: kKey, t: now })
+  }
+  return
+}
       }
 
       // kalau nggak sedang gerak, baru urusan place tile
@@ -431,7 +453,8 @@ export default function Board({
                 onClick={(e) => {
                   e.stopPropagation()
                   if (!canStep || isAnimating || isFinished) return
-                  setSelectedColor(isSelected ? null : ex.color)
+                  // setSelectedColor(isSelected ? null : ex.color)
+                  if (!isSelected) setSelectedColor(ex.color)
                 }}
               />
             </React.Fragment>
