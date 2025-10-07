@@ -7,6 +7,8 @@ import type {
   TilesMetaMap,
   TempleWin,
 } from "../lib/types"
+import { opp, colorIdx, dirToName, dirToArrowSrc } from "../utils/board"
+import Modal, { ModalButtons } from "./Modal"
 
 const DEBUG = false
 const dlog = (...args: any[]) => { if (DEBUG) console.log("[Board]", ...args) }
@@ -37,14 +39,7 @@ const highlightBottomCenterStyle: React.CSSProperties = {
 }
 
 const ARROW_SIZE = 28
-const colorIdx = (color: ExplorerColor) =>
-  ({ red: 1, blue: 2, brown: 3, yellow: 4 } as const)[color]
-const opp = (b: Branch): Branch =>
-  b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E"
 type Dir = Branch
-const dirToName = (d: Dir) =>
-  d === "N" ? "top" : d === "E" ? "right" : d === "S" ? "down" : "left"
-const dirToArrowSrc = (d: Dir) => `/arrows/arrow_${dirToName(d)}.svg`
 
 const BLINK_KEYFRAMES = `
 @keyframes confirmBlink {
@@ -781,42 +776,6 @@ useEffect(() => {
           />
         </Modal>
       )}
-    </div>
-  )
-}
-
-function Modal({ children, width = 320 }: { children: React.ReactNode; width?: number }) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          padding: 18,
-          borderRadius: 10,
-          width,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-function ModalButtons({ onYes, onCancel }: { onYes: () => void; onCancel: () => void }) {
-  return (
-    <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
-      <button onClick={onYes}>Yes</button>
-      <button onClick={onCancel}>Cancel</button>
     </div>
   )
 }
