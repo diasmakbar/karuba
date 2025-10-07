@@ -346,6 +346,8 @@ export default function Room({ gameId }: { gameId: string }) {
           actedForRound: false,
           doneForRound: false,
           lastAction: null,
+          movesHistory: [],
+          redoHistory: [],
         })
       }
     }
@@ -386,6 +388,23 @@ export default function Room({ gameId }: { gameId: string }) {
       const ex = me.explorers[color]
       if (!ex) return
       const tilesMeta = (game.tilesMeta || {}) as Record<string, { branches: Branch[] }>
+
+      // Save current state to history before move
+      const currentState = {
+        explorers: { ...me.explorers },
+        score: me.score,
+        moves: me.moves,
+        claimedRewards: { ...me.claimedRewards },
+        goldCount: (me as any).goldCount || 0,
+        crystalCount: (me as any).crystalCount || 0,
+      }
+      const newMovesHistory = [...(me.movesHistory || []), currentState]
+      const newRedoHistory: typeof newMovesHistory = []
+
+      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
+        movesHistory: newMovesHistory,
+        redoHistory: newRedoHistory,
+      })
 
       // const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
       const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
@@ -551,6 +570,55 @@ export default function Room({ gameId }: { gameId: string }) {
     }
   }
 
+  // === Undo/Redo Moves ===
+  const undoMove = async () => {
+    if (!me || !me.movesHistory || me.movesHistory.length === 0) return
+    const prevState = me.movesHistory[me.movesHistory.length - 1]
+    const newMovesHistory = me.movesHistory.slice(0, -1)
+    const newRedoHistory = [...(me.redoHistory || []), {
+      explorers: { ...me.explorers },
+      score: me.score,
+      moves: me.moves,
+      claimedRewards: { ...me.claimedRewards },
+      goldCount: (me as any).goldCount || 0,
+      crystalCount: (me as any).crystalCount || 0,
+    }]
+    await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
+      explorers: prevState.explorers,
+      score: prevState.score,
+      moves: prevState.moves,
+      claimedRewards: prevState.claimedRewards,
+      goldCount: prevState.goldCount,
+      crystalCount: prevState.crystalCount,
+      movesHistory: newMovesHistory,
+      redoHistory: newRedoHistory,
+    })
+  }
+
+  const redoMove = async () => {
+    if (!me || !me.redoHistory || me.redoHistory.length === 0) return
+    const nextState = me.redoHistory[me.redoHistory.length - 1]
+    const newRedoHistory = me.redoHistory.slice(0, -1)
+    const newMovesHistory = [...(me.movesHistory || []), {
+      explorers: { ...me.explorers },
+      score: me.score,
+      moves: me.moves,
+      claimedRewards: { ...me.claimedRewards },
+      goldCount: (me as any).goldCount || 0,
+      crystalCount: (me as any).crystalCount || 0,
+    }]
+    await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
+      explorers: nextState.explorers,
+      score: nextState.score,
+      moves: nextState.moves,
+      claimedRewards: nextState.claimedRewards,
+      goldCount: nextState.goldCount,
+      crystalCount: nextState.crystalCount,
+      movesHistory: newMovesHistory,
+      redoHistory: newRedoHistory,
+    })
+  }
+
   // === Enter Temple ===
   const enterTemple = async (color: ExplorerColor, side: Branch, index: number) => {
     try {
@@ -709,6 +777,20 @@ export default function Room({ gameId }: { gameId: string }) {
               />
               <button onClick={() => setShowDiscardList(true)} style={{ marginLeft: 4 }}>
                 Discarded Tiles
+              </button>
+              <button
+                onClick={undoMove}
+                disabled={!me?.movesHistory || me.movesHistory.length === 0}
+                style={{ marginLeft: 4 }}
+              >
+                Undo Move
+              </button>
+              <button
+                onClick={redoMove}
+                disabled={!me?.redoHistory || me.redoHistory.length === 0}
+                style={{ marginLeft: 4 }}
+              >
+                Redo Move
               </button>
             </div>
           </div>

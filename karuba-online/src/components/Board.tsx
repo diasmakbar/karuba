@@ -91,7 +91,6 @@ export default function Board({
   isFinished?: boolean
 }) {
   const [confirmPlace, setConfirmPlace] = useState<{ r: number; c: number } | null>(null)
-  const [confirmMove, setConfirmMove] = useState<{ color: ExplorerColor; dir: Dir } | null>(null)
   const [confirmTemple, setConfirmTemple] = useState<{
     color: ExplorerColor
     side: Branch
@@ -673,7 +672,7 @@ useEffect(() => {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (isFinished) return
-                      setConfirmMove({ color: selectedColor, dir: a.dir })
+                      onMoveOne(selectedColor, a.dir)
                     }}
                     style={{
                       position: "absolute",
@@ -734,22 +733,7 @@ useEffect(() => {
           )
         })()}
 
-      {confirmMove && (
-        <Modal>
-          <p>
-            Move the <b>{confirmMove.color}</b> explorer{" "}
-            <b>{dirToName(confirmMove.dir)}</b> 1 grid?
-          </p>
-          <ModalButtons
-            onYes={() => {
-              onMoveOne(confirmMove.color, confirmMove.dir)
-              setConfirmMove(null)
-              setSelectedColor(null)
-            }}
-            onCancel={() => setConfirmMove(null)}
-          />
-        </Modal>
-      )}
+
 
       {confirmTemple && (
         <Modal>

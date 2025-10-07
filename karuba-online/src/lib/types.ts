@@ -50,6 +50,22 @@ export interface Player {
   claimedRewards?: Record<ExplorerColor, Record<number, boolean>>
   finishedAtRound?: number | null
   bonusPoints?: number
+  movesHistory?: Array<{
+    explorers: Record<ExplorerColor, ExplorerState>
+    score: number
+    moves: number
+    claimedRewards: Record<ExplorerColor, Record<number, boolean>>
+    goldCount: number
+    crystalCount: number
+  }>
+  redoHistory?: Array<{
+    explorers: Record<ExplorerColor, ExplorerState>
+    score: number
+    moves: number
+    claimedRewards: Record<ExplorerColor, Record<number, boolean>>
+    goldCount: number
+    crystalCount: number
+  }>
 }
 
 export interface GameLayout {
