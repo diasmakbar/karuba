@@ -19,6 +19,7 @@ import { ExplorerComponent } from "./board/ExplorerComponent"
 const DEBUG = false
 const dlog = (...args: any[]) => { if (DEBUG) console.log("[Board]", ...args) }
 
+const ARROW_SIZE = 28
 type Dir = Branch
 
 export default function Board({
