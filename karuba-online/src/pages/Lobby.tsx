@@ -21,15 +21,18 @@ export default function Lobby() {
         justifyContent: "center"
       }}>
         <button
+          className="font-display"
           onClick={() => setShowHowToPlay(true)}
           style={{
-            background: "transparent",
-            border: "none",
-            color: "#007bff",
-            cursor: "pointer",
-            fontSize: 14,
-            marginBottom: 16,
-            textDecoration: "underline"
+            width: '100%',
+            marginBottom: 12,
+            padding: '10px',
+            fontSize: 18,
+            borderRadius: 6,
+            background: '#f8f9fa',
+            border: '1px solid #dee2e6',
+            color: '#495057',
+            cursor: 'pointer'
           }}
         >
           How to Play

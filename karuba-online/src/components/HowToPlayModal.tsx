@@ -91,8 +91,8 @@ Fokus ke satu temple dulu biar aman dapet poin besar.`
   const nextPage = () => {
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1)
-    } else if (onPlay) {
-      onPlay()
+    } else {
+      onClose()
     }
   }
 
@@ -108,81 +108,90 @@ Fokus ke satu temple dulu biar aman dapet poin besar.`
 
   return (
     <Modal width={400}>
-      <div style={{ textAlign: "center" }}>
-        <h2 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: "bold" }}>
-          How to Play
-        </h2>
-
-        <div style={{ textAlign: "left", marginBottom: 20 }}>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 16, color: "#333" }}>
-            {pages[currentPage].title}
-          </h3>
-          <div style={{
-            fontSize: 14,
-            lineHeight: 1.5,
-            color: "#555",
-            whiteSpace: "pre-line"
-          }}>
-            {pages[currentPage].content}
-          </div>
-        </div>
-
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: 20
-        }}>
-          <button
-            onClick={prevPage}
-            disabled={currentPage === 0}
-            style={{
-              padding: "8px 16px",
-              background: currentPage === 0 ? "#ccc" : "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-              cursor: currentPage === 0 ? "not-allowed" : "pointer"
-            }}
-          >
-            Previous
-          </button>
-
-          <span style={{ fontSize: 12, color: "#666" }}>
-            {currentPage + 1} / {pages.length}
-          </span>
-
-          <button
-            onClick={nextPage}
-            style={{
-              padding: "8px 16px",
-              background: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontWeight: "bold"
-            }}
-          >
-            {isLastPage ? "Play!" : "Next"}
-          </button>
-        </div>
-
+      <div style={{ position: "relative" }}>
         <button
           onClick={onClose}
           style={{
-            marginTop: 12,
-            padding: "6px 12px",
+            position: "absolute",
+            top: -8,
+            left: -8,
             background: "transparent",
+            border: "none",
+            fontSize: 18,
             color: "#666",
-            border: "1px solid #ddd",
-            borderRadius: 4,
             cursor: "pointer",
-            fontSize: 12
+            width: 24,
+            height: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "50%",
+            backgroundColor: "rgba(0,0,0,0.1)"
           }}
         >
-          Close
+          ×
         </button>
+
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <h2 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: "bold" }}>
+            How to Play
+          </h2>
+
+          <div style={{ textAlign: "left", marginBottom: 20 }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: 16, color: "#333" }}>
+              {pages[currentPage].title}
+            </h3>
+            <div style={{
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: "#555",
+              whiteSpace: "pre-line"
+            }}>
+              {pages[currentPage].content}
+            </div>
+          </div>
+
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 20
+          }}>
+            <button
+              onClick={prevPage}
+              disabled={currentPage === 0}
+              style={{
+                padding: "8px 16px",
+                background: currentPage === 0 ? "#ccc" : "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: currentPage === 0 ? "not-allowed" : "pointer"
+              }}
+            >
+              Previous
+            </button>
+
+            <span style={{ fontSize: 12, color: "#666" }}>
+              {currentPage + 1} / {pages.length}
+            </span>
+
+            <button
+              onClick={nextPage}
+              style={{
+                padding: "8px 16px",
+                background: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontWeight: "bold"
+              }}
+            >
+              {isLastPage ? "Play!" : "Next"}
+            </button>
+          </div>
+        </div>
       </div>
     </Modal>
   )
