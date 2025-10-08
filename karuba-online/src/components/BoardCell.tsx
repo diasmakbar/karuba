@@ -37,6 +37,7 @@ export default function BoardCell(props: BoardCellProps) {
     imgId,
     onCellClick,
     selectedColor,
+    setSelectedColor,
     myMoves,
     myExplorers,
     arrowsMap,
