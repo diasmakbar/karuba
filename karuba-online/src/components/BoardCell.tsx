@@ -23,6 +23,12 @@ interface BoardCellProps {
   isAnimating: boolean
   colorIdx: (color: ExplorerColor) => number
   isFinished: boolean
+  animGhost?: {
+    color: ExplorerColor
+    from8: { r: number; c: number }
+    to8: { r: number; c: number }
+    stage: number
+  } | null
 }
 
 export default function BoardCell(props: BoardCellProps) {
@@ -46,6 +52,7 @@ export default function BoardCell(props: BoardCellProps) {
     isAnimating,
     colorIdx,
     isFinished,
+    animGhost,
   } = props
 
   const cursor = (selectedColor && myMoves > 0 && arrowsMap.has(`${r6},${c6}`))
@@ -119,7 +126,8 @@ export default function BoardCell(props: BoardCellProps) {
 
       {Object.values(myExplorers || {}).map((ex) => {
         if (!ex.onBoard || ex.onBoard.r !== r6 || ex.onBoard.c !== c6) return null
-        if (isAnimating && ex.color === selectedColor) return null
+        // Hide explorer if it's being animated (check both selectedColor and animGhost)
+        if (isAnimating && (ex.color === selectedColor || (animGhost && ex.color === animGhost.color))) return null
         const idx = colorIdx(ex.color)
         const isSelected = selectedColor === ex.color
         const frameSuffix = ex.frame && ex.frame > 0 ? `_${ex.frame}` : ""
@@ -141,7 +149,6 @@ export default function BoardCell(props: BoardCellProps) {
                 e.stopPropagation()
                 if (!canStep || isAnimating || isFinished) return
                 setSelectedColor(isSelected ? null : ex.color)
-                console.log("Clicked explorer:", ex.color, "at position", r6, c6)
               }}
             />
           </React.Fragment>

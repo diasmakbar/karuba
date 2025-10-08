@@ -153,14 +153,8 @@ useEffect(() => {
     const out: Arrow[] = []
     if (!selectedColor || myMoves <= 0 || !selected) return out
 
-    console.log("Calculating arrows for:", selectedColor, "selected:", selected)
-
     if (selected.onEdge) {
-      console.log("Processing edge explorer")
-      if (!canEnterFromEdge(selected)) {
-        console.log("Cannot enter from edge")
-        return out
-      }
+      if (!canEnterFromEdge(selected)) return out
       const { side, index } = selected.onEdge
       let r = -1, c = -1
       if (side === "W") { r = index; c = 0 }
@@ -168,96 +162,39 @@ useEffect(() => {
       else if (side === "E") { r = index; c = 5 }
       else { r = 0; c = index }
       const tid = board[r][c]
-      if (tid === -1) {
-        console.log("No tile at edge position")
-        return out
-      }
+      if (tid === -1) return out
       const meta = (tilesMeta as any)[String(tid)]
-      if (!meta?.branches?.includes(side)) {
-        console.log("Edge tile doesn't have branch", side)
-        return out
-      }
-      if (occupiedByOther(r, c)) {
-        console.log("Position occupied by other")
-        return out
-      }
-      console.log("Adding edge arrow:", { r, c, dir: opp(side) })
+      if (!meta?.branches?.includes(side)) return out
+      if (occupiedByOther(r, c)) return out
       out.push({ r, c, dir: opp(side) })
       return out
     }
 
     if (selected.onBoard) {
-      console.log("Processing grid explorer at", selected.onBoard)
       const { r, c, entry } = selected.onBoard
-      console.log("Grid position:", { r, c, entry })
-      console.log("Board at position:", board[r][c])
-
       const tid = board[r][c]
-      if (tid === -1) {
-        console.log("❌ No tile at grid position", r, c)
-        return out
-      }
-
+      if (tid === -1) return out
       const meta = (tilesMeta as any)[String(tid)]
-      console.log("Tile metadata:", meta)
-
-      if (!meta?.branches) {
-        console.log("❌ Tile has no branches metadata")
-        return out
-      }
-
-      console.log("✅ Tile branches:", meta.branches)
+      if (!meta?.branches) return out
       const exits = meta.branches
-      console.log("Available exits:", exits)
 
       for (const dir of exits) {
-        console.log("Checking direction:", dir)
         let nr = r, nc = c
         if (dir === "N") nr = r - 1
         if (dir === "S") nr = r + 1
         if (dir === "E") nc = c + 1
         if (dir === "W") nc = c - 1
-
-        console.log("Target position:", { nr, nc })
-
         if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6) {
           const ntid = board[nr][nc]
-          console.log("Next tile ID:", ntid)
-
-          if (ntid === -1) {
-            console.log("❌ Next tile empty at", nr, nc)
-            continue
-          }
-
+          if (ntid === -1) continue
           const nmeta = (tilesMeta as any)[String(ntid)]
-          console.log("Next tile metadata:", nmeta)
-
-          const oppDir = opp(dir)
-          console.log("Opposite direction:", oppDir)
-
-          if (!nmeta?.branches?.includes(oppDir)) {
-            console.log("❌ Next tile missing opposite branch", oppDir)
-            console.log("Next tile branches:", nmeta?.branches)
-            continue
-          }
-
-          if (occupiedByOther(nr, nc, selectedColor || undefined)) {
-            console.log("❌ Next position occupied at", nr, nc)
-            continue
-          }
-
-          console.log("✅ Adding grid arrow:", { r: nr, c: nc, dir })
+          if (!nmeta?.branches?.includes(opp(dir))) continue
+          if (occupiedByOther(nr, nc, selectedColor || undefined)) continue
           out.push({ r: nr, c: nc, dir })
-        } else {
-          console.log("❌ Movement out of bounds:", { nr, nc })
         }
       }
-    } else {
-      console.log("❌ Explorer neither on edge nor on board")
-      console.log("Explorer state:", selected)
     }
 
-    console.log("Final arrows:", out)
     return out
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
