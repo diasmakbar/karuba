@@ -573,7 +573,7 @@ export default function Room({ gameId }: { gameId: string }) {
               canGenerate={!!canGenerate}
               onStartOrGenerate={() => onStartOrGenerate(game, gameId, isHost, isGenerateTurnOwner, order, db)}
               onReady={() => onReadyNextRound(game, me, playerId, gameId, players, db)}
-              readyDisabled={!isFinished ? (!me.actedForRound || me.doneForRound) : false}
+              readyDisabled={false}
               waitingLabel={(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
                 if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {

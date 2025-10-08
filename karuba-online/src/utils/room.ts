@@ -149,7 +149,7 @@ export const discardTile = async (tileId: number, branches: Branch[], game: Game
   if (tileId !== game.currentTile) return
   if (me.actedForRound) return
   const gain = branches.length
-  await update(db, `games/karuba/${gameId}/players/${playerId}`, {
+  await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
     moves: (me.moves || 0) + gain,
     lastDiscardDirs: branches,
     actedForRound: true,
@@ -161,7 +161,7 @@ export const discardTile = async (tileId: number, branches: Branch[], game: Game
 
 export const onReadyNextRound = async (game: Game, me: Player, playerId: string, gameId: string, players: Record<string, Player>, db: any) => {
   if (!me.actedForRound || me.doneForRound) return
-  await update(db, `games/karuba/${gameId}/players/${playerId}`, { doneForRound: true })
+  await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), { doneForRound: true })
   await maybeAdvanceRound(game, players, gameId, db)
 }
 
@@ -184,7 +184,7 @@ export const maybeAdvanceRound = async (game: Game, players: Record<string, Play
   let nextIdx = game.generateTurnIndex
   if (nextRound !== 2) nextIdx = (game.generateTurnIndex + 1) % order.length
 
-  await update(db, `games/karuba/${gameId}`, {
+  await update(ref(db, `games/karuba/${gameId}`), {
     round: nextRound,
     currentTile: 0,
     generateTurnIndex: nextIdx,
@@ -194,7 +194,7 @@ export const maybeAdvanceRound = async (game: Game, players: Record<string, Play
   for (const pid of order) {
     const p = pObj[pid]
     if (Object.keys(p.explorers || {}).length > 0) {
-      await update(db, `games/karuba/${gameId}/players/${pid}`, {
+      await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
         actedForRound: false,
         doneForRound: false,
         lastAction: null,
