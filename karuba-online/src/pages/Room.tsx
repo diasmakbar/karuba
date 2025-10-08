@@ -570,7 +570,7 @@ export default function Room({ gameId }: { gameId: string }) {
               isHost={isHost}
               status={game.status}
               round={game.round}
-              canGenerate={!!canGenerate}
+              canGenerate={canGenerateValue}
               onStartOrGenerate={() => onStartOrGenerate(game, gameId, isHost, isGenerateTurnOwner, order, db)}
               onReady={() => onReadyNextRound(game, me, playerId, gameId, players, db)}
               readyDisabled={!me.actedForRound || me.doneForRound}
