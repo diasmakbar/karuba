@@ -153,8 +153,14 @@ useEffect(() => {
     const out: Arrow[] = []
     if (!selectedColor || myMoves <= 0 || !selected) return out
 
+    console.log("Calculating arrows for:", selectedColor, "selected:", selected)
+
     if (selected.onEdge) {
-      if (!canEnterFromEdge(selected)) return out
+      console.log("Processing edge explorer")
+      if (!canEnterFromEdge(selected)) {
+        console.log("Cannot enter from edge")
+        return out
+      }
       const { side, index } = selected.onEdge
       let r = -1, c = -1
       if (side === "W") { r = index; c = 0 }
@@ -162,36 +168,73 @@ useEffect(() => {
       else if (side === "E") { r = index; c = 5 }
       else { r = 0; c = index }
       const tid = board[r][c]
-      if (tid === -1) return out
+      if (tid === -1) {
+        console.log("No tile at edge position")
+        return out
+      }
       const meta = (tilesMeta as any)[String(tid)]
-      if (!meta?.branches?.includes(side)) return out
-      if (occupiedByOther(r, c)) return out // blok overlap
+      if (!meta?.branches?.includes(side)) {
+        console.log("Edge tile doesn't have branch", side)
+        return out
+      }
+      if (occupiedByOther(r, c)) {
+        console.log("Position occupied by other")
+        return out
+      }
+      console.log("Adding edge arrow:", { r, c, dir: opp(side) })
       out.push({ r, c, dir: opp(side) })
       return out
     }
 
-    if (!selected.onBoard) return out
-    const { r, c, entry } = selected.onBoard
-    const tid = board[r][c]
-    if (tid === -1) return out
-    const meta = (tilesMeta as any)[String(tid)]
-    // const exits = (meta?.branches || []).filter((b: Branch) => b !== entry)
-    const exits = (meta?.branches || [])
-    for (const dir of exits) {
-      let nr = r, nc = c
-      if (dir === "N") nr = r - 1
-      if (dir === "S") nr = r + 1
-      if (dir === "E") nc = c + 1
-      if (dir === "W") nc = c - 1
-      if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6) {
-        const ntid = board[nr][nc]
-        if (ntid === -1) continue
-        const nmeta = (tilesMeta as any)[String(ntid)]
-        if (!nmeta?.branches?.includes(opp(dir))) continue
-        if (occupiedByOther(nr, nc, selectedColor || undefined)) continue // blok overlap
-        out.push({ r: nr, c: nc, dir })
+    if (selected.onBoard) {
+      console.log("Processing grid explorer at", selected.onBoard)
+      const { r, c, entry } = selected.onBoard
+      const tid = board[r][c]
+      if (tid === -1) {
+        console.log("No tile at grid position")
+        return out
       }
+      const meta = (tilesMeta as any)[String(tid)]
+      if (!meta?.branches) {
+        console.log("Tile has no branches")
+        return out
+      }
+      console.log("Tile branches:", meta.branches)
+      const exits = meta.branches
+      console.log("Available exits:", exits)
+
+      for (const dir of exits) {
+        let nr = r, nc = c
+        if (dir === "N") nr = r - 1
+        if (dir === "S") nr = r + 1
+        if (dir === "E") nc = c + 1
+        if (dir === "W") nc = c - 1
+        if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6) {
+          const ntid = board[nr][nc]
+          if (ntid === -1) {
+            console.log("Next tile empty at", nr, nc)
+            continue
+          }
+          const nmeta = (tilesMeta as any)[String(ntid)]
+          if (!nmeta?.branches?.includes(opp(dir))) {
+            console.log("Next tile missing opposite branch", opp(dir))
+            continue
+          }
+          if (occupiedByOther(nr, nc, selectedColor || undefined)) {
+            console.log("Next position occupied")
+            continue
+          }
+          console.log("Adding grid arrow:", { r: nr, c: nc, dir })
+          out.push({ r: nr, c: nc, dir })
+        } else {
+          console.log("Movement out of bounds:", { nr, nc })
+        }
+      }
+    } else {
+      console.log("Explorer neither on edge nor on board")
     }
+
+    console.log("Final arrows:", out)
     return out
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -204,7 +247,8 @@ useEffect(() => {
     selected?.onEdge?.index,
     board,
     myMoves,
-    myExplorers, // supaya re-calc saat posisi explorer lain berubah
+    myExplorers,
+    tilesMeta,
   ])
 
   // Set panah → dir lookup biar cell click bisa buka confirm

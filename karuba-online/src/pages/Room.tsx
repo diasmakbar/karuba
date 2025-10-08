@@ -692,7 +692,7 @@ export default function Room({ gameId }: { gameId: string }) {
               myExplorers={me.explorers}
               temples={game.layout?.temples || []}
               templeWins={game.templeWins || []}
-              onMoveOne={async (color, dir) => { await moveOne(color, dir) }}
+              onMoveOne={moveOne}
               onEnterTemple={enterTemple}
               animGhost={animGhost}
               isFinished={isFinished}
