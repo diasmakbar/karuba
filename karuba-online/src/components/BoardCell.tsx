@@ -14,6 +14,7 @@ interface BoardCellProps {
   imgId: number | null
   onCellClick: () => void
   selectedColor: ExplorerColor | null
+  setSelectedColor: (color: ExplorerColor | null) => void
   myMoves: number
   myExplorers: Record<ExplorerColor, any>
   arrowsMap: Map<string, any>
@@ -138,7 +139,8 @@ export default function BoardCell(props: BoardCellProps) {
               onClick={(e) => {
                 e.stopPropagation()
                 if (!canStep || isAnimating || isFinished) return
-                // setSelectedColor(isSelected ? null : ex.color)
+                setSelectedColor(isSelected ? null : ex.color)
+                console.log("Clicked explorer:", ex.color, "at position", r6, c6)
               }}
             />
           </React.Fragment>
