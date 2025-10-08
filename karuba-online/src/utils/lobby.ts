@@ -20,30 +20,30 @@ export function makeRandomLayout(): Layout {
   const pickK = (pool: number[], k: number) => shuffle(pool).slice(0, k)
 
   const colsShuffled = shuffle(colors)
-  const topLeftColors: ExplorerColor[] = colsShuffled.slice(0, 2)
-  const rightBottomColors: ExplorerColor[] = colsShuffled.slice(2)
+  const topBottomColors: ExplorerColor[] = colsShuffled.slice(0, 2)
+  const leftRightColors: ExplorerColor[] = colsShuffled.slice(2)
 
   const topCols = pickK([1, 2, 3, 4, 5, 6], 2)
   const rightRows = pickK([1, 2, 3, 4, 5, 6], 2)
   const leftRows = pickK([1, 2, 3, 4, 5, 6], 2)
   const bottomCols = pickK([1, 2, 3, 4, 5, 6], 2)
 
-  const topTemples = topLeftColors.map((color, i) => ({
+  const topTemples = topBottomColors.map((color, i) => ({
     side: 'N' as const,
     index: topCols[i] - 1,
     color,
   }))
-  const rightTemples = rightBottomColors.map((color, i) => ({
+  const rightTemples = leftRightColors.map((color, i) => ({
     side: 'E' as const,
     index: rightRows[i] - 1,
     color,
   }))
 
   const explorers = {} as Record<ExplorerColor, { side: Branch; index: number }>
-  explorers[topLeftColors[0]] = { side: 'W', index: leftRows[0] - 1 }
-  explorers[topLeftColors[1]] = { side: 'W', index: leftRows[1] - 1 }
-  explorers[rightBottomColors[0]] = { side: 'S', index: bottomCols[0] - 1 }
-  explorers[rightBottomColors[1]] = { side: 'S', index: bottomCols[1] - 1 }
+  explorers[leftRightColors[0]] = { side: 'W', index: leftRows[0] - 1 }
+  explorers[leftRightColors[1]] = { side: 'W', index: leftRows[1] - 1 }
+  explorers[topBottomColors[0]] = { side: 'S', index: bottomCols[0] - 1 }
+  explorers[topBottomColors[1]] = { side: 'S', index: bottomCols[1] - 1 }
 
   return { explorers, temples: [...topTemples, ...rightTemples] }
 }
