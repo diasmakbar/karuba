@@ -1,5 +1,5 @@
 import { ref, update, get } from "../firebase"
-import type { Game, Player, Branch } from "../lib/types"
+import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
 import { generateTilesMeta } from "../lib/deck"
 
 // Shared utility
@@ -203,4 +203,182 @@ export const maybeAdvanceRound = async (game: Game, players: Record<string, Play
   }
 }
 
-// More handlers like moveOne and enterTemple are too long to extract now, will do later.
+export const validateInternalMove = (
+  r: number,
+  c: number,
+  entry: Branch,
+  dir: Branch,
+  board: number[][],
+  tilesMeta: Record<string, { branches: Branch[] }>,
+  explorers: Record<ExplorerColor, any>,
+  color: ExplorerColor
+) => {
+  const tid = board[r][c]
+  if (tid === -1) { console.warn("[MOVE] no tile at", r, c); return null }
+  const meta = tilesMeta[String(tid)]
+  if (!meta?.branches?.includes(dir)) { console.warn("[MOVE] current tile has no branch", dir, "at", r, c, "meta:", meta); return null }
+
+  let nr = r, nc = c
+  if (dir === "N") nr = r - 1
+  if (dir === "S") nr = r + 1
+  if (dir === "E") nc = c + 1
+  if (dir === "W") nc = c - 1
+  if (nr < 0 || nr > 5 || nc < 0 || nc > 5) { console.warn("[MOVE] out of bounds to", nr, nc); return null }
+  const nextTid = board[nr][nc]
+  if (nextTid === -1) { console.warn("[MOVE] next tile empty at", nr, nc); return null }
+  const nextMeta = tilesMeta[String(nextTid)]
+  if (!nextMeta?.branches?.includes(opp(dir))) { console.warn("[MOVE] next tile missing opp", opp(dir), "at", nr, nc, "meta:", nextMeta); return null }
+  if (isOccupiedByOther(nr, nc, explorers, color)) { console.warn("[MOVE] occupied by other at", nr, nc); return null }
+  return { nr, nc, nextTid }
+}
+
+// Check if can enter from edge
+export const canEnterFromEdge = (ex: any, board: number[][], tilesMeta: Record<string, { branches: Branch[] }>, explorers: Record<ExplorerColor, any>) => {
+  if (!ex.onEdge) return false
+  const { side, index } = ex.onEdge
+  if (side === "W") {
+    const t = board[index][0]
+    if (t === -1) return false
+    if (!(tilesMeta as any)[String(t)]?.branches?.includes("W")) return false
+    return !isOccupiedByOther(index, 0, explorers)
+  }
+  if (side === "S") {
+    const t = board[5][index]
+    if (t === -1) return false
+    if (!(tilesMeta as any)[String(t)]?.branches?.includes("S")) return false
+    return !isOccupiedByOther(5, index, explorers)
+  }
+  if (side === "E") {
+    const t = board[index][5]
+    if (t === -1) return false
+    if (!(tilesMeta as any)[String(t)]?.branches?.includes("E")) return false
+    return !isOccupiedByOther(index, 5, explorers)
+  }
+  const t = board[0][index]
+  if (t === -1) return false
+  if (!(tilesMeta as any)[String(t)]?.branches?.includes("N")) return false
+  return !isOccupiedByOther(0, index, explorers)
+}
+
+// Calculate reward and update claimed
+export const calculateReward = (
+  tileId: number,
+  color: ExplorerColor,
+  rewards: Record<number, "gold" | "crystal" | null>,
+  claimedRewards: Record<ExplorerColor, Record<number, boolean>>
+) => {
+  const alreadyClaimed = !!(claimedRewards && claimedRewards[color]?.[tileId])
+  const gain = alreadyClaimed ? 0 : rewardGain(tileId, rewards)
+  const kind = rewardKind(tileId, rewards)
+  const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
+  const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
+  const nextClaimed = !alreadyClaimed && kind
+    ? {
+        red: claimedRewards?.red || {},
+        blue: claimedRewards?.blue || {},
+        brown: claimedRewards?.brown || {},
+        yellow: claimedRewards?.yellow || {},
+        [color]: {
+          ...(claimedRewards?.[color] || {}),
+          [tileId]: true,
+        },
+      }
+    : (claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+  return { gain, addGold, addCrystal, nextClaimed }
+}
+
+// Ghost animation helper
+export const setGhostStagesAndCommit = async (
+  color: ExplorerColor,
+  from8: { r: number; c: number },
+  to8: { r: number; c: number },
+  animGhostSetter: (ghost: any) => void,
+  afterCommit: () => Promise<void>
+) => {
+  animGhostSetter({ color, from8, to8, stage: 0 }); await new Promise((r) => setTimeout(r, 100))
+  animGhostSetter({ color, from8, to8, stage: 1 }); await new Promise((r) => setTimeout(r, 200))
+  animGhostSetter({ color, from8, to8, stage: 2 }); await new Promise((r) => setTimeout(r, 200))
+  animGhostSetter({ color, from8, to8, stage: 3 }); await new Promise((r) => setTimeout(r, 200))
+  animGhostSetter({ color, from8, to8, stage: 4 }); await new Promise((r) => setTimeout(r, 50))
+  animGhostSetter({ color, from8, to8, stage: 5 }); await new Promise((r) => setTimeout(r, 100))
+  await afterCommit()
+  animGhostSetter(null)
+}
+
+// Undo/Redo state snapshot
+export type MoveState = {
+  explorers: Record<ExplorerColor, any>
+  score: number
+  moves: number
+  claimedRewards: Record<ExplorerColor, Record<number, boolean>>
+  goldCount: number
+  crystalCount: number
+}
+
+export const createMoveState = (me: Player): MoveState => ({
+  explorers: { ...me.explorers },
+  score: me.score,
+  moves: me.moves,
+  claimedRewards: me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} },
+  goldCount: (me as any).goldCount || 0,
+  crystalCount: (me as any).crystalCount || 0,
+})
+
+// Enter temple logic
+export const enterTemple = async (
+  color: ExplorerColor,
+  side: Branch,
+  index: number,
+  game: Game,
+  me: Player,
+  playerId: string,
+  players: Record<string, Player>,
+  gameId: string,
+  db: any,
+  maybeAutoFinishMe: (newExplorers: any) => Promise<void>,
+  endGame: (gameId: string, players: Record<string, Player>, db: any) => Promise<void>
+) => {
+  if (me.moves <= 0) return
+  if (!["N", "E"].includes(side)) return
+
+  // Check temple color match
+  const temple = game.layout?.temples?.find((t) => t.side === side && t.index === index)
+  if (!temple || temple.color !== color) return
+
+  const tilesMeta = ((game as any).tilesMeta || {}) as Record<string, { branches: Branch[] }>
+  const ex = me.explorers[color]
+  if (!ex?.onBoard) return
+  const { r, c, entry } = ex.onBoard
+  const tid = me.board[r][c]
+  if (tid === -1) return
+  const meta = tilesMeta[String(tid)]
+  const neededDir: Branch = side === "N" ? "N" : "E"
+  if (!meta?.branches?.includes(neededDir)) { console.warn("[TEMPLE] current tile missing", neededDir, "meta:", meta); return }
+
+  const wins = (game.templeWins || []) as any[]
+  const sameColorWins = wins.filter((w) => w.color === color).length
+  const orderReach = sameColorWins + 1
+  const nPlayers = game.playersCount || Object.keys(players || {}).length || 1
+  const gain = Math.max(0, nPlayers + 2 - orderReach)
+
+  const newWins = [...wins, { side, index, color, playerId, order: orderReach }]
+  const newExplorers = { ...me.explorers }
+  delete newExplorers[color]
+
+  await update(ref(db, `games/karuba/${gameId}`), {
+    templeWins: newWins,
+    lastEvent: `${players[playerId]?.name || "Player"} reached the ${color} temple and got ${gain} points!`,
+  })
+  await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
+    moves: me.moves - 1,
+    explorers: newExplorers,
+    score: me.score + gain,
+  })
+
+  await maybeAutoFinishMe(newExplorers)
+
+  const everyoneFinished = await computeEveryoneFinished(gameId, db)
+  if (everyoneFinished) {
+    await endGame(gameId, players, db)
+  }
+}

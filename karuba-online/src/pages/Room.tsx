@@ -3,10 +3,30 @@ import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
 import Board from "../components/Board"
 import Controls from "../components/Controls"
+import ResultModal from "../components/ResultModal"
 import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
-import { generateTilesMeta } from "../lib/deck"
-
-const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
+import {
+  opp,
+  rewardGain,
+  rewardKind,
+  isOccupiedByOther,
+  computeEveryoneFinished,
+  endGame,
+  onStartOrGenerate,
+  playerNameById,
+  waitingLabel,
+  canGenerate,
+  placeTile,
+  discardTile,
+  onReadyNextRound,
+  maybeAdvanceRound,
+  validateInternalMove,
+  canEnterFromEdge,
+  calculateReward,
+  setGhostStagesAndCommit,
+  createMoveState,
+  enterTemple,
+} from "../utils/room"
 
 function TileIcon({
   id,
@@ -146,11 +166,7 @@ export default function Room({ gameId }: { gameId: string }) {
   const isHost = !!game && game.shuffleTurnUid === playerId
   const isGenerateTurnOwner = !!game && game.generateTurnUid === playerId
 
-  const canGenerate =
-    !!game &&
-    (game.status === "waiting"
-      ? isHost
-      : game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0)
+  const canGenerate = canGenerate(game, game.status, game?.round || 0, isGenerateTurnOwner, game?.currentTile || 0)
 
   const playerNameById = (pid: string) => players[pid]?.name || "player"
   const waitingLabel =
@@ -164,193 +180,11 @@ export default function Room({ gameId }: { gameId: string }) {
       ? "You can generate now"
       : `Waiting for ${playerNameById(game.generateTurnUid!)} to generate tile`
 
-  const rewardGain = (tileId: number | null | undefined) => {
-    if (!tileId || !game?.rewards) return 0
-    const r = game.rewards[tileId]
-    if (r === "gold") return 2
-    if (r === "crystal") return 1
-    return 0
-  }
-  const rewardKind = (tileId: number | null | undefined) =>
-    tileId && game?.rewards ? game.rewards[tileId] : null
-
   const isOccupiedByOther = (r: number, c: number, exceptColor?: ExplorerColor) => {
     if (!me) return false
     return Object.values(me.explorers || {}).some(
       (ex) => ex.onBoard && ex.onBoard.r === r && ex.onBoard.c === c && ex.color !== exceptColor
     )
-  }
-
-  // === End conditions helper ===
-  const computeEveryoneFinished = async (): Promise<boolean> => {
-    const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-    const pObj: Record<string, Player> = (plist.val() || {}) as any
-    return Object.values(pObj || {}).every((p) => Object.keys(p.explorers || {}).length === 0)
-  }
-  // const endGame = async () => {
-  //   await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
-  // }
-  const endGame = async () => {
-    if (!players) {
-      await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
-      return
-    }
-    const plist = Object.values(players || {})
-    const finished = plist
-      .filter((p) => p.finishedAtRound != null)
-      .sort((a, b) => (a.finishedAtRound ?? 99) - (b.finishedAtRound ?? 99))
-
-    const updates: Record<string, any> = {}
-    plist.forEach((p) => {
-      let bonus = 0
-      if (p.finishedAtRound != null) {
-        const baseBonus = Math.min(36 - (p.finishedAtRound as number), 8)
-        let placementBonus = 0
-        if (finished[0]?.id === p.id) placementBonus = 2
-        else if (finished[1]?.id === p.id) placementBonus = 1
-        bonus = baseBonus + placementBonus
-      }
-      updates[`players/${p.id}/bonusPoints`] = bonus
-      updates[`players/${p.id}/score`] = (p.score ?? 0) + bonus
-    })
-    updates["status"] = "ended"
-    updates["statusText"] = "Game ended"
-    await update(ref(db, `games/karuba/${gameId}`), updates)
-  }
-
-  // === Start / Generate ===
-  const onStartOrGenerate = async () => {
-    try {
-      if (!game) return
-      if (game.status === "waiting") {
-        if (!isHost) return
-        const tilesMeta = generateTilesMeta()
-        const pids = order
-        const idxForRound2 = pids.length > 1 ? 1 : 0
-        await update(ref(db, `games/karuba/${gameId}`), {
-          status: "playing",
-          statusText: "Round 1",
-          round: 1,
-          currentTile: 1,
-          generateTurnIndex: idxForRound2,
-          generateTurnUid: pids[idxForRound2] || playerId,
-          templeWins: game.templeWins || [],
-          tilesMeta,
-          lastEvent: null,
-        })
-        for (const pid of pids) {
-          await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
-            actedForRound: false,
-            doneForRound: false,
-            lastAction: null,
-          })
-        }
-        return
-      }
-      if (game.status === "playing" && game.round >= 2) {
-        if (!isGenerateTurnOwner || game.currentTile !== 0) return
-        await update(ref(db, `games/karuba/${gameId}`), {
-          currentTile: game.round,
-          statusText: `Round ${game.round}`,
-        })
-      }
-    } catch (e: any) {
-      setError(e.message)
-    }
-  }
-
-  // === Place / Discard / Ready ===
-  const placeTile = async (r: number, c: number) => {
-    try {
-      if (!game || !me) return
-      if (game.currentTile <= 0) return
-      if (me.actedForRound) return
-      const board = me.board.map((row) => row.slice())
-      if (board[r][c] !== -1) return
-      board[r][c] = game.currentTile
-
-      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
-        board,
-        actedForRound: true,
-        lastAction: "placed",
-        usedTiles: { ...(me.usedTiles || {}), [game.currentTile]: true },
-      })
-      setPreviewAt(null)
-    } catch (e: any) {
-      setError("Place tile error: " + e.message)
-    }
-  }
-
-  const discardTile = async (tileId: number, branches: Branch[]) => {
-    try {
-      if (!game || !me) return
-      if (tileId !== game.currentTile) return
-      if (me.actedForRound) return
-      const gain = branches.length
-      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
-        moves: (me.moves || 0) + gain,
-        lastDiscardDirs: branches,
-        actedForRound: true,
-        lastAction: "discarded",
-        discardedTiles: [...(me.discardedTiles || []), tileId],
-        usedTiles: { ...(me.usedTiles || {}), [tileId]: true },
-      })
-      setPreviewAt(null)
-    } catch (e: any) {
-      setError("Discard error: " + e.message)
-    }
-  }
-
-  const onReadyNextRound = async () => {
-    try {
-      if (!game || !me) return
-      if (!me.actedForRound || me.doneForRound) return
-      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), { doneForRound: true })
-      await maybeAdvanceRound()
-    } catch (e: any) {
-      setError("Ready error: " + e.message)
-    }
-  }
-
-  const maybeAdvanceRound = async () => {
-    if (!game) return
-    const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-    const pObj: Record<string, Player> = (plist.val() || {}) as any
-    const activePlayers = Object.values(pObj || {}).filter(p => Object.keys(p.explorers || {}).length > 0)
-    const allReady = activePlayers.every((p) => p.doneForRound)
-    if (!allReady) return
-
-    const pids = order
-    const nextRound = game.round + 1
-
-    // End if: hanya jika round habis > 36
-    if (nextRound > 36) {
-      await endGame()
-      return
-    }
-
-    let nextIdx = game.generateTurnIndex
-    if (nextRound !== 2) nextIdx = (game.generateTurnIndex + 1) % pids.length
-
-    await update(ref(db, `games/karuba/${gameId}`), {
-      round: nextRound,
-      currentTile: 0,
-      generateTurnIndex: nextIdx,
-      generateTurnUid: pids[nextIdx] || pids[0],
-      statusText: `Round ${nextRound} (waiting generate)`,
-    })
-    for (const pid of pids) {
-      const p = pObj[pid]
-      if (Object.keys(p.explorers || {}).length > 0) {
-        await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
-          actedForRound: false,
-          doneForRound: false,
-          lastAction: null,
-          movesHistory: [],
-          redoHistory: [],
-        })
-      }
-    }
   }
 
   const maybeAutoFinishMe = async (newExplorers: any) => {
@@ -880,178 +714,12 @@ export default function Room({ gameId }: { gameId: string }) {
           </div>
         )}
 
-        {/* Result Modal */}
-        {showResult && (
-        <div
-        style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1200,
-        }}
-        >
-        <div
-        style={{
-        background: "#fff",
-        padding: 20,
-        borderRadius: 12,
-        width: 420,
-        maxHeight: "80vh",
-        overflowY: "auto",
-        boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
-        }}
-        >
-        {(() => {
-        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
-        const myPos = Math.max(1, sorted.findIndex(p => p.id === playerId) + 1)
-        return (
-        <h2
-        className="font-display"
-        style={{ marginTop: 0, marginBottom: 12, textAlign: "center" }}
-        >
-        {myPos === 1
-        ? "Victory! 🏆"
-        : myPos === sorted.length
-        ? "Game Over! ☠️"
-        : "Game Result 🎲"}
-        </h2>
-        )
-        })()}
-
-        {(() => {
-        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
-        const wins = (game.templeWins || []) as any[]
-        return (
-        <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-        {sorted.map((p, i) => {
-        const rank = i + 1
-        const isExpanded = expandedPlayer === p.id
-        const mineWins = wins.filter(w => w.playerId === p.id)
-        const perOrder: Record<number, number> = {}
-        for (const w of mineWins) perOrder[w.order] = (perOrder[w.order] || 0) + 1
-        return (
-        <div
-        key={p.id}
-        style={{
-        border: "1px solid rgba(0,0,0,0.1)",
-        borderRadius: 8,
-        padding: "8px 12px",
-        background: isExpanded ? "rgba(0,0,0,0.05)" : "#fafafa",
-        }}
-        >
-        <div
-        style={{
-        cursor: "pointer",
-        fontWeight: p.id === playerId ? 700 : 400,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        }}
-        onClick={() => setExpandedPlayer(expandedPlayer === p.id ? null : p.id)}
-        >
-        <span>
-        {`(#${rank}) | ${p.name} | ${p.score} pts`}
-        {rank === 1 ? " 👑" : ""}
-        </span>
-        <span>{isExpanded ? "⤵" : "↩"}</span>
-        </div>
-        {isExpanded && (() => {
-  try {
-    const mineWins = (wins || []).filter(w => w.playerId === p.id)
-    const perOrder: Record<number, number> = {}
-    mineWins.forEach(w => {
-      if (w.order != null) perOrder[w.order] = (perOrder[w.order] || 0) + 1
-    })
-    const templePoints = mineWins.reduce((sum, w) => sum + (w.points || 0), 0)
-
-    const goldCount = (p as any)?.goldCount || 0
-    const crystalCount = (p as any)?.crystalCount || 0
-    const finishedAt = (p as any)?.finishedAtRound || null
-    return (
-      <div style={{color:"red", fontSize:12}}>
-        mineWins: {JSON.stringify(mineWins)}<br/>
-        perOrder: {JSON.stringify(perOrder)}<br/>
-        finishedAt: {finishedAt?.toString() || "null"}
-      </div>
-    )
-    const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 4) : 0
-    const gameBonus = rank === 1 ? 2 : rank === 2 ? 1 : 0
-
-    return (
-      <div style={{ marginTop: 8, fontSize: 14 }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>Finishing Order:</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
-          {mineWins.length > 0 ? (
-            Object.entries(perOrder).map(([order, count]) => {
-              const pts = mineWins.filter(w => w.order === Number(order)).reduce((sum, w) => sum + (w.points || 0), 0)
-              const orderLabel =
-                Number(order) === 1 ? "1st" : Number(order) === 2 ? "2nd" : Number(order) === 3 ? "3rd" : `${order}th`
-              return (
-                <React.Fragment key={order}>
-                  <div>• {orderLabel}: {count}</div>
-                  <div>{pts} pts</div>
-                </React.Fragment>
-              )
-            })
-          ) : (
-            <>
-              <div>• Unfinished: 1</div>
-              <div>0 pts</div>
-            </>
-          )}
-        </div>
-
-        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Rewards:</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
-          <div>• Gold: {goldCount}</div>
-          <div>{goldCount} pts</div>
-          <div>• Crystal: {crystalCount}</div>
-          <div>{crystalCount} pts</div>
-          {finishedAt && finishedAt < 36 && (
-            <>
-              <div>• Round {finishedAt} /36</div>
-              <div>{roundBonus} pts</div>
-            </>
-          )}
-        </div>
-
-        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Ranking bonus:</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
-          <div>{gameBonus > 0 ? "• Placement bonus" : "• None"}</div>
-          <div>{gameBonus} pts</div>
-        </div>
-      </div>
-    )
-  } catch (err) {
-    console.error("Breakdown error:", err, p)
-    return <div style={{ color: "red" }}>⚠️ Error showing breakdown</div>
-  }
-})()}
-        </div>
-        )
-        })}
-        </div>
-        )
-        })()}
-
-        <div style={{ textAlign: "center", marginTop: 12 }}>
-        <button
-        className="font-display"
-        onClick={() => {
-        setShowResult(false)
-        history.pushState({}, "", "/")
-        dispatchEvent(new PopStateEvent("popstate"))
-        }}
-        >
-        Back to Lobby
-        </button>
-        </div>
-        </div>
-        </div>
-        )}
+        <ResultModal
+          game={game}
+          players={players}
+          showResult={showResult}
+          setShowResult={setShowResult}
+        />
 
         {error && <div style={{ color: "red" }}>{error}</div>}
       </div>

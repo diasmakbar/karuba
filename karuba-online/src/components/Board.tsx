@@ -9,45 +9,17 @@ import type {
 } from "../lib/types"
 import { opp, colorIdx, dirToName, dirToArrowSrc } from "../utils/board"
 import Modal, { ModalButtons } from "./Modal"
+import BoardCell from "./BoardCell"
+import { BOARD_CONFIG, ANIMATION_CONFIG, Z_INDEX } from "./board/constants"
+import { getBoardContainerStyle, getCellStyle, getArrowStyle, getGhostStyle, getHighlightBottomCenterStyle } from "./board/styles"
+import { useBoardLogic } from "./board/useBoardLogic"
+import { TempleComponent } from "./board/TempleComponent"
+import { ExplorerComponent } from "./board/ExplorerComponent"
 
 const DEBUG = false
 const dlog = (...args: any[]) => { if (DEBUG) console.log("[Board]", ...args) }
 
-const CELL = 56
-const GAP = 6
-
-// grid (0) < tile(1) < reward(2) < highlight(3) < arrow(4) < explorer(5) < ghost(10)
-const HIGHLIGHT_DIAMETER = 38
-const HIGHLIGHT_CENTER_FROM_BOTTOM = 8
-const HIGHLIGHT_EXTRA_SHIFT_Y = 0
-const HIGHLIGHT_OPACITY = 0.75
-const ringTop =
-  CELL -
-  HIGHLIGHT_CENTER_FROM_BOTTOM -
-  HIGHLIGHT_DIAMETER / 2 +
-  HIGHLIGHT_EXTRA_SHIFT_Y
-const highlightBottomCenterStyle: React.CSSProperties = {
-  position: "absolute",
-  left: "50%",
-  top: ringTop,
-  width: HIGHLIGHT_DIAMETER,
-  height: HIGHLIGHT_DIAMETER,
-  transform: "translateX(-50%)",
-  objectFit: "contain",
-  zIndex: 3,
-  opacity: HIGHLIGHT_OPACITY,
-}
-
-const ARROW_SIZE = 28
 type Dir = Branch
-
-const BLINK_KEYFRAMES = `
-@keyframes confirmBlink {
-  0%   { opacity: .15; }
-  45%  { opacity: 1;   }
-  55%  { opacity: 1;   }
-  100% { opacity: .15; }
-}`
 
 export default function Board({
   myPlayerId,
@@ -91,11 +63,6 @@ export default function Board({
   isFinished?: boolean
 }) {
   const [confirmPlace, setConfirmPlace] = useState<{ r: number; c: number } | null>(null)
-  const [confirmTemple, setConfirmTemple] = useState<{
-    color: ExplorerColor
-    side: Branch
-    index: number
-  } | null>(null)
   const [selectedColor, setSelectedColor] = useState<ExplorerColor | null>(null)
 
   const [lastClick, setLastClick] = useState<{ key: string; t: number } | null>(null)
@@ -283,19 +250,52 @@ useEffect(() => {
   ])
 
   const cellPx = (gr: number, gc: number) => ({
-    left: GAP + gc * (CELL + GAP),
-    top: GAP + gr * (CELL + GAP),
+    left: BOARD_CONFIG.GAP_SIZE + gc * (BOARD_CONFIG.CELL_SIZE + BOARD_CONFIG.GAP_SIZE),
+    top: BOARD_CONFIG.GAP_SIZE + gr * (BOARD_CONFIG.CELL_SIZE + BOARD_CONFIG.GAP_SIZE),
   })
   const cellCenter = (gr: number, gc: number) => {
     const p = cellPx(gr, gc)
-    return { x: p.left + CELL / 2, y: p.top + CELL / 2 }
+    return { x: p.left + BOARD_CONFIG.CELL_SIZE / 2, y: p.top + BOARD_CONFIG.CELL_SIZE / 2 }
   }
 
   const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
-  const BoardCell: React.FC<{ r6: number; c6: number }> = ({ r6, c6 }) => {
-    const tileId = board[r6][c6]
-    const reward = tileId !== -1 ? rewards[tileId] : null
 
+  const handleCellClick = (r6: number, c6: number) => {
+    if (isFinished) return
+    // PRIORITAS: kalau lagi memilih explorer → klik cell tujuan buat gerak
+    if (selectedColor && myMoves > 0) {
+      const k = `${r6},${c6}`
+      const dir = arrowsMap.get(k)
+      if (dir) {
+        const now = Date.now()
+        const kKey = `${selectedColor}-${r6},${c6}`
+
+        if (lastClick && lastClick.key === kKey && now - lastClick.t < 300) {
+          // 🚀 Double click cepat → langsung gerak explorer ke arah dir
+          onMoveOne(selectedColor, dir)
+          setLastClick(null)
+        } else {
+          // 👆 Single click → set timer dulu buat bedain dari double click
+          setLastClick({ key: kKey, t: now })
+          setTimeout(() => {
+            // kalau setelah 300ms gak ada klik kedua, baru munculin confirm modal
+            if (
+              !lastClick ||
+              lastClick.key !== kKey ||
+              Date.now() - lastClick.t >= 300
+            ) {
+              onMoveOne(selectedColor, dir)
+            }
+          }, 310)
+        }
+        return
+      }
+    }
+
+    // kalau nggak sedang gerak, baru urusan place tile
+    if (!canPlace) return
+    const tileId = board[r6][c6]
+    if (tileId !== -1) return
     const isPreviewHere =
       !!canPlace &&
       !!previewTileId &&
@@ -303,196 +303,24 @@ useEffect(() => {
       previewAt.r === r6 &&
       previewAt.c === c6 &&
       tileId === -1
-
-    useEffect(() => {
-      if (isPreviewHere) {
-        const previewMeta = (tilesMeta as any)[String(previewTileId!)]
-        const previewImgId = previewMeta?.image ?? previewTileId
-        dlog("PREVIEW @ cell", { r6, c6, previewTileId, previewImgId, previewMeta })
-      }
-    }, [isPreviewHere, r6, c6])
-
-    const handleCellClick = () => {
-      if (isFinished) return
-      // PRIORITAS: kalau lagi memilih explorer → klik cell tujuan buat gerak
-      if (selectedColor && myMoves > 0) {
-        const k = `${r6},${c6}`
-        const dir = arrowsMap.get(k)
-        // if (dir) {
-        //   setConfirmMove({ color: selectedColor, dir })
-        //   return
-        // }
-        if (dir) {
-  const now = Date.now()
-  const kKey = `${selectedColor}-${r6},${c6}`
-
-  if (lastClick && lastClick.key === kKey && now - lastClick.t < 300) {
-    // 🚀 Double click cepat → langsung gerak explorer ke arah dir
-    onMoveOne(selectedColor, dir)
-    setLastClick(null)
-  } else {
-    // 👆 Single click → set timer dulu buat bedain dari double click
-    setLastClick({ key: kKey, t: now })
-    setTimeout(() => {
-      // kalau setelah 300ms gak ada klik kedua, baru munculin confirm modal
-      if (
-        !lastClick ||
-        lastClick.key !== kKey ||
-        Date.now() - lastClick.t >= 300
-      ) {
-        // setConfirmMove({ color: selectedColor, dir })
-        onMoveOne(selectedColor, dir)
-      }
-    }, 310)
-  }
-  return
-        }
-      }
-
-      // kalau nggak sedang gerak, baru urusan place tile
-      if (!canPlace) return
-      if (tileId !== -1) return
-      if (isPreviewHere) {
-        setConfirmPlace({ r: r6, c: c6 })
-      } else {
-        onPreview?.(r6, c6)
-      }
+    if (isPreviewHere) {
+      setConfirmPlace({ r: r6, c: c6 })
+    } else {
+      onPreview?.(r6, c6)
     }
-
-    const imgId =
-      tileId !== -1 ? (tilesMeta as any)[String(tileId)]?.image ?? tileId : null
-    const previewImgId =
-      previewTileId != null
-        ? (tilesMeta as any)[String(previewTileId)]?.image ?? previewTileId
-        : null
-
-    return (
-      <div
-        style={{
-          width: CELL,
-          height: CELL,
-          position: "relative",
-          border: `3px solid var(--cell-border)`,
-          background: "transparent",
-          borderRadius: 6,
-          overflow: "hidden",
-          cursor: (selectedColor && myMoves > 0 && arrowsMap.has(`${r6},${c6}`))
-            ? "pointer"
-            : (canPlace && tileId === -1 ? "pointer" : "default"),
-        }}
-        onClick={handleCellClick}
-        data-cell={`${r6},${c6}`}
-      >
-        {tileId !== -1 && imgId != null && (
-          <img
-            src={`/tiles/${imgId}.webp`}
-            alt={`Tile ${tileId}`}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1 }}
-          />
-        )}
-
-        {reward === "gold" && (
-          <img
-            src="/tiles/gold.webp"
-            alt="Gold"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
-          />
-        )}
-        {reward === "crystal" && (
-          <img
-            src="/tiles/crystal.webp"
-            alt="Crystal"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
-          />
-        )}
-
-        {isPreviewHere && (previewImgId != null) && (
-          <>
-            <img
-              src={`/tiles/${previewImgId}.webp`}
-              alt={`Preview tile ${previewTileId}`}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1, opacity: 0.95 }}
-            />
-            {(() => {
-              const rw = rewards[previewTileId!]
-              if (!rw) return null
-              return (
-                <img
-                  src={`/tiles/${rw}.webp`}
-                  alt={`${rw}`}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2, opacity: 0.95 }}
-                />
-              )
-            })()}
-
-            <img
-              src="/tiles/confirm.png"
-              alt="confirm border"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 8, pointerEvents: "none", animation: "confirmBlink 1s ease-in-out infinite" }}
-            />
-          </>
-        )}
-
-        {Object.values(myExplorers || {}).map((ex) => {
-          if (!ex.onBoard || ex.onBoard.r !== r6 || ex.onBoard.c !== c6) return null
-          if (animGhost && ex.color === animGhost.color) return null
-          const idx = colorIdx(ex.color)
-          const isSelected = selectedColor === ex.color
-          const canStep = myMoves > 0
-          const frameSuffix = ex.frame && ex.frame > 0 ? `_${ex.frame}` : ""
-          return (
-            <React.Fragment key={`ex-${ex.color}-${r6}-${c6}`}>
-              {canStep && isSelected && (
-                <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} />
-              )}
-              <img
-                src={`/explorers/explorers_${idx}${frameSuffix}.svg`}
-                alt={`${ex.color} explorer`}
-                style={{
-                  position: "absolute", inset: 4,
-                  width: "calc(100% - 8px)", height: "calc(100% - 8px)",
-                  objectFit: "contain", transform: "scale(0.85)", transformOrigin: "center", zIndex: 5,
-                  display: "block", cursor: canStep ? "pointer" : "default",
-                }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (!canStep || isAnimating || isFinished) return
-                  // setSelectedColor(isSelected ? null : ex.color)
-                  if (!isSelected) setSelectedColor(ex.color)
-                }}
-              />
-            </React.Fragment>
-          )
-        })}
-      </div>
-    )
   }
 
   return (
     <div
-      style={{
-        position: "relative",
-        display: "grid",
-        gridTemplateColumns: `repeat(8, 1fr)`,
-        gridTemplateRows: `repeat(8, 1fr)`,
-        gap: GAP,
-        padding: GAP,
-        background: "transparent",       // transparan (frame kelihatan)
-        // border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-        width: "100%",
-        // maxWidth: 8 * CELL + 7 * GAP + 2 * GAP,
-        aspectRatio: "1", // biar square responsive
-      }}
+      style={getBoardContainerStyle()}
       onClick={() => setSelectedColor(null)}
     >
-      <style dangerouslySetInnerHTML={{ __html: `${BLINK_KEYFRAMES}` }} />
+      <style dangerouslySetInnerHTML={{ __html: `${ANIMATION_CONFIG.CONFIRM_BLINK_KEYFRAMES}` }} />
 
       {Array.from({ length: 8 }).map((_, r) =>
         Array.from({ length: 8 }).map((_, c) => {
           if ((r === 0 || r === 7) && (c === 0 || c === 7))
-            return <div key={`g-${r}-${c}`} style={{ width: CELL, height: CELL }} />
+            return <div key={`g-${r}-${c}`} style={getCellStyle()} />
 
           // TOP temples (N)
           if (r === 0 && c >= 1 && c <= 6) {
@@ -506,9 +334,9 @@ useEffect(() => {
               templeTargets.some((tt) => tt.side === "N" && tt.index === c - 1)
 
             return (
-              <div key={`top-${c}`} style={{ width: CELL, height: CELL, position: "relative" }}>
+              <div key={`top-${c}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
                 {t && showHighlight && (
-                  <img src="/highlight.gif" alt="Temple highlight" style={highlightBottomCenterStyle} />
+                  <img src="/highlight.gif" alt="Temple highlight" style={getHighlightBottomCenterStyle()} />
                 )}
 
                 {t && winMine && (
@@ -527,7 +355,7 @@ useEffect(() => {
                       if (!showHighlight || isFinished) return
                       e.stopPropagation()
                       if (!selectedColor || isAnimating) return
-                      setConfirmTemple({ color: selectedColor, side: "N", index: c - 1 })
+                      onEnterTemple(selectedColor, "N", c - 1)
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5, cursor: showHighlight ? "pointer" : "default" }}
                   />
@@ -548,9 +376,9 @@ useEffect(() => {
               templeTargets.some((tt) => tt.side === "E" && tt.index === r - 1)
 
             return (
-              <div key={`right-${r}`} style={{ width: CELL, height: CELL, position: "relative" }}>
+              <div key={`right-${r}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
                 {t && showHighlight && (
-                  <img src="/highlight.gif" alt="Temple highlight" style={highlightBottomCenterStyle} />
+                  <img src="/highlight.gif" alt="Temple highlight" style={getHighlightBottomCenterStyle()} />
                 )}
 
                 {t && winMine && (
@@ -569,7 +397,7 @@ useEffect(() => {
                       if (!showHighlight || isFinished) return
                       e.stopPropagation()
                       if (!selectedColor || isAnimating) return
-                      setConfirmTemple({ color: selectedColor, side: "E", index: r - 1 })
+                      onEnterTemple(selectedColor, "E", r - 1)
                     }}
                     style={{ position: "absolute", inset: 4, width: "calc(100% - 8px)", height: "calc(100% - 8px)", objectFit: "contain", zIndex: 5, cursor: showHighlight ? "pointer" : "default" }}
                   />
@@ -581,14 +409,14 @@ useEffect(() => {
           // LEFT edge explorers (W)
           if (c === 0 && r >= 1 && r <= 6) {
             const ex = edgeExplorerAt("W", r - 1)
-            if (!ex) return <div key={`left-${r}`} style={{ width: CELL, height: CELL }} />
+            if (!ex) return <div key={`left-${r}`} style={getCellStyle()} />
             const idx = colorIdx(ex.color)
             const highlighted = canEnterFromEdge(ex) && myMoves > 0
             const isSelected = selectedColor === ex.color
             return (
-              <div key={`left-${r}`} style={{ width: CELL, height: CELL, position: "relative" }}>
+              <div key={`left-${r}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
                 {highlighted && isSelected && (
-                  <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} />
+                  <img src="/highlight.gif" alt="highlight" style={getHighlightBottomCenterStyle()} />
                 )}
                 {!isAnimating && (
                   <img
@@ -609,14 +437,14 @@ useEffect(() => {
           // BOTTOM edge explorers (S)
           if (r === 7 && c >= 1 && c <= 6) {
             const ex = edgeExplorerAt("S", c - 1)
-            if (!ex) return <div key={`bottom-${c}`} style={{ width: CELL, height: CELL }} />
+            if (!ex) return <div key={`bottom-${c}`} style={getCellStyle()} />
             const idx = colorIdx(ex.color)
             const highlighted = canEnterFromEdge(ex) && myMoves > 0
             const isSelected = selectedColor === ex.color
             return (
-              <div key={`bottom-${c}`} style={{ width: CELL, height: CELL, position: "relative" }}>
+              <div key={`bottom-${c}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
                 {highlighted && isSelected && (
-                  <img src="/highlight.gif" alt="highlight" style={highlightBottomCenterStyle} />
+                  <img src="/highlight.gif" alt="highlight" style={getHighlightBottomCenterStyle()} />
                 )}
                 {!isAnimating && (
                   <img
@@ -636,7 +464,41 @@ useEffect(() => {
 
           // playable cells
           const r6 = r - 1, c6 = c - 1
-          return <BoardCell key={`cell-${r}-${c}`} r6={r6} c6={c6} />
+          const tileId = board[r6][c6]
+          const reward = tileId !== -1 ? rewards[tileId] : null
+          const isPreviewHere =
+            !!canPlace &&
+            !!previewTileId &&
+            !!previewAt &&
+            previewAt.r === r6 &&
+            previewAt.c === c6 &&
+            tileId === -1
+          const imgId = tileId !== -1 ? (tilesMeta as any)[String(tileId)]?.image ?? tileId : null
+          const previewImgId = previewTileId != null ? (tilesMeta as any)[String(previewTileId)]?.image ?? previewTileId : null
+
+          return (
+            <BoardCell
+              key={`cell-${r}-${c}`}
+              r6={r6}
+              c6={c6}
+              tileId={tileId}
+              reward={reward}
+              isPreviewHere={isPreviewHere}
+              previewTileId={previewTileId}
+              previewImgId={previewImgId}
+              imgId={imgId}
+              onCellClick={() => handleCellClick(r6, c6)}
+              selectedColor={selectedColor}
+              myMoves={myMoves}
+              myExplorers={myExplorers}
+              arrowsMap={arrowsMap}
+              highlightBottomCenterStyle={getHighlightBottomCenterStyle()}
+              canStep={myMoves > 0}
+              isAnimating={isAnimating}
+              colorIdx={colorIdx}
+              isFinished={isFinished}
+            />
+          )
         })
       )}
 
@@ -721,8 +583,8 @@ useEffect(() => {
                 position: "absolute",
                 left,
                 top,
-                width: CELL - 8,
-                height: CELL - 8,
+                width: BOARD_CONFIG.CELL_SIZE - 8,
+                height: BOARD_CONFIG.CELL_SIZE - 8,
                 objectFit: "contain",
                 transform: "scale(0.85)",
                 transformOrigin: "center",
@@ -735,21 +597,7 @@ useEffect(() => {
 
 
 
-      {confirmTemple && (
-        <Modal>
-          <p>
-            Move the <b>{confirmTemple.color}</b> explorer into the temple?
-          </p>
-          <ModalButtons
-            onYes={() => {
-              onEnterTemple(confirmTemple.color, confirmTemple.side, confirmTemple.index)
-              setConfirmTemple(null)
-              setSelectedColor(null)
-            }}
-            onCancel={() => setConfirmTemple(null)}
-          />
-        </Modal>
-      )}
+
 
       {confirmPlace && (
         <Modal>
