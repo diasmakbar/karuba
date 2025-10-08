@@ -8,7 +8,7 @@ export type Layout = {
 }
 
 export function makeRandomLayout(): Layout {
-  const colors: ExplorerColor[] = ['red', 'blue', 'brown', 'yellow']
+  const colors: ExplorerColor[] = ['blue', 'red', 'yellow', 'brown']
   const shuffle = <T,>(arr: T[]) => {
     const a = [...arr]
     for (let i = a.length - 1; i > 0; i--) {
