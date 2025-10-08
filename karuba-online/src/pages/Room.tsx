@@ -93,24 +93,28 @@ export default function Room({ gameId }: { gameId: string }) {
 
   useEffect(() => {
     const boot = async () => {
-      const gRef = ref(db, `games/karuba/${gameId}`)
-      const snap = await get(gRef)
-      const g = snap.val()
-      if (!g) return
-      if (g.round == null || g.currentTile == null || g.status == null) {
-        await update(gRef, {
-          round: 0,
-          currentTile: 0,
-          status: "waiting",
-          statusText: "Waiting host to start the game",
-        })
+      try {
+        const gRef = ref(db, `games/karuba/${gameId}`)
+        const snap = await get(gRef)
+        const g = snap.val()
+        if (!g) return
+        if (g.round == null || g.currentTile == null || g.status == null) {
+          await update(gRef, {
+            round: 0,
+            currentTile: 0,
+            status: "waiting",
+            statusText: "Waiting host to start the game",
+          })
+        }
+        const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+        const pObj = plist.val() || {}
+        await update(gRef, { playersCount: Object.keys(pObj).length })
+      } catch (error) {
+        console.error('Boot error:', error)
       }
-      const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-      const pObj = plist.val() || {}
-      await update(gRef, { playersCount: Object.keys(pObj).length })
     }
-    boot().catch(() => {})
-  }, [db, gameId])
+    boot()
+  }, [gameId])
 
   useEffect(() => {
     if (game?.status === "ended") setShowResult(true)
@@ -166,7 +170,7 @@ export default function Room({ gameId }: { gameId: string }) {
   const isHost = !!game && game.shuffleTurnUid === playerId
   const isGenerateTurnOwner = !!game && game.generateTurnUid === playerId
 
-  const canGenerate = canGenerate(game, game.status, game?.round || 0, isGenerateTurnOwner, game?.currentTile || 0)
+  const canGenerateValue = game && game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0
 
   const playerNameById = (pid: string) => players[pid]?.name || "player"
   const waitingLabel =
@@ -501,10 +505,10 @@ export default function Room({ gameId }: { gameId: string }) {
       await maybeAutoFinishMe(newExplorers)
 
       // cek end juga di sini:
-      const everyoneFinished = await computeEveryoneFinished()
+      const everyoneFinished = await computeEveryoneFinished(gameId, db)
       // kalau semua selesai - end
       if (everyoneFinished) {
-        await endGame()
+        await endGame(gameId, players, db)
         return
       }
       // kalau sudah round 36 dan semua pemain "doneForRound" di ronde ini - end saat advance (ditangani maybeAdvanceRound)
@@ -521,7 +525,7 @@ export default function Room({ gameId }: { gameId: string }) {
     if (!canPlace || game.currentTile <= 0) return
     const branches = ((game.tilesMeta || {}) as any)[String(game.currentTile)]?.branches || []
     if (confirm(`Discard tile? Gain +${branches.length} moves.`)) {
-      discardTile(game.currentTile, branches)
+      discardTile(game.currentTile, branches, game, me, playerId, gameId, db)
     }
   }
 
@@ -567,8 +571,8 @@ export default function Room({ gameId }: { gameId: string }) {
               status={game.status}
               round={game.round}
               canGenerate={!!canGenerate}
-              onStartOrGenerate={onStartOrGenerate}
-              onReady={onReadyNextRound}
+              onStartOrGenerate={() => onStartOrGenerate(game, gameId, isHost, isGenerateTurnOwner, order, db)}
+              onReady={() => onReadyNextRound(game, me, playerId, gameId, players, db)}
               readyDisabled={!isFinished ? (!me.actedForRound || me.doneForRound) : false}
               waitingLabel={(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
@@ -661,7 +665,7 @@ export default function Room({ gameId }: { gameId: string }) {
               tilesMeta={(game.tilesMeta || {}) as any}
               rewards={game.rewards || {}}
               canPlace={canPlace}
-              onPlace={placeTile}
+              onPlace={(r, c) => placeTile(r, c, game, me, playerId, gameId, db)}
               previewTileId={canPlace ? game.currentTile : null}
               previewAt={previewAt}
               onPreview={(r, c) => setPreviewAt({ r, c })}

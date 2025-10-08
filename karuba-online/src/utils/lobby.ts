@@ -88,7 +88,10 @@ export function newGameId(): string {
 
 export async function handleCreateGame(gameId: string, name: string, playerId: string) {
   const cleanId = gameId.replace(/\s/g, '')
-  if (!name.trim()) return alert('Enter your name!')
+  if (!name.trim()) {
+    alert('Enter your name!')
+    return
+  }
   const rewards = makeRewards()
   const layout = makeRandomLayout()
 
@@ -120,12 +123,21 @@ export async function handleCreateGame(gameId: string, name: string, playerId: s
 
 export async function handleJoinGame(gameId: string, name: string, playerId: string) {
   const cleanId = gameId.replace(/\s/g, '')
-  if (!name.trim()) return alert('Enter your name!')
-  if (!/^\d{6}$/.test(cleanId)) return alert('Invalid Game ID')
+  if (!name.trim()) {
+    alert('Enter your name!')
+    return
+  }
+  if (!/^\d{6}$/.test(cleanId)) {
+    alert('Invalid Game ID')
+    return
+  }
 
   const { db, ref, get, set, update } = await import('../firebase')
   const gSnap = await get(ref(db, `games/karuba/${cleanId}`))
-  if (!gSnap.exists()) return alert('Game not found!')
+  if (!gSnap.exists()) {
+    alert('Game not found!')
+    return
+  }
 
   const layout: Layout = gSnap.val()?.layout
   const pSnap = await get(ref(db, `games/karuba/${cleanId}/players/${playerId}`))
