@@ -277,12 +277,18 @@ export default function Room({ gameId }: { gameId: string }) {
         to8: { r: number; c: number },
         afterCommit: () => Promise<void>
       ) => {
-        setAnimGhost({ color, from8, to8, stage: 0 }); await new Promise((r) => setTimeout(r, 100))
-        setAnimGhost({ color, from8, to8, stage: 1 }); await new Promise((r) => setTimeout(r, 200))
-        setAnimGhost({ color, from8, to8, stage: 2 }); await new Promise((r) => setTimeout(r, 200))
-        setAnimGhost({ color, from8, to8, stage: 3 }); await new Promise((r) => setTimeout(r, 200))
-        setAnimGhost({ color, from8, to8, stage: 4 }); await new Promise((r) => setTimeout(r, 50))
-        setAnimGhost({ color, from8, to8, stage: 5 }); await new Promise((r) => setTimeout(r, 100))
+        // Stage 0: Change to frame 2 (0.2s) - masih di tile asal
+        setAnimGhost({ color, from8, to8, stage: 0 }); await new Promise((r) => setTimeout(r, 200))
+
+        // Stage 1-12: Move with frame 2 (0.6s) - bergerak smooth ke tile target dengan 12 stages
+        for (let i = 1; i <= 12; i++) {
+          setAnimGhost({ color, from8, to8, stage: i }); await new Promise((r) => setTimeout(r, 50))
+        }
+
+        // Stage 13-14: Change to frame 1 (0.2s) - sampai di tile target
+        setAnimGhost({ color, from8, to8, stage: 13 }); await new Promise((r) => setTimeout(r, 100))
+        setAnimGhost({ color, from8, to8, stage: 14 }); await new Promise((r) => setTimeout(r, 100))
+
         await afterCommit()
         setAnimGhost(null)
       }

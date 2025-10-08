@@ -59,7 +59,7 @@ export default function Board({
     color: ExplorerColor
     from8: { r: number; c: number }
     to8: { r: number; c: number }
-    stage: 0 | 1 | 2 | 3 | 4 | 5
+    stage: number
   } | null
   isFinished?: boolean
 }) {
@@ -561,19 +561,31 @@ useEffect(() => {
           const from = cellPx(animGhost.from8.r, animGhost.from8.c)
           const to = cellPx(animGhost.to8.r, animGhost.to8.c)
           const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-          const isAtTo = animGhost.stage >= 4
-          const t = animGhost.stage === 1 ? 0 : animGhost.stage === 2 ? 0.5 : animGhost.stage === 3 ? 1 : 0
-          const pos = isAtTo ? to : from
-          const left = lerp(pos.left, isAtTo ? pos.left : to.left, t) + 4
-          const top = lerp(pos.top, isAtTo ? pos.top : to.top, t) + 4
+
+          // Calculate smooth interpolation based on stage
+          let t = 0
+          if (animGhost.stage === 0) {
+            t = 0 // At source tile
+          } else if (animGhost.stage <= 12) {
+            // Stages 1-12: Moving from source to target (12 stages for smooth movement)
+            t = (animGhost.stage - 0) / 12
+          } else {
+            // Stages 13-14: At target tile
+            t = 1
+          }
+
+          const currentPos = {
+            left: from.left + (to.left - from.left) * t,
+            top: from.top + (to.top - from.top) * t
+          }
+
+          // Frame selection based on stage
           const src =
             animGhost.stage === 0
-              ? `/explorers/explorers_${idx}_1.svg`
-              : animGhost.stage <= 3
-              ? `/explorers/explorers_${idx}_2.svg`
-              : animGhost.stage === 4
-              ? `/explorers/explorers_${idx}_3.svg`
-              : `/explorers/explorers_${idx}.svg`
+              ? `/explorers/explorers_${idx}_1.svg`  // Frame 1 (source)
+              : animGhost.stage <= 12
+              ? `/explorers/explorers_${idx}_2.svg`  // Frame 2 (moving)
+              : `/explorers/explorers_${idx}.svg`     // Frame 1 (target)
 
           return (
             <img
@@ -582,8 +594,8 @@ useEffect(() => {
               alt="moving explorer"
               style={{
                 position: "absolute",
-                left,
-                top,
+                left: currentPos.left + 4,
+                top: currentPos.top + 4,
                 width: BOARD_CONFIG.CELL_SIZE - 8,
                 height: BOARD_CONFIG.CELL_SIZE - 8,
                 objectFit: "contain",
@@ -595,10 +607,6 @@ useEffect(() => {
             />
           )
         })()}
-
-
-
-
 
       {confirmPlace && (
         <Modal>
