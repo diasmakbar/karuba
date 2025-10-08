@@ -222,21 +222,34 @@ export default function Room({ gameId }: { gameId: string }) {
   const moveOne = async (color: ExplorerColor, dir: Branch) => {
     try {
       if (!game || !me) return
-      if (me.moves <= 0) return
-      const ex = me.explorers[color]
-      if (!ex) return
+
+      // Get fresh player data from Firebase to ensure we have latest moves count
+      const { db, ref, get } = await import('../firebase')
+      const playerSnap = await get(ref(db, `games/karuba/${gameId}/players/${playerId}`))
+      const currentMe = playerSnap.val()
+
+      if (currentMe.moves <= 0) {
+        console.log("No moves remaining, current moves:", currentMe.moves)
+        return
+      }
+
+      const ex = currentMe.explorers[color]
+      if (!ex) {
+        console.log("Explorer not found:", color)
+        return
+      }
       const tilesMeta = (game.tilesMeta || {}) as Record<string, { branches: Branch[] }>
 
       // Save current state to history before move
       const currentState = {
-        explorers: { ...me.explorers },
-        score: me.score,
-        moves: me.moves,
-        claimedRewards: me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} },
-        goldCount: (me as any).goldCount || 0,
-        crystalCount: (me as any).crystalCount || 0,
+        explorers: { ...currentMe.explorers },
+        score: currentMe.score,
+        moves: currentMe.moves,
+        claimedRewards: currentMe.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} },
+        goldCount: (currentMe as any).goldCount || 0,
+        crystalCount: (currentMe as any).crystalCount || 0,
       }
-      const newMovesHistory = [...(me.movesHistory || []), currentState]
+      const newMovesHistory = [...(currentMe.movesHistory || []), currentState]
       const newRedoHistory: typeof newMovesHistory = []
 
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
@@ -246,7 +259,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
       // const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
       const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
-        const tid = me.board[r][c]
+        const tid = currentMe.board[r][c]
         // if (tid === -1) return null
         if (tid === -1) { console.warn("[MOVE] no tile at", r, c); return null }
         const meta = tilesMeta[String(tid)]
@@ -261,7 +274,7 @@ export default function Room({ gameId }: { gameId: string }) {
         if (d === "W") nc = c - 1
         // if (nr < 0 || nr > 5 || nc < 0 || nc > 5) return null
         if (nr < 0 || nr > 5 || nc < 0 || nc > 5) { console.warn("[MOVE] out of bounds to", nr, nc); return null }
-        const nextTid = me.board[nr][nc]
+        const nextTid = currentMe.board[nr][nc]
         // if (nextTid === -1) return null
         if (nextTid === -1) { console.warn("[MOVE] next tile empty at", nr, nc); return null }
         const nextMeta = tilesMeta[String(nextTid)]
@@ -302,7 +315,7 @@ export default function Room({ gameId }: { gameId: string }) {
         else if (side === "E") { r = index; c = 5 }
         else { r = 0; c = index }
 
-        const tid = me.board[r][c]
+        const tid = currentMe.board[r][c]
         if (tid === -1) return
         const meta = (game.tilesMeta || {})[String(tid)] as any
         if (!meta?.branches?.includes(side)) return
@@ -317,42 +330,42 @@ export default function Room({ gameId }: { gameId: string }) {
         // const gain = rewardGain(tid)
         // const kind = rewardKind(tid)
         const kind = rewardKind(tid)
-        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards?.[color]?.[tid])
+        const alreadyClaimed = !!(currentMe.claimedRewards && currentMe.claimedRewards?.[color]?.[tid])
         const gain = alreadyClaimed ? 0 : rewardGain(tid)
-        
+
 
         await setGhostStagesAndCommit(from8, to8, async () => {
           // const addGold = kind === "gold" ? 1 : 0
           // const addCrystal = kind === "crystal" ? 1 : 0
           const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
-          const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0          
+          const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
           // const nextClaimed =
           //   !alreadyClaimed && kind
-          //     ? { ...(me.claimedRewards || {}), [tid]: true }
-          //     : (me.claimedRewards || {})
+          //     ? { ...(currentMe.claimedRewards || {}), [tid]: true }
+          //     : (currentMe.claimedRewards || {})
           const nextClaimed =
             !alreadyClaimed && kind
                 ? {
-                    red: me.claimedRewards?.red || {},
-                    blue: me.claimedRewards?.blue || {},
-                    brown: me.claimedRewards?.brown || {},
-                    yellow: me.claimedRewards?.yellow || {},
+                    red: currentMe.claimedRewards?.red || {},
+                    blue: currentMe.claimedRewards?.blue || {},
+                    brown: currentMe.claimedRewards?.brown || {},
+                    yellow: currentMe.claimedRewards?.yellow || {},
                     [color]: {
-                      ...(me.claimedRewards?.[color] || {}),
+                      ...(currentMe.claimedRewards?.[color] || {}),
                       [tid]: true,
                     },
                   }
-                : (me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
-                                      
+                : (currentMe.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
-            moves: me.moves - 1,
-            score: me.score + gain,
-            // goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
-            // crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
-            goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
-            crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
+            moves: currentMe.moves - 1,
+            score: currentMe.score + gain,
+            // goldCount: (currentMe as any).goldCount ? (currentMe as any).goldCount + addGold : addGold,
+            // crystalCount: (currentMe as any).crystalCount ? (currentMe as any).crystalCount + addCrystal : addCrystal,
+            goldCount: (currentMe as any).goldCount ? (currentMe as any).goldCount + addGold : addGold,
+            crystalCount: (currentMe as any).crystalCount ? (currentMe as any).crystalCount + addCrystal : addCrystal,
             claimedRewards: nextClaimed,
-            explorers: { ...me.explorers, [color]: { color, onBoard: { r, c, entry: side } } },
+            explorers: { ...currentMe.explorers, [color]: { color, onBoard: { r, c, entry: side } } },
           })
         })
         return
@@ -370,7 +383,7 @@ export default function Room({ gameId }: { gameId: string }) {
         // const gain = rewardGain(nextTid)
         // const kind = rewardKind(nextTid)
         const kind = rewardKind(nextTid)
-        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards?.[color]?.[nextTid])
+        const alreadyClaimed = !!(currentMe.claimedRewards && currentMe.claimedRewards?.[color]?.[nextTid])
         const gain = alreadyClaimed ? 0 : rewardGain(nextTid)
 
         await setGhostStagesAndCommit(from8, to8, async () => {
@@ -381,31 +394,31 @@ export default function Room({ gameId }: { gameId: string }) {
           const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
           // const nextClaimed =
           //   !alreadyClaimed && kind
-          //     ? { ...(me.claimedRewards || {}), [nextTid]: true }
-          //     : (me.claimedRewards || {})
+          //     ? { ...(currentMe.claimedRewards || {}), [nextTid]: true }
+          //     : (currentMe.claimedRewards || {})
           const nextClaimed =
             !alreadyClaimed && kind
                 ? {
-                    red: me.claimedRewards?.red || {},
-                    blue: me.claimedRewards?.blue || {},
-                    brown: me.claimedRewards?.brown || {},
-                    yellow: me.claimedRewards?.yellow || {},
+                    red: currentMe.claimedRewards?.red || {},
+                    blue: currentMe.claimedRewards?.blue || {},
+                    brown: currentMe.claimedRewards?.brown || {},
+                    yellow: currentMe.claimedRewards?.yellow || {},
                     [color]: {
-                      ...(me.claimedRewards?.[color] || {}),
+                      ...(currentMe.claimedRewards?.[color] || {}),
                       [nextTid]: true,
                     },
                   }
-                : (me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+                : (currentMe.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
 
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
-            moves: me.moves - 1,
-            score: me.score + gain,
-            // goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
-            // crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
-            goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
-            crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
+            moves: currentMe.moves - 1,
+            score: currentMe.score + gain,
+            // goldCount: (currentMe as any).goldCount ? (currentMe as any).goldCount + addGold : addGold,
+            // crystalCount: (currentMe as any).crystalCount ? (currentMe as any).crystalCount + addCrystal : addCrystal,
+            goldCount: (currentMe as any).goldCount ? (currentMe as any).goldCount + addGold : addGold,
+            crystalCount: (currentMe as any).crystalCount ? (currentMe as any).crystalCount + addCrystal : addCrystal,
             claimedRewards: nextClaimed,
-            explorers: { ...me.explorers, [color]: { color, onBoard: nextOnBoard } },
+            explorers: { ...currentMe.explorers, [color]: { color, onBoard: nextOnBoard } },
           })
         })
       }
