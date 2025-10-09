@@ -256,15 +256,15 @@ useEffect(() => {
     templeWins, // kalau saya baru win, targets berubah
   ])
 
-  // Calculate cell center using grid positioning (responsive)
+  // Calculate cell center using percentage positioning (responsive)
   const getCellCenter = (gr: number, gc: number) => {
-    // Since we use CSS Grid with 8 equal columns/rows, each cell is at position gr, gc in the grid
-    // The center of cell at grid position (gr, gc) is at 50% of that cell
+    // Each cell is 12.5% of the total width/height (1/8)
+    // Center of cell at (gr, gc) is at (gr * 12.5% + 6.25%, gc * 12.5% + 6.25%)
+    const cellSizePercent = 100 / 8 // 12.5%
+    const centerOffset = cellSizePercent / 2 // 6.25%
     return {
-      gridRow: gr + 1,
-      gridColumn: gc + 1,
-      x: '50%',
-      y: '50%'
+      left: `${gr * cellSizePercent + centerOffset}%`,
+      top: `${gc * cellSizePercent + centerOffset}%`
     }
   }
 
@@ -517,53 +517,32 @@ useEffect(() => {
       {selectedColor &&
         !isAnimating &&
         arrows.length > 0 &&
-        (() => {
-          let origin8: { r: number; c: number } | null = null
-          if (selected?.onEdge) {
-            const { side, index } = selected.onEdge!
-            origin8 =
-              side === "W" ? { r: index + 1, c: 0 } :
-              side === "S" ? { r: 7, c: index + 1 } :
-              side === "E" ? { r: index + 1, c: 7 } :
-                             { r: 0, c: index + 1 }
-          } else if (selected?.onBoard) {
-            origin8 = { r: selected.onBoard.r + 1, c: selected.onBoard.c + 1 }
-          }
-          if (!origin8) return null
-
+        arrows.map((a, i) => {
+          const center = getCellCenter(a.r + 1, a.c + 1) // +1 to convert to 8x8 grid coordinates
           return (
-            <>
-              {arrows.map((a, i) => {
-                // Position arrows using CSS Grid instead of absolute positioning
-                const targetRow = a.r + 2 // +2 because grid is 1-indexed and we want center between cells
-                const targetCol = a.c + 2
-                return (
-                  <img
-                    key={`arr-${i}-${a.r}-${a.c}-${a.dir}`}
-                    src={dirToArrowSrc(a.dir)}
-                    alt={`arrow ${dirToName(a.dir)}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (isFinished) return
-                      onMoveOne(selectedColor, a.dir)
-                    }}
-                    style={{
-                      position: "absolute",
-                      gridRow: targetRow,
-                      gridColumn: targetCol,
-                      width: ARROW_SIZE,
-                      height: ARROW_SIZE,
-                      transform: "translate(-50%, -50%)",
-                      zIndex: 4,
-                      cursor: "pointer",
-                      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
-                    }}
-                  />
-                )
-              })}
-            </>
+            <img
+              key={`arr-${i}-${a.r}-${a.c}-${a.dir}`}
+              src={dirToArrowSrc(a.dir)}
+              alt={`arrow ${dirToName(a.dir)}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (isFinished) return
+                onMoveOne(selectedColor, a.dir)
+              }}
+              style={{
+                position: "absolute",
+                left: center.left,
+                top: center.top,
+                width: ARROW_SIZE,
+                height: ARROW_SIZE,
+                transform: "translate(-50%, -50%)",
+                zIndex: 4,
+                cursor: "pointer",
+                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
+              }}
+            />
           )
-        })()}
+        })}
 
       {/* GHOST anim */}
       {animGhost &&
@@ -582,9 +561,10 @@ useEffect(() => {
             t = 1
           }
 
-          // Interpolate grid positions
-          const currentRow = animGhost.from8.r + (animGhost.to8.r - animGhost.from8.r) * t + 1
-          const currentCol = animGhost.from8.c + (animGhost.to8.c - animGhost.from8.c) * t + 1
+          // Interpolate positions using percentage
+          const currentRow = animGhost.from8.r + (animGhost.to8.r - animGhost.from8.r) * t
+          const currentCol = animGhost.from8.c + (animGhost.to8.c - animGhost.from8.c) * t
+          const center = getCellCenter(currentRow, currentCol)
 
           // Frame selection based on stage
           const src =
@@ -601,10 +581,10 @@ useEffect(() => {
               alt="moving explorer"
               style={{
                 position: "absolute",
-                gridRow: currentRow,
-                gridColumn: currentCol,
-                width: "100%",
-                height: "100%",
+                left: center.left,
+                top: center.top,
+                width: "12.5%", // One cell width
+                height: "12.5%", // One cell height
                 transform: "translate(-50%, -50%) scale(0.85)",
                 transformOrigin: "center",
                 objectFit: "contain",
