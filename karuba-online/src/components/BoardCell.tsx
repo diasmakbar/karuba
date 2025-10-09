@@ -1,8 +1,6 @@
 import React from "react"
 import type { ExplorerColor } from "../lib/types"
 
-const CELL = 56
-
 interface BoardCellProps {
   r6: number
   c6: number
@@ -67,8 +65,8 @@ export default function BoardCell(props: BoardCellProps) {
   return (
     <div
       style={{
-        width: CELL,
-        height: CELL,
+        width: "100%",
+        height: "100%",
         position: "relative",
         border: `3px solid var(--cell-border)`,
         background: "transparent",

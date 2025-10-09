@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState, useRef } from "react"
 import type {
   Board as BoardGrid,
   Branch,
@@ -339,7 +339,7 @@ useEffect(() => {
               templeTargets.some((tt) => tt.side === "N" && tt.index === c - 1)
 
             return (
-              <div key={`top-${c}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
+              <div key={`top-${c}`} style={{ width: "100%", height: "100%", position: "relative" }}>
                 {t && showHighlight && (
                   <img src="/highlight.gif" alt="Temple highlight" style={getHighlightBottomCenterStyle()} />
                 )}
@@ -381,7 +381,7 @@ useEffect(() => {
               templeTargets.some((tt) => tt.side === "E" && tt.index === r - 1)
 
             return (
-              <div key={`right-${r}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
+              <div key={`right-${r}`} style={{ width: "100%", height: "100%", position: "relative" }}>
                 {t && showHighlight && (
                   <img src="/highlight.gif" alt="Temple highlight" style={getHighlightBottomCenterStyle()} />
                 )}
@@ -419,7 +419,7 @@ useEffect(() => {
             const highlighted = canEnterFromEdge(ex) && myMoves > 0
             const isSelected = selectedColor === ex.color
             return (
-              <div key={`left-${r}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
+              <div key={`left-${r}`} style={{ width: "100%", height: "100%", position: "relative" }}>
                 {highlighted && isSelected && (
                   <img src="/highlight.gif" alt="highlight" style={getHighlightBottomCenterStyle()} />
                 )}
@@ -447,7 +447,7 @@ useEffect(() => {
             const highlighted = canEnterFromEdge(ex) && myMoves > 0
             const isSelected = selectedColor === ex.color
             return (
-              <div key={`bottom-${c}`} style={{ width: BOARD_CONFIG.CELL_SIZE, height: BOARD_CONFIG.CELL_SIZE, position: "relative" }}>
+              <div key={`bottom-${c}`} style={{ width: "100%", height: "100%", position: "relative" }}>
                 {highlighted && isSelected && (
                   <img src="/highlight.gif" alt="highlight" style={getHighlightBottomCenterStyle()} />
                 )}

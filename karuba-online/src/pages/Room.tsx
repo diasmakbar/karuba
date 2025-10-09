@@ -542,9 +542,21 @@ export default function Room({ gameId }: { gameId: string }) {
         </div> */}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
-          <div className="card">
-            <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2>
-            <p style={{ margin: "4px 0" }}>Game ID: {gameId}.</p>
+          <div className="card" style={{ padding: 20 }}>
+            <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online | Game ID: {gameId}</h2>
+
+            <div style={{ margin: "12px 0" }}>
+              {(() => {
+                if (game.status === "waiting") return "Waiting host to start the game"
+                if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+                  return game.generateTurnUid === playerId
+                    ? "You can generate now"
+                    : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+                }
+                return `Round ${game.round}`
+              })()}
+            </div>
+
             <Controls
               isHost={isHost}
               status={game.status}
@@ -564,7 +576,7 @@ export default function Room({ gameId }: { gameId: string }) {
               })()}
             />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
               <strong>Current Tile:</strong>
               {me.actedForRound ? (
                 <span>{me.lastAction === "placed" ? "Placed!" : "Discarded!"}</span>
@@ -580,6 +592,9 @@ export default function Room({ gameId }: { gameId: string }) {
               )}
               <span style={{ opacity: 0.5 }}>|</span>
               <span>Moves: {me.moves}</span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <img
                 src="/trash.svg"
                 alt="Trash"
@@ -592,33 +607,41 @@ export default function Room({ gameId }: { gameId: string }) {
                   opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
                 }}
               />
-              <button 
-                onClick={() => setShowDiscardList(true)} 
-                style={{ marginLeft: 4 }}
+              <img
+                src="/discarded.svg"
+                alt="Discarded Tiles"
                 title="Discarded Tiles"
-              >
-                <img 
-                  src="/discarded.svg" 
-                  alt="Discarded Tiles" 
-                  style={{ width: 28, height: 28 }} />
-                {/* Discarded Tiles */}
-              </button>
-              <button
-                onClick={undoMove}
-                disabled={!me?.movesHistory || me.movesHistory.length === 0}
-                style={{ marginLeft: 4 }}
+                onClick={() => setShowDiscardList(true)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  cursor: "pointer",
+                }}
+              />
+              <img
+                src="/arrows/arrow_left.svg"
+                alt="Undo Move"
                 title="Undo Move"
-              >
-                <img src="/arrows/arrow_left.svg" alt="Undo Move" style={{ width: 30, height: 30 }} />
-              </button>
-              <button
-                onClick={redoMove}
-                disabled={!me?.redoHistory || me.redoHistory.length === 0}
-                style={{ marginLeft: 4 }}
+                onClick={undoMove}
+                style={{
+                  width: 30,
+                  height: 30,
+                  cursor: (!me?.movesHistory || me.movesHistory.length === 0) ? "default" : "pointer",
+                  opacity: (!me?.movesHistory || me.movesHistory.length === 0) ? 0.5 : 1,
+                }}
+              />
+              <img
+                src="/arrows/arrow_right.svg"
+                alt="Redo Move"
                 title="Redo Move"
-              >
-                <img src="/arrows/arrow_right.svg" alt="Redo Move" style={{ width: 30, height: 30 }} />
-              </button>
+                onClick={redoMove}
+                style={{
+                  width: 30,
+                  height: 30,
+                  cursor: (!me?.redoHistory || me.redoHistory.length === 0) ? "default" : "pointer",
+                  opacity: (!me?.redoHistory || me.redoHistory.length === 0) ? 0.5 : 1,
+                }}
+              />
             </div>
           </div>
         </div>
@@ -647,7 +670,7 @@ export default function Room({ gameId }: { gameId: string }) {
           </div>
         </div>
 
-        <div className="card">
+        <div className="card" style={{ padding: 20 }}>
           <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {Object.values(players || {})

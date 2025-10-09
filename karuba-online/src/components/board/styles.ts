@@ -24,13 +24,14 @@ export const getBoardContainerStyle = (): CSSProperties => ({
   display: "grid",
   gridTemplateColumns: `repeat(8, 1fr)`,
   gridTemplateRows: `repeat(8, 1fr)`,
-  gap: BOARD_CONFIG.GAP_SIZE,
-  padding: BOARD_CONFIG.GAP_SIZE,
+  gap: `${BOARD_CONFIG.GAP_SIZE}px`,
+  padding: `${BOARD_CONFIG.GAP_SIZE}px`,
   background: "transparent",
   borderRadius: 10,
   boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
   width: "100%",
   height: "100%",
+  aspectRatio: "1",
 })
 
 export const getCellStyle = (): CSSProperties => ({
