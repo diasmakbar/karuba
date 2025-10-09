@@ -526,9 +526,9 @@ export default function Room({ gameId }: { gameId: string }) {
   return (
     <main className="page">
       <div className="page-inner">
-        <div className="card">
+        {/* <div className="card">
           <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2>
-          <p style={{ margin: "4px 0" }}>Game ID: {gameId}. v1.1.</p>
+          <p style={{ margin: "4px 0" }}>Game ID: {gameId}.</p>
           <p style={{ margin: 0 }}>
             Status: {game.statusText} | Round: {game.round} | Current Tile:{" "}
             {me.actedForRound
@@ -539,10 +539,12 @@ export default function Room({ gameId }: { gameId: string }) {
                 : "-"
               : game.currentTile || "-"}
           </p>
-        </div>
+        </div> */}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           <div className="card">
+            <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2>
+            <p style={{ margin: "4px 0" }}>Game ID: {gameId}.</p>
             <Controls
               isHost={isHost}
               status={game.status}
@@ -590,47 +592,34 @@ export default function Room({ gameId }: { gameId: string }) {
                   opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
                 }}
               />
-              <button onClick={() => setShowDiscardList(true)} style={{ marginLeft: 4 }}>
-                Discarded Tiles
+              <button 
+                onClick={() => setShowDiscardList(true)} 
+                style={{ marginLeft: 4 }}
+                title="Discarded Tiles"
+              >
+                <img 
+                  src="/discarded.svg" 
+                  alt="Discarded Tiles" 
+                  style={{ width: 28, height: 28 }} />
+                {/* Discarded Tiles */}
               </button>
               <button
                 onClick={undoMove}
                 disabled={!me?.movesHistory || me.movesHistory.length === 0}
                 style={{ marginLeft: 4 }}
+                title="Undo Move"
               >
-                Undo Move
+                <img src="/arrows/arrow_left.svg" alt="Undo Move" style={{ width: 30, height: 30 }} />
               </button>
               <button
                 onClick={redoMove}
                 disabled={!me?.redoHistory || me.redoHistory.length === 0}
                 style={{ marginLeft: 4 }}
+                title="Redo Move"
               >
-                Redo Move
+                <img src="/arrows/arrow_right.svg" alt="Redo Move" style={{ width: 30, height: 30 }} />
               </button>
             </div>
-          </div>
-
-          <div className="card">
-            <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {Object.values(players || {})
-                .sort((a, b) => a.joinedAt - b.joinedAt)
-                .map((p) => {
-                  const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
-                  const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
-                  const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
-                  return (
-                    <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
-                      {p.name} - Score: {p.score} ({state})
-                    </li>
-                  )
-                })}
-            </ul>
-            {game.lastEvent && (
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
-                <em>{game.lastEvent}</em>
-              </div>
-            )}
           </div>
         </div>
 
@@ -656,6 +645,29 @@ export default function Room({ gameId }: { gameId: string }) {
               isFinished={isFinished}
             />
           </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {Object.values(players || {})
+              .sort((a, b) => a.joinedAt - b.joinedAt)
+              .map((p) => {
+                const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
+                const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
+                const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
+                return (
+                  <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
+                    {p.name} - Score: {p.score} ({state})
+                  </li>
+                )
+              })}
+          </ul>
+          {game.lastEvent && (
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
+              <em>{game.lastEvent}</em>
+            </div>
+          )}
         </div>
 
         {showDiscardList && (

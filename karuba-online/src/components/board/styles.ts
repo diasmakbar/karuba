@@ -31,7 +31,6 @@ export const getBoardContainerStyle = (): CSSProperties => ({
   boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
   width: "100%",
   height: "100%",
-  aspectRatio: "1",
 })
 
 export const getCellStyle = (): CSSProperties => ({
