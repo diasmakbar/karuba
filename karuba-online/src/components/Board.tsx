@@ -43,7 +43,7 @@ export default function Board({
   myPlayerId: string
   board: BoardGrid
   tilesMeta: TilesMetaMap | Record<string, { branches: Branch[]; image?: number }>
-  rewards: Record<number, "gold" | "crystal" | null>
+  rewards: Record<number, ("gold" | "crystal")[]>
   canPlace: boolean
   onPlace: (r: number, c: number) => void
   previewTileId?: number | null
@@ -470,7 +470,7 @@ useEffect(() => {
           // playable cells
           const r6 = r - 1, c6 = c - 1
           const tileId = board[r6][c6]
-          const reward = tileId !== -1 ? rewards[tileId] : null
+          const reward = tileId !== -1 ? rewards[tileId] || [] : []
           const isPreviewHere =
             !!canPlace &&
             !!previewTileId &&

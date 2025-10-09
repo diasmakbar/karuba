@@ -7,7 +7,7 @@ interface BoardCellProps {
   r6: number
   c6: number
   tileId: number
-  reward: "gold" | "crystal" | null
+  reward: ("gold" | "crystal")[]
   isPreviewHere: boolean
   previewTileId: number | null
   previewImgId: number | null
@@ -82,20 +82,22 @@ export default function BoardCell(props: BoardCellProps) {
         />
       )}
 
-      {reward === "gold" && (
+      {reward?.map((r, index) => (
         <img
-          src="/tiles/gold.webp"
-          alt="Gold"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
+          key={r + index}
+          src={`/tiles/${r}.webp`}
+          alt={r === "gold" ? "Gold" : "Crystal"}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            zIndex: 2,
+            transform: reward.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
+          }}
         />
-      )}
-      {reward === "crystal" && (
-        <img
-          src="/tiles/crystal.webp"
-          alt="Crystal"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2 }}
-        />
-      )}
+      ))}
 
       {isPreviewHere && (previewImgId != null) && (
         <>
@@ -106,14 +108,24 @@ export default function BoardCell(props: BoardCellProps) {
           />
           {(() => {
             const rw = reward
-            if (!rw) return null
-            return (
+            if (!rw || rw.length === 0) return null
+            return rw.map((r, index) => (
               <img
-                src={`/tiles/${rw}.webp`}
-                alt={`${rw}`}
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 2, opacity: 0.95 }}
+                key={r + index}
+                src={`/tiles/${r}.webp`}
+                alt={r === "gold" ? "Gold" : "Crystal"}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  zIndex: 2,
+                  opacity: 0.95,
+                  transform: rw.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
+                }}
               />
-            )
+            ))
           })()}
 
           <img

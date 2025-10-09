@@ -1,32 +1,12 @@
-﻿import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
 import Board from "../components/Board"
 import Controls from "../components/Controls"
-import ResultModal from "../components/ResultModal"
 import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
-import {
-  opp,
-  rewardGain,
-  rewardKind,
-  isOccupiedByOther,
-  computeEveryoneFinished,
-  endGame,
-  onStartOrGenerate,
-  playerNameById,
-  waitingLabel,
-  canGenerate,
-  placeTile,
-  discardTile,
-  onReadyNextRound,
-  maybeAdvanceRound,
-  validateInternalMove,
-  canEnterFromEdge,
-  calculateReward,
-  setGhostStagesAndCommit,
-  createMoveState,
-  enterTemple,
-} from "../utils/room"
+import { generateTilesMeta } from "../lib/deck"
+
+const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
 
 function TileIcon({
   id,
@@ -37,7 +17,7 @@ function TileIcon({
   id: number
   tilesMeta: Record<string, { image?: number }>
   size?: number
-  reward?: ("gold" | "crystal")[]
+  reward?: "gold" | "crystal" | null
 }) {
   const img = (tilesMeta as any)?.[String(id)]?.image ?? id
   return (
@@ -47,21 +27,20 @@ function TileIcon({
         alt={`Tile ${id}`}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
       />
-      {reward?.map((r, index) => (
+      {reward === "gold" && (
         <img
-          key={r + index}
-          src={`/tiles/${r}.webp`}
-          alt={r === "gold" ? "Gold" : "Crystal"}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            transform: reward.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
-          }}
+          src="/tiles/gold.webp"
+          alt="Gold"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
         />
-      ))}
+      )}
+      {reward === "crystal" && (
+        <img
+          src="/tiles/crystal.webp"
+          alt="Crystal"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      )}
     </div>
   )
 }
@@ -94,28 +73,24 @@ export default function Room({ gameId }: { gameId: string }) {
 
   useEffect(() => {
     const boot = async () => {
-      try {
-        const gRef = ref(db, `games/karuba/${gameId}`)
-        const snap = await get(gRef)
-        const g = snap.val()
-        if (!g) return
-        if (g.round == null || g.currentTile == null || g.status == null) {
-          await update(gRef, {
-            round: 0,
-            currentTile: 0,
-            status: "waiting",
-            statusText: "Waiting host to start the game",
-          })
-        }
-        const plist = await get(ref(db, `games/karuba/${gameId}/players`))
-        const pObj = plist.val() || {}
-        await update(gRef, { playersCount: Object.keys(pObj).length })
-      } catch (error) {
-        console.error('Boot error:', error)
+      const gRef = ref(db, `games/karuba/${gameId}`)
+      const snap = await get(gRef)
+      const g = snap.val()
+      if (!g) return
+      if (g.round == null || g.currentTile == null || g.status == null) {
+        await update(gRef, {
+          round: 0,
+          currentTile: 0,
+          status: "waiting",
+          statusText: "Waiting host to start the game",
+        })
       }
+      const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+      const pObj = plist.val() || {}
+      await update(gRef, { playersCount: Object.keys(pObj).length })
     }
-    boot()
-  }, [gameId])
+    boot().catch(() => {})
+  }, [db, gameId])
 
   useEffect(() => {
     if (game?.status === "ended") setShowResult(true)
@@ -171,7 +146,11 @@ export default function Room({ gameId }: { gameId: string }) {
   const isHost = !!game && game.shuffleTurnUid === playerId
   const isGenerateTurnOwner = !!game && game.generateTurnUid === playerId
 
-  const canGenerateValue = game && game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0
+  const canGenerate =
+    !!game &&
+    (game.status === "waiting"
+      ? isHost
+      : game.status === "playing" && game.round >= 2 && isGenerateTurnOwner && game.currentTile === 0)
 
   const playerNameById = (pid: string) => players[pid]?.name || "player"
   const waitingLabel =
@@ -185,11 +164,193 @@ export default function Room({ gameId }: { gameId: string }) {
       ? "You can generate now"
       : `Waiting for ${playerNameById(game.generateTurnUid!)} to generate tile`
 
+  const rewardGain = (tileId: number | null | undefined) => {
+    if (!tileId || !game?.rewards) return 0
+    const r = game.rewards[tileId]
+    if (r === "gold") return 2
+    if (r === "crystal") return 1
+    return 0
+  }
+  const rewardKind = (tileId: number | null | undefined) =>
+    tileId && game?.rewards ? game.rewards[tileId] : null
+
   const isOccupiedByOther = (r: number, c: number, exceptColor?: ExplorerColor) => {
     if (!me) return false
     return Object.values(me.explorers || {}).some(
       (ex) => ex.onBoard && ex.onBoard.r === r && ex.onBoard.c === c && ex.color !== exceptColor
     )
+  }
+
+  // === End conditions helper ===
+  const computeEveryoneFinished = async (): Promise<boolean> => {
+    const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+    const pObj: Record<string, Player> = (plist.val() || {}) as any
+    return Object.values(pObj || {}).every((p) => Object.keys(p.explorers || {}).length === 0)
+  }
+  // const endGame = async () => {
+  //   await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
+  // }
+  const endGame = async () => {
+    if (!players) {
+      await update(ref(db, `games/karuba/${gameId}`), { status: "ended", statusText: "Game ended" })
+      return
+    }
+    const plist = Object.values(players || {})
+    const finished = plist
+      .filter((p) => p.finishedAtRound != null)
+      .sort((a, b) => (a.finishedAtRound ?? 99) - (b.finishedAtRound ?? 99))
+
+    const updates: Record<string, any> = {}
+    plist.forEach((p) => {
+      let bonus = 0
+      if (p.finishedAtRound != null) {
+        const baseBonus = Math.min(36 - (p.finishedAtRound as number), 8)
+        let placementBonus = 0
+        if (finished[0]?.id === p.id) placementBonus = 2
+        else if (finished[1]?.id === p.id) placementBonus = 1
+        bonus = baseBonus + placementBonus
+      }
+      updates[`players/${p.id}/bonusPoints`] = bonus
+      updates[`players/${p.id}/score`] = (p.score ?? 0) + bonus
+    })
+    updates["status"] = "ended"
+    updates["statusText"] = "Game ended"
+    await update(ref(db, `games/karuba/${gameId}`), updates)
+  }
+
+  // === Start / Generate ===
+  const onStartOrGenerate = async () => {
+    try {
+      if (!game) return
+      if (game.status === "waiting") {
+        if (!isHost) return
+        const tilesMeta = generateTilesMeta()
+        const pids = order
+        const idxForRound2 = pids.length > 1 ? 1 : 0
+        await update(ref(db, `games/karuba/${gameId}`), {
+          status: "playing",
+          statusText: "Round 1",
+          round: 1,
+          currentTile: 1,
+          generateTurnIndex: idxForRound2,
+          generateTurnUid: pids[idxForRound2] || playerId,
+          templeWins: game.templeWins || [],
+          tilesMeta,
+          lastEvent: null,
+        })
+        for (const pid of pids) {
+          await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
+            actedForRound: false,
+            doneForRound: false,
+            lastAction: null,
+          })
+        }
+        return
+      }
+      if (game.status === "playing" && game.round >= 2) {
+        if (!isGenerateTurnOwner || game.currentTile !== 0) return
+        await update(ref(db, `games/karuba/${gameId}`), {
+          currentTile: game.round,
+          statusText: `Round ${game.round}`,
+        })
+      }
+    } catch (e: any) {
+      setError(e.message)
+    }
+  }
+
+  // === Place / Discard / Ready ===
+  const placeTile = async (r: number, c: number) => {
+    try {
+      if (!game || !me) return
+      if (game.currentTile <= 0) return
+      if (me.actedForRound) return
+      const board = me.board.map((row) => row.slice())
+      if (board[r][c] !== -1) return
+      board[r][c] = game.currentTile
+
+      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
+        board,
+        actedForRound: true,
+        lastAction: "placed",
+        usedTiles: { ...(me.usedTiles || {}), [game.currentTile]: true },
+      })
+      setPreviewAt(null)
+    } catch (e: any) {
+      setError("Place tile error: " + e.message)
+    }
+  }
+
+  const discardTile = async (tileId: number, branches: Branch[]) => {
+    try {
+      if (!game || !me) return
+      if (tileId !== game.currentTile) return
+      if (me.actedForRound) return
+      const gain = branches.length
+      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
+        moves: (me.moves || 0) + gain,
+        lastDiscardDirs: branches,
+        actedForRound: true,
+        lastAction: "discarded",
+        discardedTiles: [...(me.discardedTiles || []), tileId],
+        usedTiles: { ...(me.usedTiles || {}), [tileId]: true },
+      })
+      setPreviewAt(null)
+    } catch (e: any) {
+      setError("Discard error: " + e.message)
+    }
+  }
+
+  const onReadyNextRound = async () => {
+    try {
+      if (!game || !me) return
+      if (!me.actedForRound || me.doneForRound) return
+      await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), { doneForRound: true })
+      await maybeAdvanceRound()
+    } catch (e: any) {
+      setError("Ready error: " + e.message)
+    }
+  }
+
+  const maybeAdvanceRound = async () => {
+    if (!game) return
+    const plist = await get(ref(db, `games/karuba/${gameId}/players`))
+    const pObj: Record<string, Player> = (plist.val() || {}) as any
+    const activePlayers = Object.values(pObj || {}).filter(p => Object.keys(p.explorers || {}).length > 0)
+    const allReady = activePlayers.every((p) => p.doneForRound)
+    if (!allReady) return
+
+    const pids = order
+    const nextRound = game.round + 1
+
+    // End if: hanya jika round habis > 36
+    if (nextRound > 36) {
+      await endGame()
+      return
+    }
+
+    let nextIdx = game.generateTurnIndex
+    if (nextRound !== 2) nextIdx = (game.generateTurnIndex + 1) % pids.length
+
+    await update(ref(db, `games/karuba/${gameId}`), {
+      round: nextRound,
+      currentTile: 0,
+      generateTurnIndex: nextIdx,
+      generateTurnUid: pids[nextIdx] || pids[0],
+      statusText: `Round ${nextRound} (waiting generate)`,
+    })
+    for (const pid of pids) {
+      const p = pObj[pid]
+      if (Object.keys(p.explorers || {}).length > 0) {
+        await update(ref(db, `games/karuba/${gameId}/players/${pid}`), {
+          actedForRound: false,
+          doneForRound: false,
+          lastAction: null,
+          movesHistory: [],
+          redoHistory: [],
+        })
+      }
+    }
   }
 
   const maybeAutoFinishMe = async (newExplorers: any) => {
@@ -223,34 +384,21 @@ export default function Room({ gameId }: { gameId: string }) {
   const moveOne = async (color: ExplorerColor, dir: Branch) => {
     try {
       if (!game || !me) return
-
-      // Get fresh player data from Firebase to ensure we have latest moves count
-      const { db, ref, get } = await import('../firebase')
-      const playerSnap = await get(ref(db, `games/karuba/${gameId}/players/${playerId}`))
-      const currentMe = playerSnap.val()
-
-      if (currentMe.moves <= 0) {
-        console.log("No moves remaining, current moves:", currentMe.moves)
-        return
-      }
-
-      const ex = currentMe.explorers[color]
-      if (!ex) {
-        console.log("Explorer not found:", color)
-        return
-      }
+      if (me.moves <= 0) return
+      const ex = me.explorers[color]
+      if (!ex) return
       const tilesMeta = (game.tilesMeta || {}) as Record<string, { branches: Branch[] }>
 
       // Save current state to history before move
       const currentState = {
-        explorers: { ...currentMe.explorers },
-        score: currentMe.score,
-        moves: currentMe.moves,
-        claimedRewards: currentMe.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} },
-        goldCount: (currentMe as any).goldCount || 0,
-        crystalCount: (currentMe as any).crystalCount || 0,
+        explorers: { ...me.explorers },
+        score: me.score,
+        moves: me.moves,
+        claimedRewards: me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} },
+        goldCount: (me as any).goldCount || 0,
+        crystalCount: (me as any).crystalCount || 0,
       }
-      const newMovesHistory = [...(currentMe.movesHistory || []), currentState]
+      const newMovesHistory = [...(me.movesHistory || []), currentState]
       const newRedoHistory: typeof newMovesHistory = []
 
       await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
@@ -260,7 +408,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
       // const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
       const validateInternalMove = (r: number, c: number, entry: Branch, d: Branch) => {
-        const tid = currentMe.board[r][c]
+        const tid = me.board[r][c]
         // if (tid === -1) return null
         if (tid === -1) { console.warn("[MOVE] no tile at", r, c); return null }
         const meta = tilesMeta[String(tid)]
@@ -275,7 +423,7 @@ export default function Room({ gameId }: { gameId: string }) {
         if (d === "W") nc = c - 1
         // if (nr < 0 || nr > 5 || nc < 0 || nc > 5) return null
         if (nr < 0 || nr > 5 || nc < 0 || nc > 5) { console.warn("[MOVE] out of bounds to", nr, nc); return null }
-        const nextTid = currentMe.board[nr][nc]
+        const nextTid = me.board[nr][nc]
         // if (nextTid === -1) return null
         if (nextTid === -1) { console.warn("[MOVE] next tile empty at", nr, nc); return null }
         const nextMeta = tilesMeta[String(nextTid)]
@@ -291,18 +439,12 @@ export default function Room({ gameId }: { gameId: string }) {
         to8: { r: number; c: number },
         afterCommit: () => Promise<void>
       ) => {
-        // Stage 0: Change to frame 2 (0.2s) - masih di tile asal
-        setAnimGhost({ color, from8, to8, stage: 0 }); await new Promise((r) => setTimeout(r, 200))
-
-        // Stage 1-12: Move with frame 2 (0.6s) - bergerak smooth ke tile target dengan 12 stages
-        for (let i = 1; i <= 12; i++) {
-          setAnimGhost({ color, from8, to8, stage: i }); await new Promise((r) => setTimeout(r, 50))
-        }
-
-        // Stage 13-14: Change to frame 1 (0.2s) - sampai di tile target
-        setAnimGhost({ color, from8, to8, stage: 13 }); await new Promise((r) => setTimeout(r, 100))
-        setAnimGhost({ color, from8, to8, stage: 14 }); await new Promise((r) => setTimeout(r, 100))
-
+        setAnimGhost({ color, from8, to8, stage: 0 }); await new Promise((r) => setTimeout(r, 100))
+        setAnimGhost({ color, from8, to8, stage: 1 }); await new Promise((r) => setTimeout(r, 200))
+        setAnimGhost({ color, from8, to8, stage: 2 }); await new Promise((r) => setTimeout(r, 200))
+        setAnimGhost({ color, from8, to8, stage: 3 }); await new Promise((r) => setTimeout(r, 200))
+        setAnimGhost({ color, from8, to8, stage: 4 }); await new Promise((r) => setTimeout(r, 50))
+        setAnimGhost({ color, from8, to8, stage: 5 }); await new Promise((r) => setTimeout(r, 100))
         await afterCommit()
         setAnimGhost(null)
       }
@@ -316,7 +458,7 @@ export default function Room({ gameId }: { gameId: string }) {
         else if (side === "E") { r = index; c = 5 }
         else { r = 0; c = index }
 
-        const tid = currentMe.board[r][c]
+        const tid = me.board[r][c]
         if (tid === -1) return
         const meta = (game.tilesMeta || {})[String(tid)] as any
         if (!meta?.branches?.includes(side)) return
@@ -328,16 +470,45 @@ export default function Room({ gameId }: { gameId: string }) {
           side === "E" ? { r: r + 1, c: 7 } :
                          { r: 0, c: c + 1 }
         const to8 = { r: r + 1, c: c + 1 }
-        const { gain, addGold, addCrystal, nextClaimed } = calculateReward(tid, color, game.rewards || {}, currentMe.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+        // const gain = rewardGain(tid)
+        // const kind = rewardKind(tid)
+        const kind = rewardKind(tid)
+        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards?.[color]?.[tid])
+        const gain = alreadyClaimed ? 0 : rewardGain(tid)
+        
 
         await setGhostStagesAndCommit(from8, to8, async () => {
+          // const addGold = kind === "gold" ? 1 : 0
+          // const addCrystal = kind === "crystal" ? 1 : 0
+          const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
+          const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0          
+          // const nextClaimed =
+          //   !alreadyClaimed && kind
+          //     ? { ...(me.claimedRewards || {}), [tid]: true }
+          //     : (me.claimedRewards || {})
+          const nextClaimed =
+            !alreadyClaimed && kind
+                ? {
+                    red: me.claimedRewards?.red || {},
+                    blue: me.claimedRewards?.blue || {},
+                    brown: me.claimedRewards?.brown || {},
+                    yellow: me.claimedRewards?.yellow || {},
+                    [color]: {
+                      ...(me.claimedRewards?.[color] || {}),
+                      [tid]: true,
+                    },
+                  }
+                : (me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+                                      
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
-            moves: currentMe.moves - 1,
-            score: currentMe.score + gain,
-            goldCount: (currentMe as any).goldCount + addGold,
-            crystalCount: (currentMe as any).crystalCount + addCrystal,
+            moves: me.moves - 1,
+            score: me.score + gain,
+            // goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
+            // crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
+            goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
+            crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
             claimedRewards: nextClaimed,
-            explorers: { ...currentMe.explorers, [color]: { color, onBoard: { r, c, entry: side } } },
+            explorers: { ...me.explorers, [color]: { color, onBoard: { r, c, entry: side } } },
           })
         })
         return
@@ -346,32 +517,51 @@ export default function Room({ gameId }: { gameId: string }) {
       // inside board
       if (ex.onBoard) {
         const { r, c, entry } = ex.onBoard
-        const tid = currentMe.board[r][c]  // Get source tile ID
         const res = validateInternalMove(r, c, entry, dir)
         if (!res) return
         const { nr, nc, nextTid } = res
 
         const from8 = { r: r + 1, c: c + 1 }
         const to8 = { r: nr + 1, c: nc + 1 }
-
-        // Calculate rewards for both source and target tiles
-        const { gain: targetGain, addGold: targetAddGold, addCrystal: targetAddCrystal, nextClaimed: targetClaimed } = calculateReward(nextTid, color, game.rewards || {}, currentMe.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
-        const { gain: sourceGain, addGold: sourceAddGold, addCrystal: sourceAddCrystal, nextClaimed: sourceClaimed } = calculateReward(tid, color, game.rewards || {}, targetClaimed)
-
-        const totalGain = targetGain + sourceGain
-        const totalAddGold = targetAddGold + sourceAddGold
-        const totalAddCrystal = targetAddCrystal + sourceAddCrystal
+        // const gain = rewardGain(nextTid)
+        // const kind = rewardKind(nextTid)
+        const kind = rewardKind(nextTid)
+        const alreadyClaimed = !!(me.claimedRewards && me.claimedRewards?.[color]?.[nextTid])
+        const gain = alreadyClaimed ? 0 : rewardGain(nextTid)
 
         await setGhostStagesAndCommit(from8, to8, async () => {
           const nextOnBoard = { r: nr, c: nc, entry: opp(dir) }
+          // const addGold = kind === "gold" ? 1 : 0
+          // const addCrystal = kind === "crystal" ? 1 : 0
+          const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
+          const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
+          // const nextClaimed =
+          //   !alreadyClaimed && kind
+          //     ? { ...(me.claimedRewards || {}), [nextTid]: true }
+          //     : (me.claimedRewards || {})
+          const nextClaimed =
+            !alreadyClaimed && kind
+                ? {
+                    red: me.claimedRewards?.red || {},
+                    blue: me.claimedRewards?.blue || {},
+                    brown: me.claimedRewards?.brown || {},
+                    yellow: me.claimedRewards?.yellow || {},
+                    [color]: {
+                      ...(me.claimedRewards?.[color] || {}),
+                      [nextTid]: true,
+                    },
+                  }
+                : (me.claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
 
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
-            moves: currentMe.moves - 1,
-            score: currentMe.score + totalGain,
-            goldCount: (currentMe as any).goldCount + totalAddGold,
-            crystalCount: (currentMe as any).crystalCount + totalAddCrystal,
-            claimedRewards: sourceClaimed,
-            explorers: { ...currentMe.explorers, [color]: { color, onBoard: nextOnBoard } },
+            moves: me.moves - 1,
+            score: me.score + gain,
+            // goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
+            // crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
+            goldCount: (me as any).goldCount ? (me as any).goldCount + addGold : addGold,
+            crystalCount: (me as any).crystalCount ? (me as any).crystalCount + addCrystal : addCrystal,
+            claimedRewards: nextClaimed,
+            explorers: { ...me.explorers, [color]: { color, onBoard: nextOnBoard } },
           })
         })
       }
@@ -476,12 +666,13 @@ export default function Room({ gameId }: { gameId: string }) {
       // auto-finish jika explorer saya habis
       await maybeAutoFinishMe(newExplorers)
 
-      // Don't end game here - let it continue until round 36
-      // const everyoneFinished = await computeEveryoneFinished(gameId, db)
-      // if (everyoneFinished) {
-      //   await endGame(gameId, players, db)
-      //   return
-      // }
+      // cek end juga di sini:
+      const everyoneFinished = await computeEveryoneFinished()
+      // kalau semua selesai - end
+      if (everyoneFinished) {
+        await endGame()
+        return
+      }
       // kalau sudah round 36 dan semua pemain "doneForRound" di ronde ini - end saat advance (ditangani maybeAdvanceRound)
     } catch (e: any) {
       setError("Explorer step error: " + e.message)
@@ -496,7 +687,7 @@ export default function Room({ gameId }: { gameId: string }) {
     if (!canPlace || game.currentTile <= 0) return
     const branches = ((game.tilesMeta || {}) as any)[String(game.currentTile)]?.branches || []
     if (confirm(`Discard tile? Gain +${branches.length} moves.`)) {
-      discardTile(game.currentTile, branches, game, me, playerId, gameId, db)
+      discardTile(game.currentTile, branches)
     }
   }
 
@@ -541,10 +732,10 @@ export default function Room({ gameId }: { gameId: string }) {
               isHost={isHost}
               status={game.status}
               round={game.round}
-              canGenerate={canGenerateValue}
-              onStartOrGenerate={() => onStartOrGenerate(game, gameId, isHost, isGenerateTurnOwner, order, db)}
-              onReady={() => onReadyNextRound(game, me, playerId, gameId, players, db)}
-              readyDisabled={!me.actedForRound || me.doneForRound}
+              canGenerate={!!canGenerate}
+              onStartOrGenerate={onStartOrGenerate}
+              onReady={onReadyNextRound}
+              readyDisabled={!isFinished ? (!me.actedForRound || me.doneForRound) : false}
               waitingLabel={(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
                 if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
@@ -636,7 +827,7 @@ export default function Room({ gameId }: { gameId: string }) {
               tilesMeta={(game.tilesMeta || {}) as any}
               rewards={game.rewards || {}}
               canPlace={canPlace}
-              onPlace={(r, c) => placeTile(r, c, game, me, playerId, gameId, db)}
+              onPlace={placeTile}
               previewTileId={canPlace ? game.currentTile : null}
               previewAt={previewAt}
               onPreview={(r, c) => setPreviewAt({ r, c })}
@@ -644,7 +835,7 @@ export default function Room({ gameId }: { gameId: string }) {
               myExplorers={me.explorers}
               temples={game.layout?.temples || []}
               templeWins={game.templeWins || []}
-              onMoveOne={moveOne}
+              onMoveOne={async (color, dir) => { await moveOne(color, dir) }}
               onEnterTemple={enterTemple}
               animGhost={animGhost}
               isFinished={isFinished}
@@ -689,12 +880,178 @@ export default function Room({ gameId }: { gameId: string }) {
           </div>
         )}
 
-        <ResultModal
-          game={game}
-          players={players}
-          showResult={showResult}
-          setShowResult={setShowResult}
-        />
+        {/* Result Modal */}
+        {showResult && (
+        <div
+        style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1200,
+        }}
+        >
+        <div
+        style={{
+        background: "#fff",
+        padding: 20,
+        borderRadius: 12,
+        width: 420,
+        maxHeight: "80vh",
+        overflowY: "auto",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+        }}
+        >
+        {(() => {
+        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+        const myPos = Math.max(1, sorted.findIndex(p => p.id === playerId) + 1)
+        return (
+        <h2
+        className="font-display"
+        style={{ marginTop: 0, marginBottom: 12, textAlign: "center" }}
+        >
+        {myPos === 1
+        ? "Victory! 🏆"
+        : myPos === sorted.length
+        ? "Game Over! ☠️"
+        : "Game Result 🎲"}
+        </h2>
+        )
+        })()}
+
+        {(() => {
+        const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+        const wins = (game.templeWins || []) as any[]
+        return (
+        <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {sorted.map((p, i) => {
+        const rank = i + 1
+        const isExpanded = expandedPlayer === p.id
+        const mineWins = wins.filter(w => w.playerId === p.id)
+        const perOrder: Record<number, number> = {}
+        for (const w of mineWins) perOrder[w.order] = (perOrder[w.order] || 0) + 1
+        return (
+        <div
+        key={p.id}
+        style={{
+        border: "1px solid rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        padding: "8px 12px",
+        background: isExpanded ? "rgba(0,0,0,0.05)" : "#fafafa",
+        }}
+        >
+        <div
+        style={{
+        cursor: "pointer",
+        fontWeight: p.id === playerId ? 700 : 400,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        }}
+        onClick={() => setExpandedPlayer(expandedPlayer === p.id ? null : p.id)}
+        >
+        <span>
+        {`(#${rank}) | ${p.name} | ${p.score} pts`}
+        {rank === 1 ? " 👑" : ""}
+        </span>
+        <span>{isExpanded ? "⤵" : "↩"}</span>
+        </div>
+        {isExpanded && (() => {
+  try {
+    const mineWins = (wins || []).filter(w => w.playerId === p.id)
+    const perOrder: Record<number, number> = {}
+    mineWins.forEach(w => {
+      if (w.order != null) perOrder[w.order] = (perOrder[w.order] || 0) + 1
+    })
+    const templePoints = mineWins.reduce((sum, w) => sum + (w.points || 0), 0)
+
+    const goldCount = (p as any)?.goldCount || 0
+    const crystalCount = (p as any)?.crystalCount || 0
+    const finishedAt = (p as any)?.finishedAtRound || null
+    return (
+      <div style={{color:"red", fontSize:12}}>
+        mineWins: {JSON.stringify(mineWins)}<br/>
+        perOrder: {JSON.stringify(perOrder)}<br/>
+        finishedAt: {finishedAt?.toString() || "null"}
+      </div>
+    )
+    const roundBonus = finishedAt && finishedAt < 36 ? Math.min(36 - finishedAt, 4) : 0
+    const gameBonus = rank === 1 ? 2 : rank === 2 ? 1 : 0
+
+    return (
+      <div style={{ marginTop: 8, fontSize: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Finishing Order:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          {mineWins.length > 0 ? (
+            Object.entries(perOrder).map(([order, count]) => {
+              const pts = mineWins.filter(w => w.order === Number(order)).reduce((sum, w) => sum + (w.points || 0), 0)
+              const orderLabel =
+                Number(order) === 1 ? "1st" : Number(order) === 2 ? "2nd" : Number(order) === 3 ? "3rd" : `${order}th`
+              return (
+                <React.Fragment key={order}>
+                  <div>• {orderLabel}: {count}</div>
+                  <div>{pts} pts</div>
+                </React.Fragment>
+              )
+            })
+          ) : (
+            <>
+              <div>• Unfinished: 1</div>
+              <div>0 pts</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Rewards:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          <div>• Gold: {goldCount}</div>
+          <div>{goldCount} pts</div>
+          <div>• Crystal: {crystalCount}</div>
+          <div>{crystalCount} pts</div>
+          {finishedAt && finishedAt < 36 && (
+            <>
+              <div>• Round {finishedAt} /36</div>
+              <div>{roundBonus} pts</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ fontWeight: 600, margin: "8px 0 4px" }}>Ranking bonus:</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "2px 12px", paddingLeft: 12 }}>
+          <div>{gameBonus > 0 ? "• Placement bonus" : "• None"}</div>
+          <div>{gameBonus} pts</div>
+        </div>
+      </div>
+    )
+  } catch (err) {
+    console.error("Breakdown error:", err, p)
+    return <div style={{ color: "red" }}>⚠️ Error showing breakdown</div>
+  }
+})()}
+        </div>
+        )
+        })}
+        </div>
+        )
+        })()}
+
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+        <button
+        className="font-display"
+        onClick={() => {
+        setShowResult(false)
+        history.pushState({}, "", "/")
+        dispatchEvent(new PopStateEvent("popstate"))
+        }}
+        >
+        Back to Lobby
+        </button>
+        </div>
+        </div>
+        </div>
+        )}
 
         {error && <div style={{ color: "red" }}>{error}</div>}
       </div>

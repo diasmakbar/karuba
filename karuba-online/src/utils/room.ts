@@ -6,16 +6,15 @@ import { generateTilesMeta } from "../lib/deck"
 export const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
 
 // Reward helpers
-export const rewardGain = (tileId: number | null | undefined, rewards: Record<number, "gold" | "crystal" | null>) => {
+export const rewardGain = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[]>) => {
   if (!tileId || !rewards) return 0
   const r = rewards[tileId]
-  if (r === "gold") return 2
-  if (r === "crystal") return 1
-  return 0
+  if (!r || r.length === 0) return 0
+  return r.reduce((sum, reward) => sum + (reward === "gold" ? 2 : reward === "crystal" ? 1 : 0), 0)
 }
 
-export const rewardKind = (tileId: number | null | undefined, rewards: Record<number, "gold" | "crystal" | null>) =>
-  tileId && rewards ? rewards[tileId] : null
+export const rewardKind = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[]>) =>
+  tileId && rewards ? rewards[tileId] : []
 
 // Explorer position helper
 export const isOccupiedByOther = (r: number, c: number, explorers: Record<string, any>, exceptColor?: string) => {
@@ -264,15 +263,15 @@ export const canEnterFromEdge = (ex: any, board: number[][], tilesMeta: Record<s
 export const calculateReward = (
   tileId: number,
   color: ExplorerColor,
-  rewards: Record<number, "gold" | "crystal" | null>,
+  rewards: Record<number, ("gold" | "crystal")[]>,
   claimedRewards: Record<ExplorerColor, Record<number, boolean>>
 ) => {
   const alreadyClaimed = !!(claimedRewards && claimedRewards[color]?.[tileId])
   const gain = alreadyClaimed ? 0 : rewardGain(tileId, rewards)
-  const kind = rewardKind(tileId, rewards)
-  const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
-  const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
-  const nextClaimed = !alreadyClaimed && kind
+  const kinds = rewardKind(tileId, rewards)
+  const addGold = !alreadyClaimed ? kinds.filter(k => k === "gold").length : 0
+  const addCrystal = !alreadyClaimed ? kinds.filter(k => k === "crystal").length : 0
+  const nextClaimed = !alreadyClaimed && kinds.length > 0
     ? {
         red: claimedRewards?.red || {},
         blue: claimedRewards?.blue || {},
@@ -377,8 +376,9 @@ export const enterTemple = async (
 
   await maybeAutoFinishMe(newExplorers)
 
-  const everyoneFinished = await computeEveryoneFinished(gameId, db)
-  if (everyoneFinished) {
-    await endGame(gameId, players, db)
-  }
+  // Don't end game here - let it continue until round 36
+  // const everyoneFinished = await computeEveryoneFinished(gameId, db)
+  // if (everyoneFinished) {
+  //   await endGame(gameId, players, db)
+  // }
 }

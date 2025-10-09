@@ -88,6 +88,47 @@ h1, h2, h3, h4, h5, h6, .font-display {
   box-shadow: 0 6px 28px rgba(0,0,0,0.18);
 }
 
+/* Mobile responsive board scaling */
+@media (max-width: 768px) {
+  .board-scroll {
+    max-width: 100vw;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .board-frame {
+    transform: scale(0.8);
+    transform-origin: top left;
+    padding: calc(var(--frame-pad) * 0.8);
+  }
+
+  /* Adjust page padding for mobile */
+  .page-inner {
+    padding: 8px;
+  }
+
+  .card {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .board-frame {
+    transform: scale(0.6);
+    transform-origin: top left;
+    padding: calc(var(--frame-pad) * 0.6);
+  }
+
+  .page-inner {
+    padding: 4px;
+  }
+
+  .card {
+    padding: 6px;
+    font-size: 14px;
+  }
+}
+
 /* Form & tombol pakai PlusJakarta */
 input, button, select, textarea {
   font-family: var(--font-body);
