@@ -546,17 +546,20 @@ export default function Room({ gameId }: { gameId: string }) {
             <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2> 
 
             <div style={{ margin: "12px 0" }}>
-              <p>Game ID: {gameId} | </p>
-              {(() => {
-                if (game.status === "waiting") return "Waiting host to start the game"
-                if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
-                  return game.generateTurnUid === playerId
-                    ? "You can generate now"
-                    : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
-                }
-                return `Round ${game.round} of 36`
-              })()}
+              <p style={{ margin: 0 }}>
+                Game ID: {gameId} |{" "}
+                {(() => {
+                  if (game.status === "waiting") return "Waiting host to start the game"
+                  if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+                    return game.generateTurnUid === playerId
+                      ? "You can generate now"
+                      : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+                  }
+                  return `Round ${game.round} of 36`
+                })()}
+              </p>
             </div>
+
 
             <Controls
               isHost={isHost}

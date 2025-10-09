@@ -257,14 +257,14 @@ useEffect(() => {
   ])
 
   // Calculate cell center using percentage positioning (responsive)
-  const getCellCenter = (gr: number, gc: number) => {
+  const getCellCenter = (row: number, col: number) => {
     // Each cell is 12.5% of the total width/height (1/8)
-    // Center of cell at (gr, gc) is at (gr * 12.5% + 6.25%, gc * 12.5% + 6.25%)
+    // Center of cell at (row, col) is at (col * 12.5% + 6.25%, row * 12.5% + 6.25%)
     const cellSizePercent = 100 / 8 // 12.5%
     const centerOffset = cellSizePercent / 2 // 6.25%
     return {
-      left: `${gr * cellSizePercent + centerOffset}%`,
-      top: `${gc * cellSizePercent + centerOffset}%`
+      left: `${col * cellSizePercent + centerOffset}%`,
+      top: `${row * cellSizePercent + centerOffset}%`
     }
   }
 
