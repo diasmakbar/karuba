@@ -8,7 +8,7 @@ export type Layout = {
 }
 
 export function makeRandomLayout(): Layout {
-  const colors: ExplorerColor[] = ['blue', 'red', 'yellow', 'brown']
+  const colors: ExplorerColor[] = ['red', 'blue', 'yellow', 'brown']
   const shuffle = <T,>(arr: T[]) => {
     const a = [...arr]
     for (let i = a.length - 1; i > 0; i--) {
@@ -19,33 +19,45 @@ export function makeRandomLayout(): Layout {
   }
   const pickK = (pool: number[], k: number) => shuffle(pool).slice(0, k)
 
-  const colsShuffled = shuffle(colors)
-  const topBottomColors: ExplorerColor[] = colsShuffled.slice(0, 2)
-  const leftRightColors: ExplorerColor[] = colsShuffled.slice(2)
+  // Pick 4 different positions for each side
+  const topCols = pickK([1, 2, 3, 4, 5, 6], 2)  // TOP temples positions
+  const rightRows = pickK([1, 2, 3, 4, 5, 6], 2) // RIGHT temples positions
+  const leftRows = pickK([1, 2, 3, 4, 5, 6], 2)  // LEFT explorers positions
+  const bottomCols = pickK([1, 2, 3, 4, 5, 6], 2) // BOTTOM explorers positions
 
-  const topCols = pickK([1, 2, 3, 4, 5, 6], 2)
-  const rightRows = pickK([1, 2, 3, 4, 5, 6], 2)
-  const leftRows = pickK([1, 2, 3, 4, 5, 6], 2)
-  const bottomCols = pickK([1, 2, 3, 4, 5, 6], 2)
+  // Create diagonal pairing: each temple paired with opposite side explorer
+  const templePairs = [
+    { templeSide: 'N', templeIndex: topCols[0] - 1, explorerSide: 'S', explorerIndex: bottomCols[1] - 1 }, // TOP left ↔ BOTTOM right
+    { templeSide: 'N', templeIndex: topCols[1] - 1, explorerSide: 'S', explorerIndex: bottomCols[0] - 1 }, // TOP right ↔ BOTTOM left
+    { templeSide: 'E', templeIndex: rightRows[0] - 1, explorerSide: 'W', explorerIndex: leftRows[1] - 1 }, // RIGHT top ↔ LEFT bottom
+    { templeSide: 'E', templeIndex: rightRows[1] - 1, explorerSide: 'W', explorerIndex: leftRows[0] - 1 }, // RIGHT bottom ↔ LEFT top
+  ]
 
-  const topTemples = topBottomColors.map((color, i) => ({
-    side: 'N' as const,
-    index: topCols[i] - 1,
-    color,
-  }))
-  const rightTemples = leftRightColors.map((color, i) => ({
-    side: 'E' as const,
-    index: rightRows[i] - 1,
-    color,
+  // Shuffle colors and assign to pairs
+  const shuffledColors = shuffle(colors)
+  const colorPairs = [
+    { templeColor: shuffledColors[0], explorerColor: shuffledColors[0] }, // Pair 1: same color
+    { templeColor: shuffledColors[1], explorerColor: shuffledColors[1] }, // Pair 2: same color
+    { templeColor: shuffledColors[2], explorerColor: shuffledColors[2] }, // Pair 3: same color
+    { templeColor: shuffledColors[3], explorerColor: shuffledColors[3] }, // Pair 4: same color
+  ]
+
+  // Create temples and explorers based on pairs
+  const temples = templePairs.map((pair, i) => ({
+    side: pair.templeSide as Branch,
+    index: pair.templeIndex,
+    color: colorPairs[i].templeColor,
   }))
 
   const explorers = {} as Record<ExplorerColor, { side: Branch; index: number }>
-  explorers[leftRightColors[0]] = { side: 'W', index: leftRows[0] - 1 }
-  explorers[leftRightColors[1]] = { side: 'W', index: leftRows[1] - 1 }
-  explorers[topBottomColors[0]] = { side: 'S', index: bottomCols[0] - 1 }
-  explorers[topBottomColors[1]] = { side: 'S', index: bottomCols[1] - 1 }
+  templePairs.forEach((pair, i) => {
+    explorers[colorPairs[i].explorerColor] = {
+      side: pair.explorerSide as Branch,
+      index: pair.explorerIndex,
+    }
+  })
 
-  return { explorers, temples: [...topTemples, ...rightTemples] }
+  return { explorers, temples }
 }
 
 export function emptyBoard(): Board {
