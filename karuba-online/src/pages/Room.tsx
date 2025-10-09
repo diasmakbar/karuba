@@ -327,22 +327,14 @@ export default function Room({ gameId }: { gameId: string }) {
           side === "E" ? { r: r + 1, c: 7 } :
                          { r: 0, c: c + 1 }
         const to8 = { r: r + 1, c: c + 1 }
-        // const gain = rewardGain(tid)
-        // const kind = rewardKind(tid)
         const kind = rewardKind(tid)
         const alreadyClaimed = !!(currentMe.claimedRewards && currentMe.claimedRewards?.[color]?.[tid])
         const gain = alreadyClaimed ? 0 : rewardGain(tid)
 
-
         await setGhostStagesAndCommit(from8, to8, async () => {
-          // const addGold = kind === "gold" ? 1 : 0
-          // const addCrystal = kind === "crystal" ? 1 : 0
           const addGold = !alreadyClaimed && kind === "gold" ? 1 : 0
           const addCrystal = !alreadyClaimed && kind === "crystal" ? 1 : 0
-          // const nextClaimed =
-          //   !alreadyClaimed && kind
-          //     ? { ...(currentMe.claimedRewards || {}), [tid]: true }
-          //     : (currentMe.claimedRewards || {})
+
           const nextClaimed =
             !alreadyClaimed && kind
                 ? {
@@ -360,10 +352,8 @@ export default function Room({ gameId }: { gameId: string }) {
           await update(ref(db, `games/karuba/${gameId}/players/${playerId}`), {
             moves: currentMe.moves - 1,
             score: currentMe.score + gain,
-            // goldCount: (currentMe as any).goldCount ? (currentMe as any).goldCount + addGold : addGold,
-            // crystalCount: (currentMe as any).crystalCount ? (currentMe as any).crystalCount + addCrystal : addCrystal,
-            goldCount: (currentMe as any).goldCount ? (currentMe as any).goldCount + addGold : addGold,
-            crystalCount: (currentMe as any).crystalCount ? (currentMe as any).crystalCount + addCrystal : addCrystal,
+            goldCount: (currentMe as any).goldCount + addGold,
+            crystalCount: (currentMe as any).crystalCount + addCrystal,
             claimedRewards: nextClaimed,
             explorers: { ...currentMe.explorers, [color]: { color, onBoard: { r, c, entry: side } } },
           })
@@ -655,100 +645,18 @@ export default function Room({ gameId }: { gameId: string }) {
           <div className="card">
             <h3 style={{ marginTop: 0 }} className="font-display">Players</h3>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {allPlayers.map((p, index) => {
-                const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
-                const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
-                const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
-                const rank = index + 1
-                const title = game.status !== "ended" ? "" : rank === 1 ? "🏆" : rank === allPlayers.length ? "💀" : "🎲"
-
-                return (
-                  <li key={p.id} style={{ marginBottom: 8 }}>
-                    <div
-                      style={{
-                        padding: "8px 12px",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        background: isTurn ? "#fff3cd" : "#ffffff",
-                        fontWeight: isTurn ? 700 : 400
-                      }}
-                      onClick={() => setExpandedPlayer(expandedPlayer === p.id ? null : p.id)}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span>{title}</span>
-                        <span style={{ flex: 1 }}>
-                          (#{rank}) | {p.name} | {p.score} pts
-                        </span>
-                        <span style={{ fontSize: "12px", opacity: 0.7 }}>
-                          {expandedPlayer === p.id ? "⤵" : "↩"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {expandedPlayer === p.id && (
-                      <div style={{
-                        marginTop: "4px",
-                        padding: "12px",
-                        background: "#f8f9fa",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "4px",
-                        borderTop: "none"
-                      }}>
-                        <div style={{ fontSize: "14px", lineHeight: "1.4" }}>
-                          <div style={{ marginBottom: "8px", fontWeight: "bold" }}>
-                            (#{rank}) | {p.name} | {p.score} pts
-                          </div>
-
-                          <div style={{ marginBottom: "6px" }}>
-                            <strong>Finishing Order:</strong>
-                          </div>
-                          <div style={{ marginLeft: "8px", marginBottom: "6px" }}>
-                            {(() => {
-                              const playerWins = winsArr.filter((w: any) => w.playerId === p.id)
-                              if (playerWins.length === 0) {
-                                return <div>• Unfinished: 4 0 pts</div>
-                              }
-
-                              return playerWins
-                                .sort((a: any, b: any) => a.order - b.order)
-                                .map((win: any, i: number) => {
-                                  const points = Math.max(0, nPlayers + 2 - win.order)
-                                  return (
-                                    <div key={i}>
-                                      • {win.order}st: 1 {points} pts
-                                    </div>
-                                  )
-                                })
-                            })()}
-                          </div>
-
-                          <div style={{ marginBottom: "6px" }}>
-                            <strong>Rewards:</strong>
-                          </div>
-                          <div style={{ marginLeft: "8px", marginBottom: "6px" }}>
-                            <div>• Gold: {(p as any).goldCount || 0}  {((p as any).goldCount || 0) * 2} pts</div>
-                            <div>• Crystal: {(p as any).crystalCount || 0}  {(p as any).crystalCount || 0} pts</div>
-                          </div>
-
-                          {p.finishedAtRound && (
-                            <div style={{ marginBottom: "6px" }}>
-                              <strong>Finished at:</strong>
-                              <div style={{ marginLeft: "8px" }}>
-                                • Round {p.finishedAtRound} /36 {Math.min(36 - (p.finishedAtRound as number), 8)} pts
-                              </div>
-                            </div>
-                          )}
-
-                          <div>
-                            <strong>Ranking bonus: {p.bonusPoints || 0} pts</strong>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
+              {Object.values(players || {})
+                .sort((a, b) => a.joinedAt - b.joinedAt)
+                .map((p) => {
+                  const isTurn = game.generateTurnUid === p.id && game.round >= 2 && game.currentTile === 0
+                  const isPlayerFinished = !p.explorers || Object.keys(p.explorers).length === 0
+                  const state = isPlayerFinished ? "finished" : p.doneForRound ? "ready ✓" : p.actedForRound ? "placed tile" : "playing"
+                  return (
+                    <li key={p.id} style={{ marginBottom: 4, fontWeight: isTurn ? 700 : 400 }}>
+                      {p.name} - Score: {p.score} ({state})
+                    </li>
+                  )
+                })}
             </ul>
             {game.lastEvent && (
               <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
