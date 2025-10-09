@@ -102,9 +102,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 
   .board-frame {
-    width: 80vw;
-    min-width: 300px;
-    max-width: 500px;
+    width: min(80vw, 500px);
     padding: calc(var(--frame-pad) * 0.8);
   }
 
@@ -120,9 +118,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 @media (max-width: 480px) {
   .board-frame {
-    width: 95vw;
-    min-width: 280px;
-    max-width: 400px;
+    width: min(95vw, 400px);
     padding: calc(var(--frame-pad) * 0.6);
   }
 

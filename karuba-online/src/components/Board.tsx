@@ -329,10 +329,11 @@ useEffect(() => {
 
       {Array.from({ length: 8 }).map((_, r) =>
         Array.from({ length: 8 }).map((_, c) => {
+          // CORNERS (r=0,c=0; r=0,c=7; r=7,c=0; r=7,c=7) - empty
           if ((r === 0 || r === 7) && (c === 0 || c === 7))
-            return <div key={`g-${r}-${c}`} style={getCellStyle()} />
+            return <div key={`corner-${r}-${c}`} style={{ width: "100%", height: "100%" }} />
 
-          // TOP temples (N)
+          // TOP temples (N) - r=0, c=1-6
           if (r === 0 && c >= 1 && c <= 6) {
             const t = findTemple("N", c - 1)
             const winMine = winByMe.get(`N:${c - 1}`)
@@ -419,7 +420,7 @@ useEffect(() => {
           // LEFT edge explorers (W)
           if (c === 0 && r >= 1 && r <= 6) {
             const ex = edgeExplorerAt("W", r - 1)
-            if (!ex) return <div key={`left-${r}`} style={getCellStyle()} />
+            if (!ex) return <div key={`left-${r}`} style={{ width: "100%", height: "100%" }} />
             const idx = colorIdx(ex.color)
             const highlighted = canEnterFromEdge(ex) && myMoves > 0
             const isSelected = selectedColor === ex.color
@@ -447,7 +448,7 @@ useEffect(() => {
           // BOTTOM edge explorers (S)
           if (r === 7 && c >= 1 && c <= 6) {
             const ex = edgeExplorerAt("S", c - 1)
-            if (!ex) return <div key={`bottom-${c}`} style={getCellStyle()} />
+            if (!ex) return <div key={`bottom-${c}`} style={{ width: "100%", height: "100%" }} />
             const idx = colorIdx(ex.color)
             const highlighted = canEnterFromEdge(ex) && myMoves > 0
             const isSelected = selectedColor === ex.color

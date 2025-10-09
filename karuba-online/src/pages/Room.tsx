@@ -565,15 +565,15 @@ export default function Room({ gameId }: { gameId: string }) {
               onStartOrGenerate={() => onStartOrGenerate(game, gameId, isHost, isGenerateTurnOwner, order, db)}
               onReady={() => onReadyNextRound(game, me, playerId, gameId, players, db)}
               readyDisabled={!me.actedForRound || me.doneForRound}
-              waitingLabel={(() => {
-                if (game.status === "waiting") return "Waiting host to start the game"
-                if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
-                  return game.generateTurnUid === playerId
-                    ? "You can generate now"
-                    : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
-                }
-                return `Round ${game.round}`
-              })()}
+              // waitingLabel={(() => {
+              //   if (game.status === "waiting") return "Waiting host to start the game"
+              //   if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+              //     return game.generateTurnUid === playerId
+              //       ? "You can generate now"
+              //       : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+              //   }
+              //   return `Round ${game.round}`
+              // })()}
             />
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
@@ -594,15 +594,15 @@ export default function Room({ gameId }: { gameId: string }) {
               <span>Moves: {me.moves}</span>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}>
               <img
                 src="/trash.svg"
                 alt="Trash"
                 title={game.currentTile > 0 && canPlace ? "Discard tile" : "No tile to discard"}
                 onClick={handleTrash}
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 40,
+                  height: 40,
                   cursor: game.currentTile > 0 && canPlace ? "pointer" : "default",
                   opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
                 }}
@@ -613,8 +613,8 @@ export default function Room({ gameId }: { gameId: string }) {
                 title="Discarded Tiles"
                 onClick={() => setShowDiscardList(true)}
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 40,
+                  height: 40,
                   cursor: "pointer",
                 }}
               />
@@ -624,8 +624,8 @@ export default function Room({ gameId }: { gameId: string }) {
                 title="Undo Move"
                 onClick={undoMove}
                 style={{
-                  width: 30,
-                  height: 30,
+                  width: 40,
+                  height: 40,
                   cursor: (!me?.movesHistory || me.movesHistory.length === 0) ? "default" : "pointer",
                   opacity: (!me?.movesHistory || me.movesHistory.length === 0) ? 0.5 : 1,
                 }}
@@ -636,8 +636,8 @@ export default function Room({ gameId }: { gameId: string }) {
                 title="Redo Move"
                 onClick={redoMove}
                 style={{
-                  width: 30,
-                  height: 30,
+                  width: 40,
+                  height: 40,
                   cursor: (!me?.redoHistory || me.redoHistory.length === 0) ? "default" : "pointer",
                   opacity: (!me?.redoHistory || me.redoHistory.length === 0) ? 0.5 : 1,
                 }}
