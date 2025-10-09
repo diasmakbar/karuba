@@ -65,8 +65,10 @@ export default function Board({
 }) {
   const [confirmPlace, setConfirmPlace] = useState<{ r: number; c: number } | null>(null)
   const [selectedColor, setSelectedColor] = useState<ExplorerColor | null>(null)
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null)
 
   const [lastClick, setLastClick] = useState<{ key: string; t: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
 // Kalau moves habis, auto-clear highlight
 useEffect(() => {
@@ -254,13 +256,16 @@ useEffect(() => {
     templeWins, // kalau saya baru win, targets berubah
   ])
 
-  const cellPx = (gr: number, gc: number) => ({
-    left: BOARD_CONFIG.GAP_SIZE + gc * (BOARD_CONFIG.CELL_SIZE + BOARD_CONFIG.GAP_SIZE),
-    top: BOARD_CONFIG.GAP_SIZE + gr * (BOARD_CONFIG.CELL_SIZE + BOARD_CONFIG.GAP_SIZE),
-  })
-  const cellCenter = (gr: number, gc: number) => {
-    const p = cellPx(gr, gc)
-    return { x: p.left + BOARD_CONFIG.CELL_SIZE / 2, y: p.top + BOARD_CONFIG.CELL_SIZE / 2 }
+  // Calculate cell center using grid positioning (responsive)
+  const getCellCenter = (gr: number, gc: number) => {
+    // Since we use CSS Grid with 8 equal columns/rows, each cell is at position gr, gc in the grid
+    // The center of cell at grid position (gr, gc) is at 50% of that cell
+    return {
+      gridRow: gr + 1,
+      gridColumn: gc + 1,
+      x: '50%',
+      y: '50%'
+    }
   }
 
   const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
@@ -525,13 +530,13 @@ useEffect(() => {
             origin8 = { r: selected.onBoard.r + 1, c: selected.onBoard.c + 1 }
           }
           if (!origin8) return null
-          const oCenter = cellCenter(origin8.r, origin8.c)
 
           return (
             <>
               {arrows.map((a, i) => {
-                const tCenter = cellCenter(a.r + 1, a.c + 1)
-                const mid = { x: (oCenter.x + tCenter.x) / 2, y: (oCenter.y + tCenter.y) / 2 }
+                // Position arrows using CSS Grid instead of absolute positioning
+                const targetRow = a.r + 2 // +2 because grid is 1-indexed and we want center between cells
+                const targetCol = a.c + 2
                 return (
                   <img
                     key={`arr-${i}-${a.r}-${a.c}-${a.dir}`}
@@ -544,10 +549,11 @@ useEffect(() => {
                     }}
                     style={{
                       position: "absolute",
-                      left: mid.x - ARROW_SIZE / 2,
-                      top: mid.y - ARROW_SIZE / 2,
+                      gridRow: targetRow,
+                      gridColumn: targetCol,
                       width: ARROW_SIZE,
                       height: ARROW_SIZE,
+                      transform: "translate(-50%, -50%)",
                       zIndex: 4,
                       cursor: "pointer",
                       filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
@@ -563,9 +569,6 @@ useEffect(() => {
       {animGhost &&
         (() => {
           const idx = colorIdx(animGhost.color)
-          const from = cellPx(animGhost.from8.r, animGhost.from8.c)
-          const to = cellPx(animGhost.to8.r, animGhost.to8.c)
-          const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
           // Calculate smooth interpolation based on stage
           let t = 0
@@ -579,10 +582,9 @@ useEffect(() => {
             t = 1
           }
 
-          const currentPos = {
-            left: from.left + (to.left - from.left) * t,
-            top: from.top + (to.top - from.top) * t
-          }
+          // Interpolate grid positions
+          const currentRow = animGhost.from8.r + (animGhost.to8.r - animGhost.from8.r) * t + 1
+          const currentCol = animGhost.from8.c + (animGhost.to8.c - animGhost.from8.c) * t + 1
 
           // Frame selection based on stage
           const src =
@@ -599,13 +601,13 @@ useEffect(() => {
               alt="moving explorer"
               style={{
                 position: "absolute",
-                left: currentPos.left + 4,
-                top: currentPos.top + 4,
-                width: BOARD_CONFIG.CELL_SIZE - 8,
-                height: BOARD_CONFIG.CELL_SIZE - 8,
-                objectFit: "contain",
-                transform: "scale(0.85)",
+                gridRow: currentRow,
+                gridColumn: currentCol,
+                width: "100%",
+                height: "100%",
+                transform: "translate(-50%, -50%) scale(0.85)",
                 transformOrigin: "center",
+                objectFit: "contain",
                 zIndex: 10,
                 pointerEvents: "none",
               }}
