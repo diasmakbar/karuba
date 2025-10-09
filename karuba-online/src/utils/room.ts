@@ -6,15 +6,24 @@ import { generateTilesMeta } from "../lib/deck"
 export const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
 
 // Reward helpers
-export const rewardGain = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[]>) => {
+export const rewardGain = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[] | "gold" | "crystal" | null>) => {
   if (!tileId || !rewards) return 0
   const r = rewards[tileId]
-  if (!r || r.length === 0) return 0
-  return r.reduce((sum, reward) => sum + (reward === "gold" ? 2 : reward === "crystal" ? 1 : 0), 0)
+  if (!r) return 0
+
+  // Handle both old format (single value) and new format (array)
+  const rewardsArray = Array.isArray(r) ? r : [r]
+  return rewardsArray.reduce((sum, reward) => sum + (reward === "gold" ? 2 : reward === "crystal" ? 1 : 0), 0)
 }
 
-export const rewardKind = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[]>) =>
-  tileId && rewards ? rewards[tileId] : []
+export const rewardKind = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[] | "gold" | "crystal" | null>) => {
+  if (!tileId || !rewards) return []
+  const r = rewards[tileId]
+  if (!r) return []
+
+  // Handle both old format (single value) and new format (array)
+  return Array.isArray(r) ? r : [r]
+}
 
 // Explorer position helper
 export const isOccupiedByOther = (r: number, c: number, explorers: Record<string, any>, exceptColor?: string) => {

@@ -75,7 +75,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
 /* Board scrollable (mobile bisa geser) */
 .board-scroll {
   width: 100%;
-  max-width: 100%;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
@@ -86,7 +85,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
   position: relative;
   display: inline-block;
   width: 100%;
-  max-width: 100%;
+  max-width: var(--page-max);
   padding: var(--frame-pad);
   background: url("/board/frame.svg") center/contain no-repeat;
   border-radius: 16px;
