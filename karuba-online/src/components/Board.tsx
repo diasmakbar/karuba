@@ -519,7 +519,10 @@ useEffect(() => {
         !isAnimating &&
         arrows.length > 0 &&
         arrows.map((a, i) => {
-          const center = getCellCenter(a.r + 1, a.c + 1) // +1 to convert to 8x8 grid coordinates
+          // a.r, a.c are board coordinates (0-5), convert to 8x8 grid coordinates (1-6)
+          const gridRow = a.r + 1
+          const gridCol = a.c + 1
+          const center = getCellCenter(gridRow, gridCol)
           return (
             <img
               key={`arr-${i}-${a.r}-${a.c}-${a.dir}`}
@@ -562,7 +565,7 @@ useEffect(() => {
             t = 1
           }
 
-          // Interpolate positions using percentage
+          // animGhost.from8 and to8 are already 8x8 grid coordinates
           const currentRow = animGhost.from8.r + (animGhost.to8.r - animGhost.from8.r) * t
           const currentCol = animGhost.from8.c + (animGhost.to8.c - animGhost.from8.c) * t
           const center = getCellCenter(currentRow, currentCol)

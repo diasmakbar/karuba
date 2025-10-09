@@ -543,9 +543,10 @@ export default function Room({ gameId }: { gameId: string }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online | Game ID: {gameId}</h2>
+            <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2> 
 
             <div style={{ margin: "12px 0" }}>
+              <p>Game ID: {gameId} | </p>
               {(() => {
                 if (game.status === "waiting") return "Waiting host to start the game"
                 if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
@@ -553,7 +554,7 @@ export default function Room({ gameId }: { gameId: string }) {
                     ? "You can generate now"
                     : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
                 }
-                return `Round ${game.round}`
+                return `Round ${game.round} of 36`
               })()}
             </div>
 
@@ -601,8 +602,8 @@ export default function Room({ gameId }: { gameId: string }) {
                 title={game.currentTile > 0 && canPlace ? "Discard tile" : "No tile to discard"}
                 onClick={handleTrash}
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: 30,
+                  height: 30,
                   cursor: game.currentTile > 0 && canPlace ? "pointer" : "default",
                   opacity: game.currentTile > 0 && canPlace ? 1 : 0.5,
                 }}
