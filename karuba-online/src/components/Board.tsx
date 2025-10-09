@@ -43,7 +43,7 @@ export default function Board({
   myPlayerId: string
   board: BoardGrid
   tilesMeta: TilesMetaMap | Record<string, { branches: Branch[]; image?: number }>
-  rewards: Record<number, ("gold" | "crystal")[]>
+  rewards: Record<number, ("gold" | "crystal")[] | "gold" | "crystal" | null>
   canPlace: boolean
   onPlace: (r: number, c: number) => void
   previewTileId?: number | null

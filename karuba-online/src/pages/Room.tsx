@@ -37,9 +37,15 @@ function TileIcon({
   id: number
   tilesMeta: Record<string, { image?: number }>
   size?: number
-  reward?: ("gold" | "crystal")[]
+  reward?: ("gold" | "crystal")[] | "gold" | "crystal" | null
 }) {
   const img = (tilesMeta as any)?.[String(id)]?.image ?? id
+
+  // Handle both old format (single value) and new format (array)
+  const rewardsArray: ("gold" | "crystal")[] = Array.isArray(reward)
+    ? reward
+    : reward ? [reward] : []
+
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <img
@@ -47,7 +53,7 @@ function TileIcon({
         alt={`Tile ${id}`}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
       />
-      {reward?.map((r, index) => (
+      {rewardsArray.map((r, index) => (
         <img
           key={r + index}
           src={`/tiles/${r}.webp`}
@@ -58,7 +64,7 @@ function TileIcon({
             width: "100%",
             height: "100%",
             objectFit: "contain",
-            transform: reward.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
+            transform: rewardsArray.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
           }}
         />
       ))}

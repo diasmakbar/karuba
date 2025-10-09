@@ -7,7 +7,7 @@ interface BoardCellProps {
   r6: number
   c6: number
   tileId: number
-  reward: ("gold" | "crystal")[]
+  reward: ("gold" | "crystal")[] | "gold" | "crystal" | null
   isPreviewHere: boolean
   previewTileId: number | null
   previewImgId: number | null
@@ -55,6 +55,11 @@ export default function BoardCell(props: BoardCellProps) {
     animGhost,
   } = props
 
+  // Handle both old format (single value) and new format (array)
+  const rewardsArray: ("gold" | "crystal")[] = Array.isArray(reward)
+    ? reward
+    : reward ? [reward] : []
+
   const cursor = (selectedColor && myMoves > 0 && arrowsMap.has(`${r6},${c6}`))
     ? "pointer"
     : (tileId === -1 ? "pointer" : "default")
@@ -82,7 +87,7 @@ export default function BoardCell(props: BoardCellProps) {
         />
       )}
 
-      {reward?.map((r, index) => (
+      {rewardsArray.map((r, index) => (
         <img
           key={r + index}
           src={`/tiles/${r}.webp`}
@@ -94,7 +99,7 @@ export default function BoardCell(props: BoardCellProps) {
             height: "100%",
             objectFit: "contain",
             zIndex: 2,
-            transform: reward.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
+            transform: rewardsArray.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
           }}
         />
       ))}
@@ -107,9 +112,8 @@ export default function BoardCell(props: BoardCellProps) {
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1, opacity: 0.95 }}
           />
           {(() => {
-            const rw = reward
-            if (!rw || rw.length === 0) return null
-            return rw.map((r, index) => (
+            if (rewardsArray.length === 0) return null
+            return rewardsArray.map((r, index) => (
               <img
                 key={r + index}
                 src={`/tiles/${r}.webp`}
@@ -122,7 +126,7 @@ export default function BoardCell(props: BoardCellProps) {
                   objectFit: "contain",
                   zIndex: 2,
                   opacity: 0.95,
-                  transform: rw.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
+                  transform: rewardsArray.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
                 }}
               />
             ))
