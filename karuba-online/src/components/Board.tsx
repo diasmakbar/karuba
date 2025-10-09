@@ -519,10 +519,41 @@ useEffect(() => {
         !isAnimating &&
         arrows.length > 0 &&
         arrows.map((a, i) => {
-          // a.r, a.c are board coordinates (0-5), convert to 8x8 grid coordinates (1-6)
-          const gridRow = a.r + 1
-          const gridCol = a.c + 1
-          const center = getCellCenter(gridRow, gridCol)
+          // a.r, a.c are target board coordinates (0-5)
+          // Convert to 8x8 grid coordinates (1-6)
+          const targetRow = a.r + 1
+          const targetCol = a.c + 1
+
+          // Get origin position (where explorer currently is)
+          let originRow = -1, originCol = -1
+          if (selected.onEdge) {
+            // Explorer is on edge, calculate entry position
+            const { side, index } = selected.onEdge
+            if (side === "W") { originRow = index + 1; originCol = 0 }
+            else if (side === "S") { originRow = 7; originCol = index + 1 }
+            else if (side === "E") { originRow = index + 1; originCol = 7 }
+            else { originRow = 0; originCol = index + 1 }
+          } else if (selected.onBoard) {
+            // Explorer is on board
+            originRow = selected.onBoard.r + 1
+            originCol = selected.onBoard.c + 1
+          }
+
+          if (originRow === -1 || originCol === -1) return null
+
+          // Position arrow midway between origin and target
+          const originCenter = getCellCenter(originRow, originCol)
+          const targetCenter = getCellCenter(targetRow, targetCol)
+
+          // Parse percentages and calculate midpoint
+          const originLeft = parseFloat(originCenter.left) / 100
+          const originTop = parseFloat(originCenter.top) / 100
+          const targetLeft = parseFloat(targetCenter.left) / 100
+          const targetTop = parseFloat(targetCenter.top) / 100
+
+          const midLeft = (originLeft + targetLeft) / 2
+          const midTop = (originTop + targetTop) / 2
+
           return (
             <img
               key={`arr-${i}-${a.r}-${a.c}-${a.dir}`}
@@ -535,8 +566,8 @@ useEffect(() => {
               }}
               style={{
                 position: "absolute",
-                left: center.left,
-                top: center.top,
+                left: `${midLeft * 100}%`,
+                top: `${midTop * 100}%`,
                 width: ARROW_SIZE,
                 height: ARROW_SIZE,
                 transform: "translate(-50%, -50%)",
