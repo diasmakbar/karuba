@@ -45,17 +45,17 @@ export default function ResultModal({ game, players, showResult, setShowResult }
           background: "#fff",
           padding: 20,
           borderRadius: 12,
-          width: 500,
+          maxWidth: "90vw",
+          width: "500px",
           maxHeight: "80vh",
           overflowY: "auto",
           boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ flex: 1 }}></div>
+        <div style={{ position: "relative", textAlign: "center", marginBottom: 16 }}>
           <h2
             className="font-display"
-            style={{ margin: 0, textAlign: "center", flex: 1 }}
+            style={{ margin: 0 }}
           >
             {myPos === 1
               ? "Victory! 🏆"
@@ -66,6 +66,9 @@ export default function ResultModal({ game, players, showResult, setShowResult }
           <button
             onClick={() => setShowResult(false)}
             style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
               background: "none",
               border: "none",
               fontSize: "24px",
