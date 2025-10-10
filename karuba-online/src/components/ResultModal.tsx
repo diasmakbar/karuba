@@ -84,12 +84,22 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                 {/* HEADER BAR */}
                 <div
                   style={{
-                    padding: "12px 16px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    background: isMe ? "#fff3cd" : "#ffffff",
-                    fontWeight: isMe ? 700 : 400,
+                    // padding: "12px 16px",
+                    // border: "1px solid #e5e7eb",
+                    // borderRadius: "8px",
+                    // cursor: "pointer",
+                    // background: isMe ? "#fff3cd" : "#ffffff",
+                    // fontWeight: isMe ? 700 : 400,
+                      padding: "12px 16px",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      background: isMe ? "hsl(50, 100%, 85%)" : "#ffffff",
+                      boxShadow: isMe ? "0 0 0 2px #ffec99 inset" : "none",
+                      position: "relative",
+                      zIndex: isMe ? 1 : 0,
+                      WebkitTapHighlightColor: "transparent",
+                      fontWeight: isMe ? 700 : 400,
                   }}
                   onClick={() => setExpandedPlayer(expandedPlayer === p.id ? null : p.id)}
                 >
