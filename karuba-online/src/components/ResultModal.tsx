@@ -227,7 +227,24 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                     )}
 
                     {/* Total Bonus */}
-                    <div>
+                    <div style={{ marginTop: "10px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          paddingTop: "4px",
+                          borderTop: "1px solid #e5e7eb",
+                        }}
+                      >
+                        <span>Total Bonus</span>
+                        <span style={{ fontWeight: "bold" }}>{p.bonusPoints || 0} pts</span>
+                      </div>
+                    </div>
+
+                    {/* <div>
                       <div style={{ fontWeight: 600, marginBottom: "4px" }}>Total Bonus</div>
                       <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", }}>
                         <colgroup>
@@ -245,7 +262,7 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                           </tr>
                         </tbody>
                       </table>
-                    </div>
+                    </div> */}
                   </div>
                 )}
               </div>
