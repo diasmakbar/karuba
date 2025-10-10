@@ -1,10 +1,9 @@
 import { ref, update, get } from "../firebase"
 import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
 import { generateTilesMeta } from "../lib/deck"
-import { opp } from "./board"
 
-// Re-export opp for backward compatibility
-export { opp }
+// Define opp locally to avoid bundling conflicts
+export const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
 
 // Reward helpers
 export const rewardGain = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[] | "gold" | "crystal" | null>) => {
