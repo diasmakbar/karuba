@@ -94,6 +94,12 @@ export default function Room({ gameId }: { gameId: string }) {
   const lastActionRef = useRef<number>(Date.now())
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  const playerName = (history.state as any)?.playerName || "Unknown"
+  const playerId = getPlayerId(playerName)
+
+  // Memoized data derived from players/game - moved up before useEffect hooks
+  const me: Player | undefined = players[playerId]
+
   // Auto-ready when actedForRound and moves === 0
   useEffect(() => {
     if (me?.actedForRound && me.moves === 0 && !me.doneForRound && game?.status === "playing") {
@@ -148,9 +154,6 @@ export default function Room({ gameId }: { gameId: string }) {
       }, 4000)
     }
   }, [game?.lastEvent])
-
-  const playerName = (history.state as any)?.playerName || "Unknown"
-  const playerId = getPlayerId(playerName)
 
   useEffect(() => {
     const off1 = onValue(ref(db, `games/karuba/${gameId}`), (s) => setGame(s.val()))
@@ -210,9 +213,6 @@ export default function Room({ gameId }: { gameId: string }) {
       }
     }
   }, [game?.generateTurnUid, players])
-
-  // Memoized data derived from players/game
-  const me: Player | undefined = players[playerId]
   const isFinished = !me?.explorers || Object.keys(me.explorers).length === 0
   const order: string[] = useMemo(() => {
     return Object.values(players || {})
