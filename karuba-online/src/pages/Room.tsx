@@ -288,6 +288,9 @@ export default function Room({ gameId }: { gameId: string }) {
   // === Move 1 grid ===
   const moveOne = async (color: ExplorerColor, dir: Branch) => {
     try {
+      // Reset idle timer when explorer moves
+      resetIdleTimer()
+
       if (!game || !me) return
 
       // Get fresh player data from Firebase to ensure we have latest moves count

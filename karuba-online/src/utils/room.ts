@@ -179,13 +179,20 @@ export const maybeAdvanceRound = async (game: Game, players: Record<string, Play
   const plist = await get(ref(db, `games/karuba/${gameId}/players`))
   const pObj: Record<string, Player> = (plist.val() || {}) as any
   const activePlayers = Object.values(pObj || {}).filter(p => Object.keys(p.explorers || {}).length > 0)
+
+  // If no active players (everyone finished), end game immediately
+  if (activePlayers.length === 0) {
+    await endGame(gameId, players, db)
+    return
+  }
+
   const allReady = activePlayers.every((p) => p.doneForRound)
   if (!allReady) return
 
   const order = Object.values(players || {}).sort((a, b) => a.joinedAt - b.joinedAt).map(p => p.id)
   const nextRound = game.round + 1
 
-  // End if: only if round > 36
+  // End if: round > 36
   if (nextRound > 36) {
     await endGame(gameId, players, db)
     return
