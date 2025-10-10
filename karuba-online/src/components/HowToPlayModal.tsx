@@ -14,20 +14,20 @@ export default function HowToPlayModal({ isOpen, onClose, onPlay }: HowToPlayMod
   const pages = [
     {
       title: "Tujuan Permainan",
-      content: `Bantu para penjelajah (explorer) menemukan jalannya menuju temple berwarna sama sebelum pemain lain!
-Susun tile jalan dan kelola langkahmu seefisien mungkin untuk mengumpulkan poin terbanyak.`
+      content: `Bantu penjelajah menemukan jalannya menuju harta karun berwarna sama sebelum pemain lain!
+Susun jalan dan kelola langkahmu seefisien mungkin untuk mengumpulkan poin terbanyak.`
     },
     {
       title: "1. Setup Game",
       content: `Setiap pemain punya papan 6×6 dengan:
-- 4 penjelajah (🟤🟡🔵🔴) di tepi pantai
-- 4 temple di sisi berlawanan (warnanya sesuai explorer)
+- 4 penjelajah berwarna coklat, kuning, biru, dan merah berada di tepi pantai
+- 4 harta karun berwarna coklat, kuning, biru, dan merah di sisi berlawanan
 - Semua pemain punya set tile jalan (1–36) yang sama.
-- Satu pemain jadi Host, dan memulai ronde pertama lewat tombol Start Game.`
+- Pemain yang membuat room memulai ronde pertama lewat tombol Start Game.`
     },
     {
       title: "2. Giliran Permainan",
-      content: `Setiap ronde, semua pemain akan mendapat tile dengan nomor yang sama.
+      content: `Setiap ronde, semua pemain akan mendapat jalan dengan nomor yang sama.
 Pemain bisa memilih:
 - Menaruh tile di papan untuk membangun jalan.
 - Membuang tile (discard) untuk mendapat langkah gerak tambahan.
@@ -76,8 +76,7 @@ Apabila tile terdapat gold akan menambah +2 poin, dan apabila tile terdapat crys
     {
       title: "7. Selesai Permainan",
       content: `Game berakhir setelah semua 36 tile dimainkan atau semua explorer mencapai temple.
-Pemain dengan total poin tertinggi menang!
-Jika seri, pemenang ditentukan oleh jalur tercepat (langkah paling efisien).`
+Pemain dengan total poin tertinggi menang!`
     },
     {
       title: "Tips untuk Pemula",

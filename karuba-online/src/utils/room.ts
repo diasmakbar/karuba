@@ -1,9 +1,10 @@
 import { ref, update, get } from "../firebase"
 import type { Game, Player, Branch, ExplorerColor } from "../lib/types"
 import { generateTilesMeta } from "../lib/deck"
+import { opp } from "./board"
 
-// Shared utility
-export const opp = (b: Branch): Branch => (b === "N" ? "S" : b === "S" ? "N" : b === "E" ? "W" : "E")
+// Re-export opp for backward compatibility
+export { opp }
 
 // Reward helpers
 export const rewardGain = (tileId: number | null | undefined, rewards: Record<number, ("gold" | "crystal")[] | "gold" | "crystal" | null>) => {
