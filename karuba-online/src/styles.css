@@ -29,7 +29,7 @@ html, body, #root { height: 100%; }
 @font-face {
   font-family: "Rubik Dirt";
   src: url("/fonts/RubikDirt.ttf") format("truetype");
-  font-weight: 400; /* heading akan tetap bisa dibold (sintetik) */
+  font-weight: 200; /* heading akan tetap bisa dibold (sintetik) */
   font-style: normal;
   font-display: swap;
 }
