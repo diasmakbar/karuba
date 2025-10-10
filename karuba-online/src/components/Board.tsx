@@ -74,6 +74,13 @@ export default function Board({
 useEffect(() => {
   if (myMoves <= 0) setSelectedColor(null)
 }, [myMoves])
+
+// Clear selectedColor if the selected explorer no longer exists
+useEffect(() => {
+  if (selectedColor && !myExplorers[selectedColor]) {
+    setSelectedColor(null)
+  }
+}, [selectedColor, myExplorers])
   
   useEffect(() => {
     dlog("props", {
