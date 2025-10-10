@@ -70,6 +70,15 @@ export default function ResultModal({ game, players, showResult, setShowResult }
             const playerWins = winsArr.filter((w: any) => w.playerId === p.id)
             const nPlayers = sorted.length
 
+            // 🧮 Group finishing orders
+            const groupedWins: Record<number, number> = {}
+            playerWins.forEach((win: any) => {
+              groupedWins[win.order] = (groupedWins[win.order] || 0) + 1
+            })
+            const sortedOrders = Object.entries(groupedWins)
+              .map(([order, count]) => ({ order: Number(order), count }))
+              .sort((a, b) => a.order - b.order)
+
             return (
               <div key={p.id} style={{ marginBottom: 8 }}>
                 {/* HEADER BAR */}
@@ -93,8 +102,6 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                     }}
                   >
                     <div>{getRankIcon(rank)}</div>
-
-                    {/* three-column section */}
                     <div
                       style={{
                         display: "grid",
@@ -107,7 +114,6 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                       <div style={{ textAlign: "center" }}>{p.name}</div>
                       <div style={{ textAlign: "right" }}>{p.score} pts</div>
                     </div>
-
                     <div style={{ fontSize: "12px", opacity: 0.7 }}>
                       {expandedPlayer === p.id ? "⤵" : "↩"}
                     </div>
@@ -127,33 +133,22 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                       lineHeight: 1.6,
                     }}
                   >
-                    <div
-                      style={{
-                        fontWeight: "bold",
-                        marginBottom: "8px",
-                        fontSize: "15px",
-                      }}
-                    >
-                      {getOrdinalSuffix(rank)} | {p.name} | {p.score} pts
-                    </div>
-
                     {/* Finishing Order */}
                     <div style={{ marginBottom: "10px" }}>
                       <div style={{ fontWeight: 600, marginBottom: "4px" }}>Finishing Order</div>
-                      {playerWins.length === 0 ? (
+                      {sortedOrders.length === 0 ? (
                         <div style={{ color: "#888" }}>Unfinished (0 pts)</div>
                       ) : (
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                           <tbody>
-                            {playerWins.map((win: any, i: number) => {
-                              const points = Math.max(0, nPlayers + 2 - win.order)
+                            {sortedOrders.map(({ order, count }) => {
+                              const pointsEach = Math.max(0, nPlayers + 2 - order)
+                              const totalPoints = pointsEach * count
                               return (
-                                <tr key={i}>
-                                  <td style={{ padding: "2px 4px" }}>
-                                    • Finishing {getOrdinalSuffix(win.order)}
-                                  </td>
-                                  <td style={{ textAlign: "center" }}>×1</td>
-                                  <td style={{ textAlign: "right" }}>{points} pts</td>
+                                <tr key={order}>
+                                  <td>• Finishing {getOrdinalSuffix(order)}</td>
+                                  <td style={{ textAlign: "center" }}>×{count}</td>
+                                  <td style={{ textAlign: "right" }}>{totalPoints} pts</td>
                                 </tr>
                               )
                             })}
@@ -187,19 +182,28 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                       </table>
                     </div>
 
-                    {/* Finished At */}
+                    {/* Finish Bonus */}
                     {p.finishedAtRound && (
                       <div style={{ marginBottom: "10px" }}>
-                        <div style={{ fontWeight: 600, marginBottom: "4px" }}>Finished At</div>
+                        <div style={{ fontWeight: 600, marginBottom: "4px" }}>Finish Bonus</div>
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                           <tbody>
                             <tr>
-                              <td>• Round {p.finishedAtRound}/36</td>
+                              <td>• Base Bonus (Round {p.finishedAtRound}/36)</td>
                               <td style={{ textAlign: "center" }}>
-                                {Math.min(36 - (p.finishedAtRound as number), 8)}×
+                                {(p as any).baseBonus || 0}×
                               </td>
                               <td style={{ textAlign: "right" }}>
-                                {Math.min(36 - (p.finishedAtRound as number), 8)} pts
+                                {(p as any).baseBonus || 0} pts
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>• Placement Bonus ({getOrdinalSuffix(rank)} place)</td>
+                              <td style={{ textAlign: "center" }}>
+                                {(p as any).placementBonus || 0}×
+                              </td>
+                              <td style={{ textAlign: "right" }}>
+                                {(p as any).placementBonus || 0} pts
                               </td>
                             </tr>
                           </tbody>
@@ -207,9 +211,9 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                       </div>
                     )}
 
-                    {/* Bonus */}
+                    {/* Total Bonus */}
                     <div>
-                      <div style={{ fontWeight: 600, marginBottom: "4px" }}>Ranking Bonus</div>
+                      <div style={{ fontWeight: 600, marginBottom: "4px" }}>Total Bonus</div>
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <tbody>
                           <tr>

@@ -57,16 +57,18 @@ export const endGame = async (
 
   const updates: Record<string, any> = {}
   plist.forEach((p) => {
-    let bonus = 0
+    let baseBonus = 0
+    let placementBonus = 0
     if (p.finishedAtRound != null) {
-      const baseBonus = Math.min(36 - (p.finishedAtRound as number), 8)
-      let placementBonus = 0
-      if (finished[0]?.id === p.id) placementBonus = 2
-      else if (finished[1]?.id === p.id) placementBonus = 1
-      bonus = baseBonus + placementBonus
+      baseBonus = Math.min(36 - (p.finishedAtRound as number), 8)
+      if (finished[0]?.id === p.id) placementBonus = 2  // 1st place: +2
+      else if (finished[1]?.id === p.id) placementBonus = 1  // 2nd place: +1
     }
-    updates[`players/${p.id}/bonusPoints`] = bonus
-    updates[`players/${p.id}/score`] = (p.score ?? 0) + bonus
+    const totalBonus = baseBonus + placementBonus
+    updates[`players/${p.id}/baseBonus`] = baseBonus
+    updates[`players/${p.id}/placementBonus`] = placementBonus
+    updates[`players/${p.id}/bonusPoints`] = totalBonus  // Keep for backward compatibility
+    updates[`players/${p.id}/score`] = (p.score ?? 0) + totalBonus
   })
   updates["status"] = "ended"
   updates["statusText"] = "Game ended"
