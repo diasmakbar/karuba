@@ -139,7 +139,12 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                       {sortedOrders.length === 0 ? (
                         <div style={{ color: "#888" }}>Unfinished (0 pts)</div>
                       ) : (
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", }}>
+                          <colgroup>
+                            <col style={{ width: "70%" }} />
+                            <col style={{ width: "10%" }} />
+                            <col style={{ width: "20%" }} />
+                          </colgroup>
                           <tbody>
                             {sortedOrders.map(({ order, count }) => {
                               const pointsEach = Math.max(0, nPlayers + 2 - order)
@@ -147,7 +152,7 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                               return (
                                 <tr key={order}>
                                   <td>• Finishing {getOrdinalSuffix(order)}</td>
-                                  <td style={{ textAlign: "center" }}>×{count}</td>
+                                  <td style={{ textAlign: "center" }}>{count}x</td>
                                   <td style={{ textAlign: "right" }}>{totalPoints} pts</td>
                                 </tr>
                               )
@@ -160,7 +165,12 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                     {/* Rewards */}
                     <div style={{ marginBottom: "10px" }}>
                       <div style={{ fontWeight: 600, marginBottom: "4px" }}>Rewards</div>
-                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", }}>
+                        <colgroup>
+                          <col style={{ width: "70%" }} />
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "20%" }} />
+                        </colgroup>
                         <tbody>
                           <tr>
                             <td>• Gold</td>
@@ -186,10 +196,15 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                     {p.finishedAtRound && (
                       <div style={{ marginBottom: "10px" }}>
                         <div style={{ fontWeight: 600, marginBottom: "4px" }}>Finish Bonus</div>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", }}>
+                          <colgroup>
+                            <col style={{ width: "70%" }} />
+                            <col style={{ width: "10%" }} />
+                            <col style={{ width: "20%" }} />
+                          </colgroup>
                           <tbody>
                             <tr>
-                              <td>• Base Bonus (Round {p.finishedAtRound}/36)</td>
+                              <td>• Finishing Round at Round {p.finishedAtRound}/36</td>
                               <td style={{ textAlign: "center" }}>
                                 {(p as any).baseBonus || 0}×
                               </td>
@@ -198,7 +213,7 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                               </td>
                             </tr>
                             <tr>
-                              <td>• Placement Bonus ({getOrdinalSuffix(rank)} place)</td>
+                              <td>• Finishing Round as {getOrdinalSuffix(rank)} place</td>
                               <td style={{ textAlign: "center" }}>
                                 {(p as any).placementBonus || 0}×
                               </td>
@@ -214,7 +229,12 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                     {/* Total Bonus */}
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: "4px" }}>Total Bonus</div>
-                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", }}>
+                        <colgroup>
+                          <col style={{ width: "70%" }} />
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "20%" }} />
+                        </colgroup>
                         <tbody>
                           <tr>
                             <td></td>
