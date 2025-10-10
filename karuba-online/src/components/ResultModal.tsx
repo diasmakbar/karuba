@@ -51,16 +51,34 @@ export default function ResultModal({ game, players, showResult, setShowResult }
           boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
         }}
       >
-        <h2
-          className="font-display"
-          style={{ marginTop: 0, marginBottom: 16, textAlign: "center" }}
-        >
-          {myPos === 1
-            ? "Victory! 🏆"
-            : myPos === sorted.length
-            ? "Game Over! ☠️"
-            : "Game Result 🎲"}
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ flex: 1 }}></div>
+          <h2
+            className="font-display"
+            style={{ margin: 0, textAlign: "center", flex: 1 }}
+          >
+            {myPos === 1
+              ? "Victory! 🏆"
+              : myPos === sorted.length
+              ? "Game Over! ☠️"
+              : "Game Result 🎲"}
+          </h2>
+          <button
+            onClick={() => setShowResult(false)}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "24px",
+              cursor: "pointer",
+              color: "#666",
+              padding: "4px",
+              borderRadius: "4px",
+            }}
+            title="Close"
+          >
+            ×
+          </button>
+        </div>
 
         <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 }}>
           {sorted.map((p, i) => {
@@ -231,13 +249,20 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                                 {(p as any).placementBonus || 0} pts
                               </td>
                             </tr>
+                            <tr>
+                              <td>Total Bonus</td>
+                              <td style={{ textAlign: "center" }}></td>
+                              <td style={{ textAlign: "right" }}>
+                                {p.bonusPoints || 0} pts
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                       </div>
                     )}
 
                     {/* Total Bonus */}
-                    <div style={{ marginTop: "10px" }}>
+                    {/* <div style={{ marginTop: "10px" }}>
                       <div
                         style={{
                           display: "flex",
@@ -252,7 +277,7 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                         <span>Total Bonus</span>
                         <span style={{ fontWeight: "bold" }}>{p.bonusPoints || 0} pts</span>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* <div>
                       <div style={{ fontWeight: 600, marginBottom: "4px" }}>Total Bonus</div>

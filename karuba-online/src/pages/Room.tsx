@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState, useRef } from "react"
 import { db, ref, onValue, update, get } from "../firebase"
 import { getPlayerId } from "../lib/playerId"
 import Board from "../components/Board"
@@ -88,6 +88,66 @@ export default function Room({ gameId }: { gameId: string }) {
   } | null>(null)
 
   const [previewAt, setPreviewAt] = useState<{ r: number; c: number } | null>(null)
+  const [showIdleModal, setShowIdleModal] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastActionRef = useRef<number>(Date.now())
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Auto-ready when actedForRound and moves === 0
+  useEffect(() => {
+    if (me?.actedForRound && me.moves === 0 && !me.doneForRound && game?.status === "playing") {
+      onReadyNextRound(game, me, playerId, gameId, players, db)
+    }
+  }, [me?.actedForRound, me?.moves, me?.doneForRound, game?.status])
+
+  // Idle popup after 5 seconds
+  useEffect(() => {
+    if (!me || !game || game.status !== "playing") return
+
+    // Start idle timer when player has acted but not ready
+    if (me.actedForRound && !me.doneForRound) {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+      idleTimerRef.current = setTimeout(() => {
+        setShowIdleModal(true)
+      }, 5000) // 5 seconds
+    } else {
+      // Clear timer when not applicable
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current)
+        idleTimerRef.current = null
+      }
+      setShowIdleModal(false)
+    }
+
+    return () => {
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current)
+      }
+    }
+  }, [me?.actedForRound, me?.doneForRound, game?.status])
+
+  // Reset idle timer on any action
+  const resetIdleTimer = () => {
+    lastActionRef.current = Date.now()
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current)
+      idleTimerRef.current = null
+    }
+    setShowIdleModal(false)
+  }
+
+  // Show toast for game events
+  useEffect(() => {
+    if (game?.lastEvent) {
+      setToastMessage(game.lastEvent)
+      // Auto-hide toast after 4 seconds
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => {
+        setToastMessage(null)
+      }, 4000)
+    }
+  }, [game?.lastEvent])
 
   const playerName = (history.state as any)?.playerName || "Unknown"
   const playerId = getPlayerId(playerName)
@@ -523,6 +583,9 @@ export default function Room({ gameId }: { gameId: string }) {
   for (const w of myWins) orderCount[w.order] = (orderCount[w.order] || 0) + 1
   const orders = Array.from({ length: nPlayers }, (_, i) => i + 1)
 
+  // Calculate unfinished explorers for current player
+  const unfinishedExplorers = me ? Object.keys(me.explorers || {}).length : 0
+
   return (
     <main className="page">
       <div className="page-inner">
@@ -568,16 +631,19 @@ export default function Room({ gameId }: { gameId: string }) {
               canGenerate={canGenerateValue}
               onStartOrGenerate={() => onStartOrGenerate(game, gameId, isHost, isGenerateTurnOwner, order, db)}
               onReady={() => onReadyNextRound(game, me, playerId, gameId, players, db)}
+              onShowScoreboard={() => setShowResult(true)}
               readyDisabled={!me.actedForRound || me.doneForRound}
-              // waitingLabel={(() => {
-              //   if (game.status === "waiting") return "Waiting host to start the game"
-              //   if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
-              //     return game.generateTurnUid === playerId
-              //       ? "You can generate now"
-              //       : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
-              //   }
-              //   return `Round ${game.round}`
-              // })()}
+              waitingLabel={(() => {
+                if (game.status === "waiting") return "Waiting host to start the game"
+                if (game.status === "playing" && game.currentTile === 0 && game.round >= 2) {
+                  return game.generateTurnUid === playerId
+                    ? "You can generate now"
+                    : `Waiting for ${players[game.generateTurnUid!]?.name || "player"} to generate tile`
+                }
+                return `Round ${game.round}`
+              })()}
+              playerMoves={me.moves}
+              unfinishedExplorers={unfinishedExplorers}
             />
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
@@ -690,11 +756,6 @@ export default function Room({ gameId }: { gameId: string }) {
                 )
               })}
           </ul>
-          {game.lastEvent && (
-            <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(0,0,0,0.15)" }}>
-              <em>{game.lastEvent}</em>
-            </div>
-          )}
         </div>
 
         {showDiscardList && (
@@ -740,6 +801,123 @@ export default function Room({ gameId }: { gameId: string }) {
           showResult={showResult}
           setShowResult={setShowResult}
         />
+
+        {showIdleModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1200,
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                padding: 24,
+                borderRadius: 12,
+                width: 320,
+                textAlign: "center",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+              }}
+            >
+              <h3 style={{ marginTop: 0, marginBottom: 16 }} className="font-display">
+                Ready for next round?
+              </h3>
+              <p style={{ marginBottom: 20, color: "#666" }}>
+                You've placed/discarded your tile but haven't clicked ready yet.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button
+                  onClick={() => {
+                    setShowIdleModal(false)
+                    if (idleTimerRef.current) {
+                      clearTimeout(idleTimerRef.current)
+                      idleTimerRef.current = null
+                    }
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    border: "1px solid #ccc",
+                    background: "#f5f5f5",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Not yet
+                </button>
+                <button
+                  onClick={() => {
+                    setShowIdleModal(false)
+                    if (idleTimerRef.current) {
+                      clearTimeout(idleTimerRef.current)
+                      idleTimerRef.current = null
+                    }
+                    onReadyNextRound(game, me, playerId, gameId, players, db)
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    border: "none",
+                    background: "#007bff",
+                    color: "white",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  Yes, ready!
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div
+            style={{
+              position: "fixed",
+              top: 20,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "#333",
+              color: "white",
+              padding: "12px 20px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              zIndex: 1500,
+              maxWidth: "400px",
+              textAlign: "center",
+              fontSize: "14px",
+              lineHeight: "1.4",
+              cursor: "pointer",
+              animation: "slideDown 0.3s ease-out",
+            }}
+            onClick={() => {
+              setToastMessage(null)
+              if (toastTimerRef.current) {
+                clearTimeout(toastTimerRef.current)
+              }
+            }}
+          >
+            {toastMessage}
+            <div
+              style={{
+                position: "absolute",
+                top: "4px",
+                right: "8px",
+                fontSize: "16px",
+                lineHeight: "1",
+                opacity: 0.7,
+              }}
+            >
+              ×
+            </div>
+          </div>
+        )}
 
         {error && <div style={{ color: "red" }}>{error}</div>}
       </div>
