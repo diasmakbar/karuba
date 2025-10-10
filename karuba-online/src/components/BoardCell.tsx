@@ -140,8 +140,8 @@ export default function BoardCell(props: BoardCellProps) {
 
       {Object.values(myExplorers || {}).map((ex) => {
         if (!ex.onBoard || ex.onBoard.r !== r6 || ex.onBoard.c !== c6) return null
-        // Hide explorer if it's being animated (check both selectedColor and animGhost)
-        if (isAnimating && (ex.color === selectedColor || (animGhost && ex.color === animGhost.color))) return null
+        // Hide all explorers during animation to prevent double rendering
+        if (isAnimating) return null
         const idx = colorIdx(ex.color)
         const isSelected = selectedColor === ex.color
         const frameSuffix = ex.frame && ex.frame > 0 ? `_${ex.frame}` : ""

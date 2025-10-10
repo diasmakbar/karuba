@@ -272,26 +272,28 @@ export const canEnterFromEdge = (ex: any, board: number[][], tilesMeta: Record<s
 export const calculateReward = (
   tileId: number,
   color: ExplorerColor,
-  rewards: Record<number, ("gold" | "crystal")[]>,
-  claimedRewards: Record<ExplorerColor, Record<number, boolean>>
+  rewards: Record<number, ("gold" | "crystal")[]> | undefined,
+  claimedRewards: Record<ExplorerColor, Record<number, boolean>> | undefined
 ) => {
-  const alreadyClaimed = !!(claimedRewards && claimedRewards[color]?.[tileId])
-  const gain = alreadyClaimed ? 0 : rewardGain(tileId, rewards)
-  const kinds = rewardKind(tileId, rewards)
+  // Ensure claimedRewards is always a valid object
+  const safeClaimedRewards = claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} }
+  const alreadyClaimed = !!(safeClaimedRewards[color]?.[tileId])
+  const gain = alreadyClaimed ? 0 : rewardGain(tileId, rewards || {})
+  const kinds = rewardKind(tileId, rewards || {})
   const addGold = !alreadyClaimed ? kinds.filter(k => k === "gold").length : 0
   const addCrystal = !alreadyClaimed ? kinds.filter(k => k === "crystal").length : 0
   const nextClaimed = !alreadyClaimed && kinds.length > 0
     ? {
-        red: claimedRewards?.red || {},
-        blue: claimedRewards?.blue || {},
-        brown: claimedRewards?.brown || {},
-        yellow: claimedRewards?.yellow || {},
+        red: safeClaimedRewards.red || {},
+        blue: safeClaimedRewards.blue || {},
+        brown: safeClaimedRewards.brown || {},
+        yellow: safeClaimedRewards.yellow || {},
         [color]: {
-          ...(claimedRewards?.[color] || {}),
+          ...(safeClaimedRewards[color] || {}),
           [tileId]: true,
         },
       }
-    : (claimedRewards || { red: {}, blue: {}, brown: {}, yellow: {} })
+    : safeClaimedRewards
   return { gain, addGold, addCrystal, nextClaimed }
 }
 
