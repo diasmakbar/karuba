@@ -497,6 +497,7 @@ useEffect(() => {
               isPreviewHere={isPreviewHere}
               previewTileId={previewTileId}
               previewImgId={previewImgId}
+              previewReward={previewTileId ? rewards[previewTileId] || null : null}
               imgId={imgId}
               onCellClick={() => handleCellClick(r6, c6)}
               selectedColor={selectedColor}

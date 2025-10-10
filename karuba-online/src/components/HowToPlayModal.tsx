@@ -183,8 +183,8 @@ export default function HowToPlayModal({ isOpen, onClose, onPlay }: HowToPlayMod
           onClick={onClose}
           style={{
             position: "absolute",
-            top: -8,
-            left: -8,
+            top: 8,
+            right: 8,
             background: "transparent",
             border: "none",
             fontSize: 18,
@@ -229,7 +229,7 @@ export default function HowToPlayModal({ isOpen, onClose, onPlay }: HowToPlayMod
                 src={pages[currentPage].image}
                 alt={pages[currentPage].title}
                 style={{
-                  width: "100%",
+                  width: "50%",
                   marginTop: 12,
                   borderRadius: 8,
                   boxShadow: "0 2px 6px rgba(0,0,0,0.15)"

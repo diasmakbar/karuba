@@ -9,6 +9,7 @@ interface BoardCellProps {
   isPreviewHere: boolean
   previewTileId: number | null
   previewImgId: number | null
+  previewReward: ("gold" | "crystal")[] | "gold" | "crystal" | null
   imgId: number | null
   onCellClick: () => void
   selectedColor: ExplorerColor | null
@@ -57,6 +58,11 @@ export default function BoardCell(props: BoardCellProps) {
   const rewardsArray: ("gold" | "crystal")[] = Array.isArray(reward)
     ? reward
     : reward ? [reward] : []
+
+  // Handle preview rewards
+  const previewRewardsArray: ("gold" | "crystal")[] = Array.isArray(props.previewReward)
+    ? props.previewReward
+    : props.previewReward ? [props.previewReward] : []
 
   const cursor = (selectedColor && myMoves > 0 && arrowsMap.has(`${r6},${c6}`))
     ? "pointer"
@@ -110,8 +116,8 @@ export default function BoardCell(props: BoardCellProps) {
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 1, opacity: 0.95 }}
           />
           {(() => {
-            if (rewardsArray.length === 0) return null
-            return rewardsArray.map((r, index) => (
+            if (previewRewardsArray.length === 0) return null
+            return previewRewardsArray.map((r, index) => (
               <img
                 key={r + index}
                 src={`/tiles/${r}.webp`}
@@ -124,7 +130,7 @@ export default function BoardCell(props: BoardCellProps) {
                   objectFit: "contain",
                   zIndex: 2,
                   opacity: 0.95,
-                  transform: rewardsArray.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
+                  transform: previewRewardsArray.length > 1 ? `translate(${index * 2}px, ${index * 2}px)` : undefined,
                 }}
               />
             ))
