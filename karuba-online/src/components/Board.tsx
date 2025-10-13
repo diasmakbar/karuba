@@ -277,6 +277,10 @@ useEffect(() => {
 
   const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
 
+  if (!myExplorers || Object.values(myExplorers).some(e => e == null)) {
+    return null;
+  }
+
   const handleCellClick = (r6: number, c6: number) => {
     if (isFinished) return
     // PRIORITAS: kalau lagi memilih explorer → klik cell tujuan buat gerak
