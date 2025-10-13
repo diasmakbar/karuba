@@ -609,7 +609,7 @@ export default function Room({ gameId }: { gameId: string }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
           <div className="card" style={{ padding: 20 }}>
-            <h2 style={{ margin: "4px 0" }} className="font-display">Karuba Online</h2> 
+            <h2 style={{ margin: "4px 0" }} className="font-display">Jelajah Radiasi</h2> 
 
             <div style={{ margin: "12px 0" }}>
               <p style={{ margin: 0 }}>

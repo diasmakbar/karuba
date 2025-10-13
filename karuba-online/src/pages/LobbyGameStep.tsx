@@ -9,7 +9,7 @@ interface LobbyGameStepProps {
 export default function LobbyGameStep({ gameId, setGameId, setStep }: LobbyGameStepProps) {
   return (
     <div style={{ textAlign: 'center' }}>
-      <h2 className="font-display" style={{ marginBottom: 16 }}>Welcome to Karuba Online!</h2>
+      <h2 className="font-display" style={{ marginBottom: 16 }}>Welcome to Jelajah Radiasi!</h2>
       <input
         type="text"
         inputMode="numeric"
