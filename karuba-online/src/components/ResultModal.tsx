@@ -23,7 +23,10 @@ export default function ResultModal({ game, players, showResult, setShowResult }
     }))
     .sort((a, b) => b.score - a.score);
 
-  const myPos = sorted.findIndex(p => p.id === myId) + 1 || sorted.length;
+  // const myPos = sorted.findIndex(p => p.id === myId) + 1 || sorted.length;
+  const myIndex = sorted.findIndex(p => p.id === myId || p.name === myId);
+  const myPos = myIndex >= 0 ? myIndex + 1 : sorted.length;
+
   
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
 
@@ -70,11 +73,12 @@ export default function ResultModal({ game, players, showResult, setShowResult }
             style={{ margin: 0 }}
           >
             {(() => {
-              if (myPos === 1) return "Victory! 🏆"
-              if (myPos === sorted.length) return "Game Over! ☠️"
-              if (myPos === 2) return "2nd Place! 🥈"
-              if (myPos === 3) return "3rd Place! 🥉"
-              return "Game Result 🎲"
+              if (myPos === 1) return "Victory! 🏆";
+              if (myPos === 2) return "2nd Place! 🥈";
+              if (myPos === 3) return "3rd Place! 🥉";
+              if (myPos > 3 && myPos < sorted.length) return "Game Result 🎲";
+              if (myPos === sorted.length) return "Game Over ☠️";
+              return "Game Result 🎲";
             })()}
           </h2>
           <button
@@ -101,17 +105,19 @@ export default function ResultModal({ game, players, showResult, setShowResult }
           {sorted.map((p, i) => {
             const rank = i + 1
             // const isMe = p.id === (history.state as any)?.playerName
-            const isMe = p.id === myId;
+            const isMe = p.id === myId || p.name === myId || p.playerName === myId;
             // const highlightStyle = isMe
             //   ? { position: "relative", zIndex: 10, backgroundColor: "rgba(255,235,59,0.25)" }
             //   : {};
             const highlightStyle = isMe
               ? {
                   position: "relative",
-                  zIndex: 10,
+                  zIndex: 999,
                   isolation: "isolate",
-                  backgroundColor: "rgba(255, 235, 59, 0.25)",
-                  transition: "background-color 0.3s ease"
+                  backgroundColor: "rgba(255, 235, 59, 0.35)",
+                  boxShadow: "0 0 0 3px rgba(255, 235, 59, 0.5) inset",
+                  border: "2px solid rgba(255, 235, 59, 0.4)",
+                  transition: "background-color 0.3s ease, box-shadow 0.3s ease"
                 }
               : {};
 
