@@ -192,8 +192,8 @@ export const maybeAdvanceRound = async (game: Game, players: Record<string, Play
   const order = Object.values(players || {}).sort((a, b) => a.joinedAt - b.joinedAt).map(p => p.id)
   const nextRound = game.round + 1
 
-  // End if: round > 36 OR all players finished before round 36
-  if (nextRound > 36 || activePlayers.length === 0) {
+  // End if: round > 36
+  if (nextRound > 36) {
     await endGame(gameId, players, db)
     return
   }
