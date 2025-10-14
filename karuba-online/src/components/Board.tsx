@@ -281,13 +281,10 @@ useEffect(() => {
     }
   }
 
-  const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
+// Ensure myExplorers is always an object to prevent rendering issues
+myExplorers = myExplorers || {}
 
-  // Allow rendering even if explorers are empty (finished players still need to see the board)
-  // Just don't allow interactions
-  if (!myExplorers) {
-    return null;
-  }
+const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
 
   const handleCellClick = (r6: number, c6: number) => {
     if (isFinished) return

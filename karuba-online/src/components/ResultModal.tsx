@@ -74,10 +74,10 @@ export default function ResultModal({ game, players, showResult, setShowResult }
           >
             {(() => {
               if (myPos === 1) return "Victory! 🏆";
+              if (myPos === sorted.length) return "Game Over ☠️";
               if (myPos === 2) return "2nd Place! 🥈";
               if (myPos === 3) return "3rd Place! 🥉";
-              if (myPos > 3 && myPos < sorted.length) return "Game Result 🎲";
-              if (myPos === sorted.length) return "Game Over ☠️";
+              // if (myPos > 3 && myPos < sorted.length) return "Game Result 🎲";
               return "Game Result 🎲";
             })()}
           </h2>

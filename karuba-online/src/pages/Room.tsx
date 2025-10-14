@@ -100,12 +100,15 @@ export default function Room({ gameId }: { gameId: string }) {
   // Memoized data derived from players/game - moved up before useEffect hooks
   const me: Player | undefined = players[playerId]
 
-  // Auto-ready when actedForRound and moves === 0
+  // Auto-ready when actedForRound and moves === 0, or when finished (no explorers)
   useEffect(() => {
-    if (me?.actedForRound && me.moves === 0 && !me.doneForRound && game?.status === "playing") {
-      onReadyNextRound(game, me, playerId, gameId, players, db)
+    if (game?.status === "playing" && me) {
+      const isFinished = !me.explorers || Object.keys(me.explorers).length === 0
+      if ((me.actedForRound && me.moves === 0 && !me.doneForRound) || (isFinished && !me.doneForRound)) {
+        onReadyNextRound(game, me, playerId, gameId, players, db)
+      }
     }
-  }, [me?.actedForRound, me?.moves, me?.doneForRound, game?.status])
+  }, [me?.actedForRound, me?.moves, me?.doneForRound, me?.explorers, game?.status])
 
   // Idle popup after 5 seconds
   useEffect(() => {
