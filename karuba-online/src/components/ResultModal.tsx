@@ -11,8 +11,20 @@ interface ResultModalProps {
 export default function ResultModal({ game, players, showResult, setShowResult }: ResultModalProps) {
   if (!showResult) return null
 
-  const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
-  const myPos = Math.max(1, sorted.findIndex(p => p.id === (history.state as any)?.playerName) + 1)
+  // const sorted = Object.values(players || {}).sort((a, b) => b.score - a.score)
+  // const myPos = Math.max(1, sorted.findIndex(p => p.id === (history.state as any)?.playerName) + 1)
+  
+  const myId = (history.state as any)?.playerName;
+
+  const sorted = Object.values(players || {})
+    .map(p => ({
+      ...p,
+      score: p.score ?? 0
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const myPos = sorted.findIndex(p => p.id === myId) + 1 || sorted.length;
+  
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
 
   const getOrdinalSuffix = (num: number) => {
@@ -88,7 +100,21 @@ export default function ResultModal({ game, players, showResult, setShowResult }
         <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 }}>
           {sorted.map((p, i) => {
             const rank = i + 1
-            const isMe = p.id === (history.state as any)?.playerName
+            // const isMe = p.id === (history.state as any)?.playerName
+            const isMe = p.id === myId;
+            // const highlightStyle = isMe
+            //   ? { position: "relative", zIndex: 10, backgroundColor: "rgba(255,235,59,0.25)" }
+            //   : {};
+            const highlightStyle = isMe
+              ? {
+                  position: "relative",
+                  zIndex: 10,
+                  isolation: "isolate",
+                  backgroundColor: "rgba(255, 235, 59, 0.25)",
+                  transition: "background-color 0.3s ease"
+                }
+              : {};
+
             const winsArr = (game.templeWins || []) as any[]
             const playerWins = winsArr.filter((w: any) => w.playerId === p.id)
             const nPlayers = sorted.length
