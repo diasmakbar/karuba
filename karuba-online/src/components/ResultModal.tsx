@@ -57,11 +57,13 @@ export default function ResultModal({ game, players, showResult, setShowResult }
             className="font-display"
             style={{ margin: 0 }}
           >
-            {myPos === 1
-              ? "Victory! 🏆"
-              : myPos === sorted.length
-              ? "Game Over! ☠️"
-              : "Game Result 🎲"}
+            {(() => {
+              if (myPos === 1) return "Victory! 🏆"
+              if (myPos === sorted.length) return "Game Over! ☠️"
+              if (myPos === 2) return "2nd Place! 🥈"
+              if (myPos === 3) return "3rd Place! 🥉"
+              return "Game Result 🎲"
+            })()}
           </h2>
           <button
             onClick={() => setShowResult(false)}
@@ -139,7 +141,7 @@ export default function ResultModal({ game, players, showResult, setShowResult }
                       <div style={{ textAlign: "right" }}>{p.score} pts</div>
                     </div>
                     <div style={{ fontSize: "12px", opacity: 0.7 }}>
-                      {expandedPlayer === p.id ? "⤵" : "↩"}
+                      {expandedPlayer === p.id ? "▽" : "◁"}
                     </div>
                   </div>
                 </div>

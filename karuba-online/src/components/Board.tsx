@@ -154,8 +154,14 @@ useEffect(() => {
   // === Arrows untuk langkah selanjutnya
   type Arrow = { r: number; c: number; dir: Dir }
   type TempleTarget = { side: Branch; index: number; dir: Dir }
-  const selected = selectedColor ? myExplorers[selectedColor] : undefined
+  const selected = selectedColor && myExplorers ? myExplorers[selectedColor] : undefined
   const isAnimating = !!animGhost
+
+  // Safety check for selected explorer
+  if (selectedColor && myExplorers && !myExplorers[selectedColor]) {
+    // Explorer no longer exists, clear selection
+    setSelectedColor(null)
+  }
 
   const arrows: Arrow[] = useMemo(() => {
     if (isAnimating) return []
@@ -277,7 +283,9 @@ useEffect(() => {
 
   const isFinished = !myExplorers || Object.keys(myExplorers).length === 0
 
-  if (!myExplorers || Object.values(myExplorers).some(e => e == null)) {
+  // Allow rendering even if explorers are empty (finished players still need to see the board)
+  // Just don't allow interactions
+  if (!myExplorers) {
     return null;
   }
 
