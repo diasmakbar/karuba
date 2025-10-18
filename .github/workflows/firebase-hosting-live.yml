@@ -50,6 +50,7 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
           projectId: decryptor-game
           target: karuba  # <-- deploy hanya target ini
+          channelId: live
 
       # Build & deploy Rancang (hanya jika berubah)
       - name: Build Rancang
@@ -65,6 +66,7 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
           projectId: decryptor-game
           target: rancang  # <-- deploy hanya target ini
+          channelId: live
 
 # name: Deploy Firebase Hosting (Live)
 

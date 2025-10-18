@@ -1,0 +1,222 @@
+{
+  "id": {
+    "game": {
+      "title": "Karuba Online",
+      "gameId": "Game ID",
+      "status": {
+        "waiting": "Menunggu game dimulai...",
+        "generating": "Lihat jalan selanjutnya!",
+        "waitingFor": "Menunggu $1 untuk tau jalan selanjutnya",
+        "round": "Ronde $1 dari 36"
+      },
+      "buttons": {
+        "startGame": "Mulai Permainan",
+        "generateTile": "Lihat Jalan Selanjutnya",
+        "ready": "Gas, ronde selanjutnya!",
+        "finishGame": "Selesai!",
+        "viewScoreboard": "Lihat Papan Skor",
+        "backToLobby": "Kembali ke Lobi",
+        "discardTile": "Buang Jalan",
+        "close": "Close"
+      },
+      "labels": {
+        "nextTile": "Jalan Selanjutnya:",
+        "built": "Dibangun!",
+        "discarded": "Dibuang!",
+        "moves": "Langkah",
+        "players": "Pemain",
+        "finished": "Tamat!",
+        "ready": "Siap ✓",
+        "done": "Sudah!",
+        "thinking": "Berpikir...",
+        "ordinal": {
+          "1": "Pertama",
+          "2": "Kedua",
+          "3": "Ketiga",
+          "default": "Ke-$1"
+        }
+      },
+      "confirmation": {
+        "discardTile": "Buang jalan? Kamu akan dapat +$1 langkah.",
+        "finishGameEarly": "Are you sure to finish the game? You still have $1 moves and $2 unfinished explorers."
+      },
+      "modal": {
+        "idle": {
+          "title": "Sudah siap?",
+          "message": "Kamu sudah membangun/membuang jalan tapi belum siap.",
+          "notReady": "Belum Siap",
+          "ready": "Gas, Siap!"
+        },
+        "result": {
+          "title": {
+            "victory": "Kamu Menang! 🏆",
+            "defeat": "Kamu Kalah! ☠️",
+            "default": "Hasil Permainan 🎲"
+          },
+          "finishOrder": "Urutan Selesai",
+          "unfinished": "Tidak Selesai (0 poin)",
+          "finishedAt": "Selesai $1",
+          "order": "Selesai $1",
+          "initRewards": "Hadiah",
+          "gold": "Emas",
+          "crystal": "Kristal",
+          "finishBonus": "Bonus Tambahan",
+          "finishedAtRound": "Selesai pada ronde $1/36",
+          "finishedAtPosition": "Selesai pada urutan $1",
+          "totalBonus": "Total Bonus",
+          "points": "poin",
+          "rewardAlt": {
+            "gold": "Gold",
+            "crystal": "Crystal"
+          }
+        },
+        "discard": {
+          "title": "Discarded Tiles"
+        }
+      },
+      "tile": {
+        "alt": "Tile $1",
+        "rewardAlt": {
+          "gold": "Gold",
+          "crystal": "Crystal"
+        }
+      },
+      "explorer": {
+        "alt": "$1 explorer",
+        "moveError": "Explorer step error: $1",
+        "reward": "$1 reached the $2 temple and got $3 points!"
+      },
+      "board": {
+        "arrow": {
+          "alt": "arrow $1"
+        },
+        "temple": {
+          "win": "Temple win $1",
+          "default": "Temple $1"
+        },
+        "highlight": "Temple highlight"
+      },
+      "tooltip": {
+        "discardDisabled": "Tidak ada jalan yang dibuang",
+        "close": "Tutup"
+      },
+      "waitingLabels": [
+        "Menunggu...",
+        "Menunggu game dimulai...",
+        "Buat jalan, buang jalan, atau jalankan petualangmu!",
+        "Lihat jalan selanjutnya",
+        "Menunggu $1 untuk tau jalan selanjutnya"
+      ]
+    }
+  },
+  "en": {
+    "game": {
+      "title": "Karuba Online",
+      "gameId": "Game ID",
+      "status": {
+        "waiting": "Waiting for game to start...",
+        "generating": "Reveal next tile!",
+        "waitingFor": "Waiting for $1 to reveal next tile",
+        "round": "Round $1 of 36"
+      },
+      "buttons": {
+        "startGame": "Start Game",
+        "generateTile": "Generate Next Tile",
+        "ready": "Next round, go!",
+        "finishGame": "Finish Game!",
+        "viewScoreboard": "View Scoreboard",
+        "backToLobby": "Back to Lobby",
+        "discardTile": "Discard Tile",
+        "close": "Close"
+      },
+      "labels": {
+        "nextTile": "Next Tile:",
+        "built": "Built!",
+        "discarded": "Discarded!",
+        "moves": "Moves",
+        "players": "Players",
+        "finished": "Finished!",
+        "ready": "Ready ✓",
+        "done": "Done!",
+        "thinking": "Thinking...",
+        "ordinal": {
+          "1": "1st",
+          "2": "2nd",
+          "3": "3rd",
+          "default": "$1th"
+        }
+      },
+      "confirmation": {
+        "discardTile": "Discard tile? You'll gain +$1 moves.",
+        "finishGameEarly": "Are you sure to finish the game? You still have $1 moves and $2 unfinished explorers."
+      },
+      "modal": {
+        "idle": {
+          "title": "Ready?",
+          "message": "You've already placed/discarded a tile but haven't clicked ready yet.",
+          "notReady": "Not Ready",
+          "ready": "Ready, Go!"
+        },
+        "result": {
+          "title": {
+            "victory": "You Won! 🏆",
+            "defeat": "You Lost! ☠️",
+            "default": "Game Results 🎲"
+          },
+          "finishOrder": "Finish Order",
+          "unfinished": "Unfinished (0 points)",
+          "finishedAt": "Finished $1",
+          "order": "Finished $1",
+          "initRewards": "Rewards",
+          "gold": "Gold",
+          "crystal": "Crystal",
+          "finishBonus": "Bonus Points",
+          "finishedAtRound": "Finished at round $1/36",
+          "finishedAtPosition": "Finished at position $1",
+          "totalBonus": "Total Bonus",
+          "points": "points",
+          "rewardAlt": {
+            "gold": "Gold",
+            "crystal": "Crystal"
+          }
+        },
+        "discard": {
+          "title": "Discarded Tiles"
+        }
+      },
+      "tile": {
+        "alt": "Tile $1",
+        "rewardAlt": {
+          "gold": "Gold",
+          "crystal": "Crystal"
+        }
+      },
+      "explorer": {
+        "alt": "$1 explorer",
+        "moveError": "Explorer step error: $1",
+        "reward": "$1 reached the $2 temple and got $3 points!"
+      },
+      "board": {
+        "arrow": {
+          "alt": "arrow $1"
+        },
+        "temple": {
+          "win": "Temple win $1",
+          "default": "Temple $1"
+        },
+        "highlight": "Temple highlight"
+      },
+      "tooltip": {
+        "discardDisabled": "No tile to discard",
+        "close": "Close"
+      },
+      "waitingLabels": [
+        "Loading...",
+        "Waiting for game to start...",
+        "Build roads, discard tiles, or move your explorers!",
+        "Reveal next tile",
+        "Waiting for $1 to reveal next tile"
+      ]
+    }
+  }
+}
