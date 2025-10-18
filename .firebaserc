@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "decryptor-game"
+  },
+  "targets": {
+    "decryptor-game": {
+      "hosting": {
+        "karuba": ["karuba"],
+        "rancang": ["rancang"]
+      }
+    }
+  }
+}
