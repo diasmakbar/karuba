@@ -2,35 +2,103 @@ name: Deploy Firebase Hosting (Live)
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - 'karuba-online/**'
+      - 'rancang/**'
+      - '.github/workflows/firebase-hosting-live.yml'
+      - 'firebase.json'
+      - '.firebaserc'
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
 
+    # Cek apakah ada perubahan di folder tertentu
+    outputs:
+      karuba_changed: ${{ steps.changes.outputs.karuba }}
+      rancang_changed: ${{ steps.changes.outputs.rancang }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # butuh history buat cek perubahan
+
+      - name: Check which folders changed
+        id: changes
+        run: |
+          echo "karuba=$(git diff --name-only HEAD~1 HEAD | grep -q '^karuba-online/' && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "rancang=$(git diff --name-only HEAD~1 HEAD | grep -q '^rancang/' && echo true || echo false)" >> $GITHUB_OUTPUT
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install
+      # Build & deploy Karuba (hanya jika berubah)
+      - name: Build Karuba
+        if: steps.changes.outputs.karuba == 'true'
+        run: bun install && bun run build
         working-directory: ./karuba-online
 
-      - name: Build project
-        run: bun run build
-        working-directory: ./karuba-online
-
-      - name: Deploy to Firebase Hosting
+      - name: Deploy Karuba
+        if: steps.changes.outputs.karuba == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
-          channelId: live
           projectId: decryptor-game
-          entryPoint: karuba-online
+          target: karuba  # <-- deploy hanya target ini
+
+      # Build & deploy Rancang (hanya jika berubah)
+      - name: Build Rancang
+        if: steps.changes.outputs.rancang == 'true'
+        run: bun install && bun run build
+        working-directory: ./rancang
+
+      - name: Deploy Rancang
+        if: steps.changes.outputs.rancang == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
+          projectId: decryptor-game
+          target: rancang  # <-- deploy hanya target ini
+
+# name: Deploy Firebase Hosting (Live)
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build_and_deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+
+#       - name: Setup Bun
+#         uses: oven-sh/setup-bun@v1
+#         with:
+#           bun-version: latest
+
+#       - name: Install dependencies
+#         run: bun install
+#         working-directory: ./karuba-online
+
+#       - name: Build project
+#         run: bun run build
+#         working-directory: ./karuba-online
+
+#       - name: Deploy to Firebase Hosting
+#         uses: FirebaseExtended/action-hosting-deploy@v0
+#         with:
+#           repoToken: '${{ secrets.GITHUB_TOKEN }}'
+#           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
+#           channelId: live
+#           projectId: decryptor-game
+#           entryPoint: karuba-online
