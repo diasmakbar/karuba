@@ -20,7 +20,7 @@ export default function App() {
   return (
     <div>
       <h1 style={{ textAlign: 'center', color: 'white', margin: '10px' }}>
-        Rancang — Testing Distribusi
+        Rancang
       </h1>
 
       <LandSelectionTest
