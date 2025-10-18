@@ -1,6 +1,6 @@
 // src/components/LandSelectionTest.tsx
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import type { Attraction } from '../game/types';
 import { generateAllAttractions } from '../game/config';
 

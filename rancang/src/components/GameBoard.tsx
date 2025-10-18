@@ -1,7 +1,5 @@
 // src/components/GameBoard.tsx
 
-import React from 'react';
-
 interface Cell {
   n: number;
   x: number;

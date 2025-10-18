@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import GameBoard from './components/GameBoard';
 import LandSelectionTest from './components/LandSelectionTest';
 import { getMaxTileCount } from './game/config';
