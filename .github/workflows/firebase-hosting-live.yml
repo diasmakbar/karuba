@@ -1,3 +1,5 @@
+# .github/workflows/firebase-hosting-live.yml
+
 name: Deploy Firebase Hosting (Live)
 
 on:
@@ -6,66 +8,40 @@ on:
     paths:
       - 'karuba-online/**'
       - 'rancang/**'
-      - '.github/workflows/firebase-hosting-live.yml'
       - 'firebase.json'
       - '.firebaserc'
+      - '.github/workflows/firebase-hosting-live.yml'
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
 
-    # Cek apakah ada perubahan di folder tertentu
-    outputs:
-      karuba_changed: ${{ steps.changes.outputs.karuba }}
-      rancang_changed: ${{ steps.changes.outputs.rancang }}
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # butuh history buat cek perubahan
-
-      - name: Check which folders changed
-        id: changes
-        run: |
-          echo "karuba=$(git diff --name-only HEAD~1 HEAD | grep -q '^karuba-online/' && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "rancang=$(git diff --name-only HEAD~1 HEAD | grep -q '^rancang/' && echo true || echo false)" >> $GITHUB_OUTPUT
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      # Build & deploy Karuba (hanya jika berubah)
+      # Build Karuba
       - name: Build Karuba
-        if: steps.changes.outputs.karuba == 'true'
         run: bun install && bun run build
         working-directory: ./karuba-online
 
-      - name: Deploy Karuba
-        if: steps.changes.outputs.karuba == 'true'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
-          projectId: decryptor-game
-          target: karuba  # <-- deploy hanya target ini
-          channelId: live
-
-      # Build & deploy Rancang (hanya jika berubah)
+      # Build Rancang
       - name: Build Rancang
-        if: steps.changes.outputs.rancang == 'true'
         run: bun install && bun run build
         working-directory: ./rancang
 
-      - name: Deploy Rancang
-        if: steps.changes.outputs.rancang == 'true'
+      # Deploy SEMUA target dari ROOT
+      - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
           projectId: decryptor-game
-          target: rancang  # <-- deploy hanya target ini
           channelId: live
 
 # name: Deploy Firebase Hosting (Live)
