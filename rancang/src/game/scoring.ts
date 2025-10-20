@@ -6,7 +6,7 @@ import type { Tile, Attraction } from './types';
 // Simple mock: assume tiles 1-81, adjacent if differ by 1 or something
 // For now, mock scoring
 
-export function calculateScore(tiles: Tile[], attractions: Attraction[]): number {
+export function calculateScore(attractions: Attraction[]): number {
   // Mock: group by size
   const bySize: Record<number, Attraction[]> = { 3: [], 4: [], 5: [] };
   attractions.forEach(attr => bySize[attr.size].push(attr));
