@@ -1,7 +1,6 @@
 import { update, ref, db } from '../firebase/client';
-import { getRoundRules, generateAllAttractions, getMaxTileCount } from '../game/config';
-import { calculateScore } from '../game/scoring';
-import type { GameConfig, Player, Attraction, Tile } from '../game/types';
+import { getRoundRules, generateAllAttractions } from '../game/config';
+import type { Player } from '../game/types';
 
 // Start game from lobby
 export async function startGame(gameId: string, players: Record<string, Player>) {

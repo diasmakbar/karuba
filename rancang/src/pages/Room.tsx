@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, ref, onValue } from '../firebase/client';
 import { getPlayerId } from '../lib/playerId';
-import { startGame, selectTiles, startNegotiation, endNegotiation } from '../utils/room';
+import { startGame, selectTiles, endNegotiation } from '../utils/room';
 import type { GameConfig, Player } from '../game/types';
 
 export default function Room() {

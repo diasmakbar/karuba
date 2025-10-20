@@ -37,5 +37,6 @@ export interface GameConfig {
   currentRound: number;
   totalRounds: 4;
   status: GameStatus;
+  statusText: string;
   negotiationEndTime: number | null; // timestamp (ms)
 }

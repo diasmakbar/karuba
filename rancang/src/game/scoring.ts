@@ -7,12 +7,6 @@ import type { Tile, Attraction } from './types';
 // For now, mock scoring
 
 export function calculateScore(tiles: Tile[], attractions: Attraction[]): number {
-  // Find clusters of adjacent tiles with attractions
-  // For simplicity, each attraction gives size points, bonus for same size clusters
-
-  const ownedTiles = tiles.filter(t => t.owner !== null);
-  const clusters: Attraction[][] = [];
-
   // Mock: group by size
   const bySize: Record<number, Attraction[]> = { 3: [], 4: [], 5: [] };
   attractions.forEach(attr => bySize[attr.size].push(attr));

@@ -1,4 +1,3 @@
-import { getPlayerId } from '../lib/playerId'
 import { getMaxTileCount } from '../game/config'
 import type { Player, GameConfig } from '../game/types'
 
