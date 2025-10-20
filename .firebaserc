@@ -5,6 +5,7 @@
   "targets": {
     "decryptor-game": {
       "hosting": {
+        "karuba": ["decryptor-game"],
         "rancang": ["rancang"]
       }
     }
