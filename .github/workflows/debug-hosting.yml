@@ -1,0 +1,40 @@
+# .github/workflows/debug-hosting.yml
+
+name: Debug Firebase Hosting Configuration
+
+on:
+  # Biarkan kita jalankan manual saja agar tidak boros
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Authenticate with Firebase
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}' > service-account.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$PWD/service-account.json
+          echo "Authentication successful."
+
+      - name: List ALL Hosting Sites in Project
+        run: |
+          echo "=== Daftar SEMUA Situs Hosting yang Ada di Project decryptor-game ==="
+          firebase hosting:sites:list --project decryptor-game
+
+      - name: List Configured Targets in .firebaserc
+        run: |
+          echo ""
+          echo "=== Daftar Target yang Sudah Dikonfigurasi di .firebaserc ==="
+          firebase target:list --project decryptor-game
