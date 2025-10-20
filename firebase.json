@@ -1,7 +1,7 @@
 {
   "hosting": [
     {
-      "target": "decryptor-game",
+      "target": "karuba",
       "public": "karuba-online/dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [{ "source": "**", "destination": "/index.html" }]
