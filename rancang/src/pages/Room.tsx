@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { db, ref, onValue } from '../firebase/client';
 import { getPlayerId } from '../lib/playerId';
 import { startGame, selectTiles, endNegotiation } from '../utils/room';
+import GameBoard from '../components/GameBoard';
 import type { GameConfig, Player } from '../game/types';
 
 export default function Room() {
@@ -43,13 +44,39 @@ export default function Room() {
 
           {game.status === 'distributing' && me.tiles && (
             <div>
-              <p>Select 3 tiles from: {me.tiles.join(', ')}</p>
-              <input
-                type="text"
-                placeholder="e.g. 1,2,3"
-                onChange={(e) => setSelectedTiles(e.target.value.split(',').map(Number))}
-              />
-              <button onClick={handleSelectTiles}>Submit Tiles</button>
+              <p>Select 3 tiles:</p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {me.tiles.map(tile => {
+                  const isSelected = selectedTiles.includes(tile);
+                  return (
+                    <button
+                      key={tile}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedTiles(prev => prev.filter(t => t !== tile));
+                        } else if (selectedTiles.length < 3) {
+                          setSelectedTiles(prev => [...prev, tile]);
+                        }
+                      }}
+                      style={{
+                        width: '50px',
+                        height: '50px',
+                        background: isSelected ? '#4caf50' : '#555',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {tile}
+                    </button>
+                  );
+                })}
+              </div>
+              <p>Selected: {selectedTiles.join(', ')}</p>
+              <button onClick={handleSelectTiles} disabled={selectedTiles.length !== 3}>
+                Submit Tiles ({selectedTiles.length}/3)
+              </button>
             </div>
           )}
 
@@ -69,6 +96,12 @@ export default function Room() {
             ))}
           </ul>
         </div>
+
+        <GameBoard
+          n={game.maxTiles}
+          ownedTiles={selectedTiles}
+          submittedTiles={selectedTiles}
+        />
       </div>
     </main>
   );
