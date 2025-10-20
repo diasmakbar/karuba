@@ -1,4 +1,4 @@
-import type { Tile, Attraction } from './types';
+import type { Attraction } from './types';
 
 // Assume tiles are in a grid, but for simplicity, use adjacency based on numbers
 // In real spiral, adjacent if |dx| + |dy| = 1 in spiral coords
