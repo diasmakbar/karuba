@@ -12,6 +12,8 @@ const firebaseConfig = {
   measurementId: "G-ZRDVJX3P31"
 };
 
+// Using games/rancang/ for separate game
+
 const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 
