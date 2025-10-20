@@ -1,73 +1,95 @@
-# React + TypeScript + Vite
+# Rancang — Game Logic
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Game **Rancang** adalah game multiplayer berbasis negosiasi dan area control, terinspirasi dari *Chinatown* dan *Waterfall Park*, dengan mekanik orisinal berbasis grid spiral dan sistem kluster atraksi.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🎯 Tujuan
+Pemain membangun **kluster atraksi** yang saling menempel di papan spiral. Skor diperoleh berdasarkan **jumlah atraksi dalam kluster** dan **kelengkapannya** (dalam satu ukuran atraksi yang sama).
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🧱 Setup Awal
 
-## Expanding the ESLint configuration
+- **Jumlah pemain**: 2–9
+- **Ukuran papan**: `(jumlah pemain + 4)²`, minimal **50 tile** maksimal **150 tile**
+- **Penomoran tile**: dimulai dari tengah, lalu spiral ke luar searah jarum jam
+- **Modal awal**: setiap pemain mendapat **koin = jumlah pemain**
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🎁 Distribusi per Ronde
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Ada **4 ronde**. Tiap ronde, tiap pemain menerima:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+| Jumlah Pemain | Ronde 1–2 (Tanah / Atraksi) | Ronde 3–4 (Tanah / Atraksi) |
+|---------------|-----------------------------|-----------------------------|
+| 2–3           | 5 / 6                       | 6 / 5                       |
+| 4–5           | 4 / 4                       | 5 / 3                       |
+| 6–7           | 3 / 3                       | 4 / 2                       |
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+> Terdapat {jumlah tanah} + 2 sebagai pilihan dan pemain harus memilih hanya sejumlah {jumlah tanah} tanah. Misalkan dalam 4-5 pemain, ronde 1, pemain mendapatkan 6 tanah namun hanya memilih 4 tanah.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🗂️ Jenis Atraksi
+
+Atraksi dibagi dalam 3 ukuran, masing-masing dengan 3 varian:
+
+- **Ukuran 3**: Rest Area (x3), Minimarket (x3), Tempat Ibadah (x3)  
+- **Ukuran 4**: Taman (x4), Bioskop (x4), Lapangan Olahraga (x4)
+- **Ukuran 5**: Gedung Bisnis (x5), Waterboom (x5), Apartemen (x5)
+
+### Total Kartu Atraksi
+- 2–3 pemain → 1 set = **36 kartu**
+- 4–5 pemain → 2 set = **72 kartu**
+- 6–7 pemain → 3 set = **108 kartu**
+- 8–9 pemain → 4 set = **144 kartu**
+
+---
+
+## 💬 Fase Negosiasi
+
+- Durasi: **5 menit per ronde**
+- Pemain boleh **tawar-menawar bebas**:
+  - Tukar **tanah**, **atraksi**, atau **koin**
+  - Bisa tawar tanah kosong atau tanah + atraksi
+- Fase berakhir jika:
+  - Waktu habis, **atau**
+  - Semua pemain klik **"Selesai"**
+
+---
+
+## 📊 Scoring (Akhir Tiap Ronde)
+
+Skor dihitung berdasarkan **kluster atraksi** yang saling menempel (adjacent di grid spiral).
+
+| Jumlah Atraksi | Tidak Lengkap | Lengkap |
+|----------------|---------------|---------|
+| 1              | 1 koin        | –       |
+| 2              | 3 koin        | –       |
+| 3              | 5 koin        | 6 koin  |
+| 4              | 7 koin        | 9 koin  |
+| 5              | –             | 12 koin |
+
+> **Lengkap** = Semua atraksi dalam kluster sudah sesuai ukuran atraksi. Misal terdapat 4 bangunan Bioskop yang saling menempel.  
+> **Tidak lengkap** = Semua atraksi dalam kluster belum sesuai ukuran atraksi.
+
+Koin hasil scoring langsung ditambahkan ke pemain.
+
+---
+
+## 🔁 Alur Game
+
+1. **Distribusi** tanah & atraksi
+2. **Negosiasi** (5 menit)
+3. **Scoring otomatis**
+4. **Auto-advance** ke ronde berikutnya (setelah 10 detik)
+5. Ulangi hingga ronde 4 → tampilkan **skor akhir**
+
+---
+
+## 🌐 Teknis
+
+- **Papan**: grid spiral dengan offset ganjil-genap (mirip hex)
+- **Multiplayer**: real-time via **Firebase Realtime Database**
