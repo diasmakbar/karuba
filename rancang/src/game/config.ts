@@ -9,6 +9,13 @@ const ATTRACTIONS_BY_SIZE: Record<AttractionSize, string[]> = {
   5: ['gedung-bisnis', 'waterboom', 'apartemen'],
 };
 
+// Jumlah kartu per jenis atraksi berdasarkan ukuran
+const CARD_COUNTS_PER_SIZE: Record<AttractionSize, number> = {
+  3: 3, // x3 kartu per jenis
+  4: 4, // x4 kartu per jenis
+  5: 5, // x5 kartu per jenis
+};
+
 // Hitung total atraksi berdasarkan jumlah pemain
 export function getTotalAttractionCount(playerCount: number): number {
   if (playerCount <= 3) return 27;   // 1 set
@@ -29,7 +36,9 @@ export function generateAllAttractions(playerCount: number): Attraction[] {
   for (let set = 0; set < setSize; set++) {
     for (const size of [3, 4, 5] as const) {
       for (const type of ATTRACTIONS_BY_SIZE[size]) {
-        attractions.push({ size, type: type as any });
+        for (let count = 0; count < CARD_COUNTS_PER_SIZE[size]; count++) {
+          attractions.push({ size, type: type as any });
+        }
       }
     }
   }

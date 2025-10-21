@@ -1,13 +1,27 @@
 import { useState } from 'react'
 import { getPlayerId } from '../lib/playerId'
+import { handleCreateGame, handleJoinGame } from '../utils/lobby'
 import LobbyGameStep from './LobbyGameStep'
 import LobbyNameStep from './LobbyNameStep'
+import LobbyColorStep from './LobbyColorStep'
 
 export default function Lobby() {
-  const [step, setStep] = useState<'game' | 'name'>('game')
+  const [step, setStep] = useState<'game' | 'name' | 'color'>('game')
   const [gameId, setGameId] = useState('')
   const [name, setName] = useState('')
+  const [color, setColor] = useState('')
   const playerId = getPlayerId(name)
+
+  const handleJoin = async () => {
+    const cleanId = gameId.replace(/\s/g, '')
+    const { get, ref, db } = await import('../firebase/client')
+    const gSnap = await get(ref(db, `games/rancang/${cleanId}`))
+    if (!gSnap.exists()) {
+      await handleCreateGame(gameId, name, playerId, color)
+    } else {
+      await handleJoinGame(gameId, name, playerId, color)
+    }
+  }
 
   return (
     <main className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -30,7 +44,10 @@ export default function Lobby() {
           )}
 
           {step === 'name' && (
-            <LobbyNameStep gameId={gameId} name={name} setName={setName} playerId={playerId} />
+            <LobbyNameStep gameId={gameId} name={name} setName={setName} playerId={playerId} setStep={setStep} />
+          )}
+          {step === 'color' && (
+            <LobbyColorStep gameId={gameId} name={name} playerId={playerId} color={color} setColor={setColor} onJoin={handleJoin} />
           )}
         </div>
       </div>

@@ -1,28 +1,52 @@
 import type { Attraction } from './types';
+import { findClusters, generateSpiralGrid } from './spiral';
 
-// Assume tiles are in a grid, but for simplicity, use adjacency based on numbers
-// In real spiral, adjacent if |dx| + |dy| = 1 in spiral coords
+// Scoring table from README (incomplete vs complete clusters)
+const SCORE_TABLE = {
+  1: { incomplete: 1 },
+  2: { incomplete: 3 },
+  3: { incomplete: 5 },
+  4: { incomplete: 7 },
+  5: { incomplete: 12 },
+};
 
-// Simple mock: assume tiles 1-81, adjacent if differ by 1 or something
-// For now, mock scoring
+// Complete bonus: compared to incomplete
+const COMPLETE_BONUS = {
+  3: 1, // 5 -> 6
+  4: 2, // 7 -> 9
+  5: 0, // already complete at 5=12?
+};
 
-export function calculateScore(attractions: Attraction[]): number {
-  // Mock: group by size
-  const bySize: Record<number, Attraction[]> = { 3: [], 4: [], 5: [] };
-  attractions.forEach(attr => bySize[attr.size].push(attr));
+// Calculate score for a player based on their built attractions clusters
+export function calculateScore(playerTiles: Record<number, Attraction>): number {
+  const maxTiles = Math.max(...Object.keys(playerTiles).map(n => parseInt(n))); // rough estimate
+  const cells = generateSpiralGrid(maxTiles);
 
-  let score = 0;
-  for (const size in bySize) {
-    const count = bySize[size].length;
-    if (count === 0) continue;
-    if (count === 1) score += 1;
-    else if (count === 2) score += 3;
-    else if (count === 3) score += 5;
-    else if (count === 4) score += 7;
-    else if (count === 5) score += 12;
-    // Bonus for complete set
-    if (count >= parseInt(size)) score += 1; // mock
+  // Built tiles for this player: those with attraction
+  const builtTiles: Record<number, boolean> = {};
+  for (let i = 1; i <= maxTiles; i++) {
+    builtTiles[i] = i in playerTiles;
   }
 
-  return score;
+  // Find clusters of built tiles
+  const clusters = findClusters(builtTiles, cells);
+
+  let totalScore = 0;
+  clusters.forEach(cluster => {
+    const attractions = cluster.map(n => playerTiles[n]);
+    // All attractions in cluster
+    const sizes = attractions.map(a => a.size);
+    const isComplete = sizes.every(s => s === sizes[0]); // all same size
+    const clusterSize = cluster.length;
+    if (clusterSize <= 5) {
+      const baseScore = SCORE_TABLE[clusterSize as keyof typeof SCORE_TABLE].incomplete;
+      const bonus = isComplete && clusterSize >= 3 ? COMPLETE_BONUS[clusterSize as 3 | 4 | 5] || 0 : 0;
+      totalScore += baseScore + bonus;
+    } else {
+      // For >5, assume 12 + more if complete? Not specified, maybe cap at 12
+      totalScore += 12;
+    }
+  });
+
+  return totalScore;
 }

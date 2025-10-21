@@ -20,13 +20,28 @@ export interface Tile {
   attraction: Attraction | null; // null = belum pasang atraksi
 }
 
+export const PLAYER_COLORS = [
+  '#e74c3c', // red
+  '#3498db', // blue
+  '#2ecc71', // green
+  '#f39c12', // yellow
+  '#9b59b6', // purple
+  '#1abc9c', // turquoise
+  '#e67e22', // orange
+  '#34495e', // dark gray
+  '#ecf0f1', // light gray
+  '#95a5a6', // silver
+];
+
 export interface Player {
   id: string;
   name: string;
+  color: string;                // chosen color
   coins: number;
   tiles: number[];              // array nomor tile yang dimiliki
   attractions: Attraction[];    // kartu atraksi di tangan
   doneNegotiating: boolean;
+  builtAttractions?: Record<number, Attraction>; // tile -> attraction built
 }
 
 export type GameStatus = 'lobby' | 'distributing' | 'negotiation' | 'scoring' | 'finished';

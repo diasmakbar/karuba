@@ -6,7 +6,7 @@ export function newGameId(): string {
   return num.slice(0, 3) + ' ' + num.slice(3)
 }
 
-export async function handleCreateGame(gameId: string, name: string, playerId: string) {
+export async function handleCreateGame(gameId: string, name: string, playerId: string, color: string) {
   const cleanId = gameId.replace(/\s/g, '')
   if (!name.trim()) {
     alert('Enter your name!')
@@ -30,14 +30,14 @@ export async function handleCreateGame(gameId: string, name: string, playerId: s
   await set(ref(db, `games/rancang/${cleanId}`), gamePayload)
   await set(
     ref(db, `games/rancang/${cleanId}/players/${playerId}`),
-    createPlayerPayload(playerId, name.trim(), playerCount)
+    createPlayerPayload(playerId, name.trim(), playerCount, color)
   )
 
   history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`)
   dispatchEvent(new PopStateEvent('popstate'))
 }
 
-export async function handleJoinGame(gameId: string, name: string, playerId: string) {
+export async function handleJoinGame(gameId: string, name: string, playerId: string, color: string) {
   const cleanId = gameId.replace(/\s/g, '')
   if (!name.trim()) {
     alert('Enter your name!')
@@ -60,7 +60,7 @@ export async function handleJoinGame(gameId: string, name: string, playerId: str
   if (!pSnap.exists()) {
     await set(
       ref(db, `games/rancang/${cleanId}/players/${playerId}`),
-      createPlayerPayload(playerId, name.trim(), gameData.playerCount || 5)
+      createPlayerPayload(playerId, name.trim(), gameData.playerCount || 5, color)
     )
     const playersSnap = await get(ref(db, `games/rancang/${cleanId}/players`))
     const count = playersSnap.exists() ? Object.keys(playersSnap.val() || {}).length : 1
@@ -71,10 +71,11 @@ export async function handleJoinGame(gameId: string, name: string, playerId: str
   dispatchEvent(new PopStateEvent('popstate'))
 }
 
-function createPlayerPayload(id: string, pname: string, playerCount: number): Player {
+function createPlayerPayload(id: string, pname: string, playerCount: number, color: string): Player {
   return {
     id,
     name: pname,
+    color,
     coins: playerCount, // initial coins = player count
     tiles: [],
     attractions: [],

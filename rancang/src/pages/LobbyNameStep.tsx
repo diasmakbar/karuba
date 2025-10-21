@@ -5,9 +5,10 @@ interface LobbyNameStepProps {
   name: string
   setName: (name: string) => void
   playerId: string
+  setStep: (step: 'game' | 'name' | 'color') => void
 }
 
-export default function LobbyNameStep({ gameId, name, setName, playerId }: LobbyNameStepProps) {
+export default function LobbyNameStep({ gameId, name, setName, playerId, setStep }: LobbyNameStepProps) {
   return (
     <div style={{ textAlign: 'center' }}>
       <h2 style={{ marginBottom: 16 }}>Please input your name:</h2>
@@ -19,18 +20,10 @@ export default function LobbyNameStep({ gameId, name, setName, playerId }: Lobby
       />
       <button
         style={{ width: '100%', padding: '10px', fontSize: 18, borderRadius: 6 }}
-        onClick={async () => {
-          const cleanId = gameId.replace(/\s/g, '')
-          const { get, ref, db } = await import('../firebase/client')
-          const gSnap = await get(ref(db, `games/rancang/${cleanId}`))
-          if (!gSnap.exists()) {
-            await handleCreateGame(gameId, name, playerId)
-          } else {
-            await handleJoinGame(gameId, name, playerId)
-          }
-        }}
+        onClick={() => setStep('color')}
+        disabled={!name.trim()}
       >
-        Join!
+        Next
       </button>
     </div>
   )

@@ -2,15 +2,21 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, ref, onValue } from '../firebase/client';
 import { getPlayerId } from '../lib/playerId';
-import { startGame, selectTiles, endNegotiation } from '../utils/room';
+import { startGame, selectTiles, endNegotiation, updateAttraction } from '../utils/room';
 import GameBoard from '../components/GameBoard';
-import type { GameConfig, Player } from '../game/types';
+import LandSelectionTest from '../components/LandSelectionTest';
+import BuildModal from '../components/BuildModal';
+import type { GameConfig, Player, Attraction } from '../game/types';
 
 export default function Room() {
   const { gameId } = useParams<{ gameId: string }>();
   const [game, setGame] = useState<GameConfig | null>(null);
   const [players, setPlayers] = useState<Record<string, Player>>({});
   const [selectedTiles, setSelectedTiles] = useState<number[]>([]);
+  const [blinkingTiles, setBlinkingTiles] = useState<number[]>([]);
+  const [tilesSubmitted, setTilesSubmitted] = useState(false);
+  // builtAttractions from player state
+  const [buildMode, setBuildMode] = useState<number | null>(null); // tile being built
   const playerName = (history.state as any)?.playerName || 'Unknown';
   const playerId = getPlayerId(playerName);
   const me = players[playerId];
@@ -26,7 +32,7 @@ export default function Room() {
   if (!game || !me) return <div>Loading game...</div>;
 
   const handleStartGame = () => startGame(gameId!, players);
-  const handleSelectTiles = () => selectTiles(gameId!, playerId, selectedTiles);
+  const handleSelectTiles = (tiles: number[]) => selectTiles(gameId!, playerId, tiles);
   const handleDoneNegotiating = () => endNegotiation(gameId!, players);
 
   return (
@@ -42,42 +48,22 @@ export default function Room() {
             <button onClick={handleStartGame}>Start Game</button>
           )}
 
-          {game.status === 'distributing' && me.tiles && (
-            <div>
-              <p>Select 3 tiles:</p>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {me.tiles.map(tile => {
-                  const isSelected = selectedTiles.includes(tile);
-                  return (
-                    <button
-                      key={tile}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelectedTiles(prev => prev.filter(t => t !== tile));
-                        } else if (selectedTiles.length < 3) {
-                          setSelectedTiles(prev => [...prev, tile]);
-                        }
-                      }}
-                      style={{
-                        width: '50px',
-                        height: '50px',
-                        background: isSelected ? '#4caf50' : '#555',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {tile}
-                    </button>
-                  );
-                })}
-              </div>
-              <p>Selected: {selectedTiles.join(', ')}</p>
-              <button onClick={handleSelectTiles} disabled={selectedTiles.length !== 3}>
-                Submit Tiles ({selectedTiles.length}/3)
-              </button>
-            </div>
+          {game.status === 'distributing' && me.tiles && !tilesSubmitted && (
+            <LandSelectionTest
+              maxTile={game.maxTiles}
+              playerCount={game.playerCount || 5}
+              round={game.currentRound || 1}
+              playerColor={me.color || '#4caf50'}
+              tilePool={me.tiles}
+              onSelected={(tiles, attractions) => {
+                setSelectedTiles(tiles);
+                setTilesSubmitted(true);
+                setBlinkingTiles([]); // Stop blinking on submit
+                handleSelectTiles(tiles);
+                // Attractions could be stored or sent later
+              }}
+              onUpdateBlinkingTiles={setBlinkingTiles}
+            />
           )}
 
           {game.status === 'negotiation' && (
@@ -97,11 +83,42 @@ export default function Room() {
           </ul>
         </div>
 
+
         <GameBoard
           n={game.maxTiles}
-          ownedTiles={selectedTiles}
-          submittedTiles={selectedTiles}
+          ownedTiles={{
+            ...Object.fromEntries(selectedTiles.map(t => [t, playerId]))
+          }}
+          playerColors={Object.fromEntries(
+            Object.values(players).map(p => [p.id, p.color])
+          )}
+          builtAttractions={me.builtAttractions || {}}
+          onTileClick={game.status === 'negotiation' ? (tile) => {
+            if (selectedTiles.includes(tile)) {
+              const current = me.builtAttractions?.[tile];
+              if (current) {
+                // Remove the built attraction
+                updateAttraction(gameId!, playerId, tile, null);
+                setBuildMode(tile); // reopen modal for rebuild
+              } else {
+                setBuildMode(tile); // open modal to build
+              }
+            }
+          } : undefined}
+          selectedTilesForBlink={blinkingTiles}
         />
+
+        {buildMode && (
+          <BuildModal
+            attractions={me.attractions}
+            playerColor={me.color || '#4caf50'}
+            onSelect={(attraction) => {
+              updateAttraction(gameId!, playerId, buildMode, attraction);
+              setBuildMode(null);
+            }}
+            onCancel={() => setBuildMode(null)}
+          />
+        )}
       </div>
     </main>
   );

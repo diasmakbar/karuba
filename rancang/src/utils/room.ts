@@ -1,6 +1,6 @@
-import { update, ref, db } from '../firebase/client';
+import { update, ref, db, get } from '../firebase/client';
 import { getRoundRules, generateAllAttractions } from '../game/config';
-import type { Player } from '../game/types';
+import type { Player, Attraction } from '../game/types';
 
 // Start game from lobby
 export async function startGame(gameId: string, players: Record<string, Player>) {
@@ -56,6 +56,24 @@ export async function selectTiles(gameId: string, playerId: string, selectedTile
     status: 'negotiation',
     statusText: 'Negotiate trades',
     negotiationEndTime: Date.now() + 5 * 60 * 1000, // 5 min
+  });
+}
+
+// Player builds or removes attraction on tile
+export async function updateAttraction(gameId: string, playerId: string, tile: number, attraction: Attraction | null) {
+  // Get current builtAttractions, update
+  const pRef = ref(db, `games/rancang/${gameId}/players/${playerId}`);
+  const snap = await get(pRef);
+  const currentPlayer = snap.val() as Player;
+  const currentBuilt = currentPlayer.builtAttractions || {};
+  const newBuilt = { ...currentBuilt };
+  if (attraction) {
+    newBuilt[tile] = attraction;
+  } else {
+    delete newBuilt[tile];
+  }
+  await update(ref(db, `games/rancang/${gameId}/players/${playerId}`), {
+    builtAttractions: newBuilt,
   });
 }
 

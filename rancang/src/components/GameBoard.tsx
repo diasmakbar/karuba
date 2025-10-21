@@ -1,46 +1,24 @@
 // src/components/GameBoard.tsx
 
-interface Cell {
-  n: number;
-  x: number;
-  y: number;
-}
+import { generateSpiralGrid } from '../game/spiral';
+import type { Attraction } from '../game/types';
+import React from 'react';
 
-function generateSpiralGrid(nMax: number): Cell[] {
-  let x = 0, y = 0;
-  let dx = 1, dy = 0;
-  let steps = 1;
-  let n = 1;
-
-  const out: Cell[] = [{ n, x, y }];
-  n++;
-
-  while (n <= nMax) {
-    for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < steps; j++) {
-        if (n > nMax) break;
-        x += dx;
-        y += dy;
-        out.push({ n, x, y });
-        n++;
-      }
-      [dx, dy] = [-dy, dx];
-    }
-    steps++;
-  }
-
-  return out.map((cell) =>
-    cell.y % 2 !== 0 ? { ...cell, x: cell.x + 0.5 } : cell
-  );
+// Helper function to get attraction initials
+function getAttractionInitial(type: string): string {
+  return type.split('-').map(word => word[0].toUpperCase()).join('');
 }
 
 interface GameBoardProps {
   n?: number;
-  ownedTiles?: number[]; // tambahan: tile yang dimiliki
-  submittedTiles?: number[];
+  ownedTiles?: Record<number, string>; // tile -> owner uid
+  playerColors?: Record<string, string>; // uid -> color
+  builtAttractions?: Record<number, Attraction>; // tile -> attraction
+  onTileClick?: (tile: number) => void;
+  selectedTilesForBlink?: number[]; // tiles to blink white
 }
 
-export default function GameBoard({ n = 36, ownedTiles = [], submittedTiles = [] }: GameBoardProps) {
+export default function GameBoard({ n = 36, ownedTiles = {}, playerColors = {}, builtAttractions = {}, onTileClick, selectedTilesForBlink }: GameBoardProps) {
   const cells = generateSpiralGrid(n);
 
   const minX = Math.min(...cells.map(c => c.x));
@@ -56,19 +34,29 @@ export default function GameBoard({ n = 36, ownedTiles = [], submittedTiles = []
   const boardHeight = gridSizeY * tileSize;
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100vh',
-        background: '#1e1e1e',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        padding: '20px',
-      }}
-    >
+    <>
+      <style>
+        {`
+          @keyframes blink-white {
+            0% { background: inherit; opacity: inherit; }
+            50% { background: white; opacity: 1; }
+            100% { background: inherit; opacity: inherit; }
+          }
+        `}
+      </style>
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100vh',
+          background: '#1e1e1e',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          padding: '20px',
+        }}
+      >
       <div
         style={{
           width: '100%',
@@ -94,11 +82,30 @@ export default function GameBoard({ n = 36, ownedTiles = [], submittedTiles = []
           }}
         >
           {cells.map((cell) => {
-            const isOwned = ownedTiles.includes(cell.n);
-            const isSubmitted = submittedTiles?.includes(cell.n);
+            const ownerId = ownedTiles[cell.n];
+            const ownerColor = ownerId ? playerColors[ownerId] || '#333' : '#333';
+            const builtAttr = builtAttractions[cell.n];
+            const isOwned = !!ownerId;
+            const isBuilt = !!builtAttr;
+
+            // Base content: tile number or attraction layout
+            let content: React.ReactNode = cell.n;
+            if (isBuilt) {
+              // Attraction display layout
+              const initial = getAttractionInitial(builtAttr.type);
+              content = (
+                <div style={{ textAlign: 'center', lineHeight: '1.1' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{initial}</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', position: 'relative', top: '-2px' }}>({builtAttr.size})</div>
+                  <div style={{ fontSize: '10px', marginTop: '-2px' }}>{cell.n}</div>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={cell.n}
+                onClick={() => onTileClick?.(cell.n)}
                 style={{
                   position: 'absolute',
                   left: `${(cell.x - minX) * tileSize}px`,
@@ -111,23 +118,22 @@ export default function GameBoard({ n = 36, ownedTiles = [], submittedTiles = []
                   fontSize: '12px',
                   fontWeight: 'bold',
                   color: '#fff',
-                  background: isOwned ? '#2a6f4e' : '#333', // hijau kalau dimiliki
-                  border: isSubmitted
-                    ? '3px solid #2196f3' // biru tebal kalau submitted
-                    : isOwned
-                    ? '2px solid #4caf50'
-                    : '1px solid #666',
-                //   border: isOwned ? '2px solid #4caf50' : '1px solid #666',
+                  background: '#333',
+                  opacity: isOwned ? 1 : 0.2, // semi-transparent if claimed, but owned full opacity
+                  border: selectedTilesForBlink?.includes(cell.n) ? '2px solid #fff' : isOwned ? `2px solid ${ownerColor}` : '1px solid #666',
                   borderRadius: '4px',
                   userSelect: 'none',
+                  cursor: onTileClick ? 'pointer' : 'default',
+                  animation: selectedTilesForBlink?.includes(cell.n) ? 'blink-white 1s ease-out infinite' : 'none',
                 }}
               >
-                {cell.n}
+                {content}
               </div>
             );
           })}
         </div>
       </div>
     </div>
+    </>
   );
 }

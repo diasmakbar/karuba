@@ -11,7 +11,7 @@ Pemain membangun **kluster atraksi** yang saling menempel di papan spiral. Skor 
 
 ## 🧱 Setup Awal
 
-- **Jumlah pemain**: 2–9
+- **Jumlah pemain**: 3–9
 - **Ukuran papan**: `(jumlah pemain + 4)²`, minimal **50 tile** maksimal **150 tile**
 - **Penomoran tile**: dimulai dari tengah, lalu spiral ke luar searah jarum jam
 - **Modal awal**: setiap pemain mendapat **koin = jumlah pemain**

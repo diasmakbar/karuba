@@ -2,51 +2,59 @@
 
 import { useState, useMemo } from 'react';
 import type { Attraction } from '../game/types';
-import { generateAllAttractions } from '../game/config';
+import { generateAllAttractions, getRoundRules } from '../game/config';
 
 interface LandSelectionTestProps {
   maxTile: number;
+  playerCount: number;
+  round: number; // 1-4
+  playerColor: string; // color for selected buttons
+  tilePool?: number[]; // if provided, use this as options instead of random
   onSelected: (tiles: number[], attractions: Attraction[]) => void;
+  onUpdateBlinkingTiles?: (tiles: number[]) => void; // for blinking effect, pass current selected tiles
 }
 
-export default function LandSelectionTest({ maxTile, onSelected }: LandSelectionTestProps) {
+export default function LandSelectionTest({ maxTile, playerCount, round, playerColor, tilePool, onSelected, onUpdateBlinkingTiles }: LandSelectionTestProps) {
   const [selectedTiles, setSelectedTiles] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
-  // --- Generate 5 tile acak ---
+  const roundRules = useMemo(() => getRoundRules(playerCount)[round - 1], [playerCount, round]);
+  const landCount = roundRules.land; // the number to choose
+
+  // --- Generate or use provided tile pool ---
   const randomTiles = useMemo(() => {
+    if (tilePool) {
+      // Use provided pool, take first 7 for example (landCount + 2 = 7 for 2-3 players)
+      return tilePool.slice(0, landCount + 2);
+    }
     const set = new Set<number>();
-    while (set.size < 5) {
+    while (set.size < landCount + 2) {
       set.add(Math.floor(Math.random() * maxTile) + 1);
     }
     return Array.from(set);
-  }, [maxTile]);
+  }, [maxTile, landCount, tilePool]);
 
-  // --- Generate 1 atraksi per tipe (3, 4, 5) ---
+  // --- Generate 3 random attractions from full pool ---
   const randomAttractions = useMemo<Attraction[]>(() => {
-    // Ambil semua atraksi (1 set cukup)
-    const all = generateAllAttractions(2); // 2 pemain → 1 set
-
-    const type3 = all.filter(a => a.size === 3);
-    const type4 = all.filter(a => a.size === 4);
-    const type5 = all.filter(a => a.size === 5);
-
-    const pickRandom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-
-    return [
-      pickRandom(type3),
-      pickRandom(type4),
-      pickRandom(type5)
-    ];
-  }, []);
+    const all = generateAllAttractions(playerCount);
+    // Shuffle and pick first 3
+    const shuffled = [...all].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3);
+  }, [playerCount]);
 
   const toggleTile = (tile: number) => {
     if (submitted) return;
-    if (selectedTiles.includes(tile)) {
-      setSelectedTiles(prev => prev.filter(t => t !== tile));
-    } else if (selectedTiles.length < 3) {
-      setSelectedTiles(prev => [...prev, tile]);
-    }
+    setSelectedTiles(prev => {
+      const newSelected = [...prev];
+      const index = newSelected.indexOf(tile);
+      if (index > -1) {
+        newSelected.splice(index, 1); // remove
+      } else if (newSelected.length < landCount) {
+        newSelected.push(tile); // add
+      }
+      onUpdateBlinkingTiles?.(newSelected);
+      return newSelected;
+    });
   };
 
   const handleSubmit = () => {
@@ -73,12 +81,12 @@ export default function LandSelectionTest({ maxTile, onSelected }: LandSelection
 
   return (
     <div style={{ padding: '20px', background: '#333', borderRadius: '8px', margin: '20px', color: 'white' }}>
-      <h3 style={{ marginBottom: '16px' }}>Pilih Tanah (Maks 3)</h3>
+      <h3 style={{ marginBottom: '16px' }}>Pilih Tanah (Select {landCount} from {landCount + 2} options)</h3>
 
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
         {randomTiles.map(tile => {
           const isSelected = selectedTiles.includes(tile);
-          const isDisabled = !isSelected && selectedTiles.length >= 3 && !submitted;
+          const isDisabled = !isSelected && selectedTiles.length >= landCount && !submitted;
 
           return (
             <button
@@ -90,7 +98,7 @@ export default function LandSelectionTest({ maxTile, onSelected }: LandSelection
                 height: '50px',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                background: isSelected ? '#4caf50' : '#555',
+                background: isSelected ? playerColor : '#555', // player color for selected
                 color: 'white',
                 border: isSelected ? '2px solid #8bc34a' : '1px solid #777',
                 borderRadius: '6px',
@@ -98,7 +106,7 @@ export default function LandSelectionTest({ maxTile, onSelected }: LandSelection
                 opacity: isDisabled ? 0.5 : 1,
               }}
             >
-              {isSelected ? '✓' : tile}
+              {tile}
             </button>
           );
         })}
