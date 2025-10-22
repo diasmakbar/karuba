@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Player } from '../game/types';
+import { PLAYER_COLORS } from '../game/types';
 
 // Helper function to get attraction initials
 function getAttractionInitial(type: string): string {
@@ -14,8 +15,14 @@ interface ScoreboardProps {
 }
 
 export default function Scoreboard({ players, currentPlayerId }: ScoreboardProps) {
+  // Get text color for player color
+  const getTextColor = (color: string) => {
+    const col = PLAYER_COLORS.find(c => c.color === color);
+    return col ? col.textColor : 'white';
+  };
+
   return (
-    <div style={{ background: '#2d2d2d', padding: '16px', borderRadius: '8px' }}>
+    <div style={{ background: '#2d2d2d', padding: '16px', borderRadius: '8px', width: '300px' }}>
       <h3 style={{ color: '#fff', marginBottom: '16px' }}>Players</h3>
       {players.map(player => (
         <div key={player.id} style={{ marginBottom: '16px', padding: '8px', border: player.id === currentPlayerId ? '2px solid #4caf50' : '1px solid #444', borderRadius: '4px' }}>
@@ -32,7 +39,7 @@ export default function Scoreboard({ players, currentPlayerId }: ScoreboardProps
                   height: '40px',
                   background: player.color,
                   opacity: 0.8,
-                  color: '#fff',
+                  color: getTextColor(player.color),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

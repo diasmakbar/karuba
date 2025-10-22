@@ -22,17 +22,22 @@ export default function LobbyColorStep({ gameId, name, playerId, color, setColor
         {PLAYER_COLORS.map((col, index) => (
           <button
             key={index}
-            onClick={() => setColor(col)}
+            onClick={() => setColor(col.color)}
             style={{
               width: '40px',
               height: '40px',
-              backgroundColor: col,
-              border: color === col ? '3px solid #000' : '2px solid #ccc',
+              backgroundColor: col.color,
+              color: col.textColor,
+              border: color === col.color ? '3px solid #000' : '2px solid #ccc',
               borderRadius: '4px',
               cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 'bold',
             }}
             title={`Color ${index + 1}`}
-          />
+          >
+            {index + 1}
+          </button>
         ))}
       </div>
 

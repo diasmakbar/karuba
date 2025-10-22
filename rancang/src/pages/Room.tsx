@@ -6,6 +6,7 @@ import { startGame, selectTiles, endNegotiation, updateAttraction } from '../uti
 import GameBoard from '../components/GameBoard';
 import LandSelectionTest from '../components/LandSelectionTest';
 import BuildModal from '../components/BuildModal';
+import Scoreboard from '../components/Scoreboard';
 import type { GameConfig, Player, Attraction } from '../game/types';
 
 export default function Room() {
@@ -38,49 +39,46 @@ export default function Room() {
   return (
     <main className="page">
       <div className="page-inner">
-        <div className="card" style={{ padding: 20 }}>
-          <h2>Rancang - Game {gameId}</h2>
-          <p>Status: {game.statusText}</p>
-          <p>Round: {game.currentRound} / {game.totalRounds}</p>
-          <p>Players: {Object.keys(players).length}</p>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <div style={{ flex: 1 }}>
+            <div className="card" style={{ padding: 20 }}>
+              <h2>Rancang - Game {gameId}</h2>
+              <p>Status: {game.statusText}</p>
+              <p>Round: {game.currentRound} / {game.totalRounds}</p>
+              <p>Players: {Object.keys(players).length}</p>
 
-          {game.status === 'lobby' && isHost && (
-            <button onClick={handleStartGame}>Start Game</button>
-          )}
+              {game.status === 'lobby' && isHost && (
+                <button onClick={handleStartGame}>Start Game</button>
+              )}
 
-          {game.status === 'distributing' && me.tiles && !tilesSubmitted && (
-            <LandSelectionTest
-              maxTile={game.maxTiles}
-              playerCount={game.playerCount || 5}
-              round={game.currentRound || 1}
-              playerColor={me.color || '#4caf50'}
-              tilePool={me.tiles}
-              onSelected={(tiles, attractions) => {
-                setSelectedTiles(tiles);
-                setTilesSubmitted(true);
-                setBlinkingTiles([]); // Stop blinking on submit
-                handleSelectTiles(tiles);
-                // Attractions could be stored or sent later
-              }}
-              onUpdateBlinkingTiles={setBlinkingTiles}
-            />
-          )}
+              {game.status === 'distributing' && me.tiles && !tilesSubmitted && (
+                <LandSelectionTest
+                  maxTile={game.maxTiles}
+                  playerCount={game.playerCount || 5}
+                  round={game.currentRound || 1}
+                  playerColor={me.color || '#4caf50'}
+                  tilePool={me.tiles}
+                  onSelected={(tiles, attractions) => {
+                    setSelectedTiles(tiles);
+                    setTilesSubmitted(true);
+                    setBlinkingTiles([]); // Stop blinking on submit
+                    handleSelectTiles(tiles);
+                    // Attractions could be stored or sent later
+                  }}
+                  onUpdateBlinkingTiles={setBlinkingTiles}
+                />
+              )}
 
-          {game.status === 'negotiation' && (
-            <div>
-              <p>Negotiate! Time left: {game.negotiationEndTime ? Math.max(0, Math.floor((game.negotiationEndTime - Date.now()) / 1000)) : 0}s</p>
-              <button onClick={handleDoneNegotiating}>Done Negotiating</button>
+              {game.status === 'negotiation' && (
+                <div>
+                  <p>Negotiate! Time left: {game.negotiationEndTime ? Math.max(0, Math.floor((game.negotiationEndTime - Date.now()) / 1000)) : 0}s</p>
+                  <button onClick={handleDoneNegotiating}>Done Negotiating</button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
-          <ul>
-            {Object.values(players).map((p) => (
-              <li key={p.id}>
-                {p.name} - Coins: {p.coins}
-                {p.attractions && <span> Attractions: {p.attractions.length}</span>}
-              </li>
-            ))}
-          </ul>
+          <Scoreboard players={Object.values(players)} currentPlayerId={playerId} />
         </div>
 
 

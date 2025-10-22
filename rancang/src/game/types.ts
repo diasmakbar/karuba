@@ -21,16 +21,16 @@ export interface Tile {
 }
 
 export const PLAYER_COLORS = [
-  '#e74c3c', // red
-  '#3498db', // blue
-  '#2ecc71', // green
-  '#f39c12', // yellow
-  '#9b59b6', // purple
-  '#1abc9c', // turquoise
-  '#e67e22', // orange
-  '#34495e', // dark gray
-  '#ecf0f1', // light gray
-  '#95a5a6', // silver
+  { color: '#e74c3c', textColor: 'white' }, // red
+  { color: '#3498db', textColor: 'white' }, // blue
+  { color: '#2ecc71', textColor: 'white' }, // green
+  { color: '#f39c12', textColor: 'black' }, // yellow
+  { color: '#9b59b6', textColor: 'white' }, // purple
+  { color: '#1abc9c', textColor: 'white' }, // turquoise
+  { color: '#e67e22', textColor: 'white' }, // orange
+  { color: '#34495e', textColor: 'white' }, // dark gray
+  { color: '#ecf0f1', textColor: 'black' }, // light gray
+  { color: '#95a5a6', textColor: 'white' }, // silver
 ];
 
 export interface Player {
