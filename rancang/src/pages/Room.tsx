@@ -33,7 +33,7 @@ export default function Room() {
   if (!game || !me) return <div>Loading game...</div>;
 
   const handleStartGame = () => startGame(gameId!, players);
-  const handleSelectTiles = (tiles: number[]) => selectTiles(gameId!, playerId, tiles, players);
+  const handleSelectTiles = (tiles: number[]) => selectTiles(gameId!, playerId, tiles, game);
   const handleDoneNegotiating = () => markDoneNegotiating(gameId!, playerId, players);
 
   return (

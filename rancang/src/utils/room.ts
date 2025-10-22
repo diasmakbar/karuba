@@ -44,21 +44,21 @@ export async function startGame(gameId: string, players: Record<string, Player>)
 }
 
 // Player selects tiles
-export async function selectTiles(gameId: string, playerId: string, selectedTiles: number[], players: Record<string, Player>) {
+export async function selectTiles(gameId: string, playerId: string, selectedTiles: number[], game: any) {
   await update(ref(db, `games/rancang/${gameId}/players/${playerId}`), {
     tiles: selectedTiles,
   });
 
-  // Count how many have selected tiles
-  const selectedCount = Object.values(players).filter(p => p.tiles && p.tiles.length > 0).length + 1; // +1 for current
-  const totalPlayers = Object.keys(players).length;
+  // Increment count
+  const currentCount = (game.playersSelectedTiles || 0) + 1;
+  const totalPlayers = game.playerCount || Object.keys(game.players || {}).length;
 
   await update(ref(db, `games/rancang/${gameId}`), {
-    playersSelectedTiles: selectedCount,
+    playersSelectedTiles: currentCount,
   });
 
   // If all selected, proceed to negotiation
-  if (selectedCount >= totalPlayers) {
+  if (currentCount >= totalPlayers) {
     await update(ref(db, `games/rancang/${gameId}`), {
       status: 'negotiation',
       statusText: 'Negotiate trades',
