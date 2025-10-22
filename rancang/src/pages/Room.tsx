@@ -33,7 +33,7 @@ export default function Room() {
   if (!game || !me) return <div>Loading game...</div>;
 
   const handleStartGame = () => startGame(gameId!, players);
-  const handleSelectTiles = (tiles: number[]) => selectTiles(gameId!, playerId, tiles);
+  const handleSelectTiles = (tiles: number[]) => selectTiles(gameId!, playerId, tiles, players);
   const handleDoneNegotiating = () => markDoneNegotiating(gameId!, playerId, players);
 
   return (
@@ -83,13 +83,19 @@ export default function Room() {
 
         <GameBoard
           n={game.maxTiles}
-          ownedTiles={{
-            ...Object.fromEntries(selectedTiles.map(t => [t, playerId]))
-          }}
+          ownedTiles={Object.fromEntries(
+            Object.values(players).flatMap(p =>
+              (p.tiles || []).map(t => [t, p.id] as [number, string])
+            )
+          )}
           playerColors={Object.fromEntries(
             Object.values(players).map(p => [p.id, p.color])
           )}
-          builtAttractions={me.builtAttractions || {}}
+          builtAttractions={Object.fromEntries(
+            Object.values(players).flatMap(p =>
+              Object.entries(p.builtAttractions || {}).map(([tile, attr]) => [parseInt(tile), attr] as [number, any])
+            )
+          )}
           onTileClick={game.status === 'negotiation' ? (tile) => {
             if (selectedTiles.includes(tile)) {
               const current = me.builtAttractions?.[tile];

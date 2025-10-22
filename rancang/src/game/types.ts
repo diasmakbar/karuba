@@ -53,4 +53,5 @@ export interface GameConfig {
   statusText: string;
   negotiationEndTime: number | null; // timestamp (ms)
   playersDoneNegotiating?: number; // count of players who clicked done
+  playersSelectedTiles?: number; // count of players who selected tiles
 }

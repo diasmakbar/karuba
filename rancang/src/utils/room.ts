@@ -44,19 +44,27 @@ export async function startGame(gameId: string, players: Record<string, Player>)
 }
 
 // Player selects tiles
-export async function selectTiles(gameId: string, playerId: string, selectedTiles: number[]) {
+export async function selectTiles(gameId: string, playerId: string, selectedTiles: number[], players: Record<string, Player>) {
   await update(ref(db, `games/rancang/${gameId}/players/${playerId}`), {
     tiles: selectedTiles,
   });
 
-  // Check if all players have selected (assume 3 tiles each for simplicity)
-  // In real, check if tiles.length === landCount
-  // For now, assume done
+  // Count how many have selected tiles
+  const selectedCount = Object.values(players).filter(p => p.tiles && p.tiles.length > 0).length + 1; // +1 for current
+  const totalPlayers = Object.keys(players).length;
+
   await update(ref(db, `games/rancang/${gameId}`), {
-    status: 'negotiation',
-    statusText: 'Negotiate trades',
-    negotiationEndTime: Date.now() + 5 * 60 * 1000, // 5 min
+    playersSelectedTiles: selectedCount,
   });
+
+  // If all selected, proceed to negotiation
+  if (selectedCount >= totalPlayers) {
+    await update(ref(db, `games/rancang/${gameId}`), {
+      status: 'negotiation',
+      statusText: 'Negotiate trades',
+      negotiationEndTime: Date.now() + 5 * 60 * 1000, // 5 min
+    });
+  }
 }
 
 // Player builds or removes attraction on tile
