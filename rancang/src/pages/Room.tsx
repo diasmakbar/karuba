@@ -83,7 +83,7 @@ export default function Room() {
 
         <GameBoard
           n={game.maxTiles}
-          ownedTiles={Object.fromEntries(
+          ownedTiles={game.status === 'distributing' ? {} : Object.fromEntries(
             Object.values(players).flatMap(p =>
               (p.tiles || []).map(t => [t, p.id] as [number, string])
             )
