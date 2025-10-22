@@ -30,7 +30,7 @@ export default function Scoreboard({ players, currentPlayerId }: ScoreboardProps
             <span style={{ color: '#ffd700' }}>💰 {player.coins}</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {player.attractions.map((attr, index) => (
+            {(player.attractions || []).map((attr, index) => (
               <div
                 key={`${player.id}-attr-${index}`}
                 style={{
