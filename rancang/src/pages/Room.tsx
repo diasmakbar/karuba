@@ -51,7 +51,7 @@ export default function Room() {
                 <button onClick={handleStartGame}>Start Game</button>
               )}
 
-              {game.status === 'distributing' && me.tiles && !tilesSubmitted && (
+              {game.status === 'distributing' && me.tiles && Array.isArray(me.tiles) && !tilesSubmitted && (
                 <LandSelectionTest
                   maxTile={game.maxTiles}
                   playerCount={game.playerCount || 5}
