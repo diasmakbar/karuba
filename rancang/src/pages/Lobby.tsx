@@ -44,10 +44,10 @@ export default function Lobby() {
           )}
 
           {step === 'name' && (
-            <LobbyNameStep gameId={gameId} name={name} setName={setName} playerId={playerId} setStep={setStep} />
+            <LobbyNameStep name={name} setName={setName} setStep={setStep} />
           )}
           {step === 'color' && (
-            <LobbyColorStep gameId={gameId} name={name} playerId={playerId} color={color} setColor={setColor} onJoin={handleJoin} />
+            <LobbyColorStep gameId={gameId} name={name} color={color} setColor={setColor} onJoin={handleJoin} />
           )}
         </div>
       </div>

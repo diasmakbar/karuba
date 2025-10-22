@@ -58,12 +58,11 @@ export default function Room() {
                   round={game.currentRound || 1}
                   playerColor={me.color || '#4caf50'}
                   tilePool={me.tiles}
-                  onSelected={(tiles, attractions) => {
+                  onSelected={(tiles) => {
                     setSelectedTiles(tiles);
                     setTilesSubmitted(true);
                     setBlinkingTiles([]); // Stop blinking on submit
                     handleSelectTiles(tiles);
-                    // Attractions could be stored or sent later
                   }}
                   onUpdateBlinkingTiles={setBlinkingTiles}
                 />
