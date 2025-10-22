@@ -7,6 +7,9 @@ import GameBoard from '../components/GameBoard';
 import LandSelectionTest from '../components/LandSelectionTest';
 import BuildModal from '../components/BuildModal';
 import Scoreboard from '../components/Scoreboard';
+import NegotiationPanel from '../components/NegotiationPanel';
+import RoundTimer from '../components/RoundTimer';
+import PlayerHand from '../components/PlayerHand';
 import type { GameConfig, Player } from '../game/types';
 
 export default function Room() {
@@ -39,6 +42,10 @@ export default function Room() {
   return (
     <main className="page">
       <div className="page-inner">
+        {game.status === 'negotiation' && (
+          <RoundTimer endTime={game.negotiationEndTime} onTimeUp={() => markDoneNegotiating(gameId!, playerId, players)} />
+        )}
+
         <div style={{ display: 'flex', gap: '20px' }}>
           <div style={{ flex: 1 }}>
             <div className="card" style={{ padding: 20 }}>
@@ -70,14 +77,28 @@ export default function Room() {
 
               {game.status === 'negotiation' && (
                 <div>
-                  <p>Negotiate! Time left: {game.negotiationEndTime ? Math.max(0, Math.floor((game.negotiationEndTime - Date.now()) / 1000)) : 0}s</p>
                   <button onClick={handleDoneNegotiating}>Done Negotiating</button>
                 </div>
               )}
             </div>
           </div>
 
-          <Scoreboard players={Object.values(players)} currentPlayerId={playerId} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <Scoreboard players={Object.values(players)} currentPlayerId={playerId} />
+            {game.status === 'negotiation' && (
+              <>
+                <NegotiationPanel
+                  players={Object.values(players)}
+                  currentPlayerId={playerId}
+                  onSendOffer={(offer) => console.log('Send offer:', offer)}
+                  offers={[]}
+                  onAcceptOffer={(id) => console.log('Accept:', id)}
+                  onRejectOffer={(id) => console.log('Reject:', id)}
+                />
+                <PlayerHand attractions={me.attractions || []} playerColor={me.color || '#4caf50'} />
+              </>
+            )}
+          </div>
         </div>
 
 
