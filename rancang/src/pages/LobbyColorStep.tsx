@@ -5,13 +5,12 @@ import { PLAYER_COLORS } from '../game/types';
 interface LobbyColorStepProps {
   gameId: string;
   name: string;
-  playerId: string;
   color: string;
   setColor: (color: string) => void;
   onJoin: () => void;
 }
 
-export default function LobbyColorStep({ gameId, name, playerId, color, setColor, onJoin }: LobbyColorStepProps) {
+export default function LobbyColorStep({ gameId, name, color, setColor, onJoin }: LobbyColorStepProps) {
   return (
     <div>
       <h3>Choose Your Color</h3>

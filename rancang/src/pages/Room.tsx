@@ -7,7 +7,7 @@ import GameBoard from '../components/GameBoard';
 import LandSelectionTest from '../components/LandSelectionTest';
 import BuildModal from '../components/BuildModal';
 import Scoreboard from '../components/Scoreboard';
-import type { GameConfig, Player, Attraction } from '../game/types';
+import type { GameConfig, Player } from '../game/types';
 
 export default function Room() {
   const { gameId } = useParams<{ gameId: string }>();

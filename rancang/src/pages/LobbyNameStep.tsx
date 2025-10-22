@@ -1,14 +1,10 @@
-import { handleCreateGame, handleJoinGame } from '../utils/lobby'
-
 interface LobbyNameStepProps {
-  gameId: string
   name: string
   setName: (name: string) => void
-  playerId: string
   setStep: (step: 'game' | 'name' | 'color') => void
 }
 
-export default function LobbyNameStep({ gameId, name, setName, playerId, setStep }: LobbyNameStepProps) {
+export default function LobbyNameStep({ name, setName, setStep }: LobbyNameStepProps) {
   return (
     <div style={{ textAlign: 'center' }}>
       <h2 style={{ marginBottom: 16 }}>Please input your name:</h2>

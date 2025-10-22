@@ -11,7 +11,6 @@ export function generateSpiralGrid(nMax: number): Cell[] {
   let x = 0, y = 0;
   let dx = 1, dy = 0;
   let steps = 1;
-  let segment = 0;
   let n = 1;
 
   const out: Cell[] = [{ n, x, y }];

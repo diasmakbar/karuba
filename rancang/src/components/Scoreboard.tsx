@@ -1,6 +1,5 @@
 // src/components/Scoreboard.tsx
 
-import React from 'react';
 import type { Player } from '../game/types';
 import { PLAYER_COLORS } from '../game/types';
 
