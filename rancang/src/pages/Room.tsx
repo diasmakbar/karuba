@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { db, ref, onValue } from '../firebase/client';
 import { getPlayerId } from '../lib/playerId';
-import { startGame, selectTiles, endNegotiation, updateAttraction } from '../utils/room';
+import { startGame, selectTiles, markDoneNegotiating, updateAttraction } from '../utils/room';
 import GameBoard from '../components/GameBoard';
 import LandSelectionTest from '../components/LandSelectionTest';
 import BuildModal from '../components/BuildModal';
@@ -34,7 +34,7 @@ export default function Room() {
 
   const handleStartGame = () => startGame(gameId!, players);
   const handleSelectTiles = (tiles: number[]) => selectTiles(gameId!, playerId, tiles);
-  const handleDoneNegotiating = () => endNegotiation(gameId!, players);
+  const handleDoneNegotiating = () => markDoneNegotiating(gameId!, playerId, players);
 
   return (
     <main className="page">

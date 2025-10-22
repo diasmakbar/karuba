@@ -21,16 +21,14 @@ export interface Tile {
 }
 
 export const PLAYER_COLORS = [
-  { color: '#e74c3c', textColor: 'white' }, // red
-  { color: '#3498db', textColor: 'white' }, // blue
-  { color: '#2ecc71', textColor: 'white' }, // green
-  { color: '#f39c12', textColor: 'black' }, // yellow
-  { color: '#9b59b6', textColor: 'white' }, // purple
-  { color: '#1abc9c', textColor: 'white' }, // turquoise
-  { color: '#e67e22', textColor: 'white' }, // orange
-  { color: '#34495e', textColor: 'white' }, // dark gray
-  { color: '#ecf0f1', textColor: 'black' }, // light gray
-  { color: '#95a5a6', textColor: 'white' }, // silver
+  { color: '#BF092F', textColor: 'white' },
+  { color: '#4E61D3', textColor: 'white' },
+  { color: '#11224E', textColor: 'white' },
+  { color: '#FF714B', textColor: 'white' },
+  { color: '#450693', textColor: 'white' },
+  { color: '#016B61', textColor: 'white' },
+  { color: '#A6515FFF', textColor: 'white' },
+  { color: '#DDA853', textColor: 'white' },
 ];
 
 export interface Player {
@@ -54,4 +52,5 @@ export interface GameConfig {
   status: GameStatus;
   statusText: string;
   negotiationEndTime: number | null; // timestamp (ms)
+  playersDoneNegotiating?: number; // count of players who clicked done
 }

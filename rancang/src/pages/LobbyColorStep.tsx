@@ -8,9 +8,10 @@ interface LobbyColorStepProps {
   color: string;
   setColor: (color: string) => void;
   onJoin: () => void;
+  takenColors?: string[]; // colors already chosen
 }
 
-export default function LobbyColorStep({ gameId, name, color, setColor, onJoin }: LobbyColorStepProps) {
+export default function LobbyColorStep({ gameId, name, color, setColor, onJoin, takenColors = [] }: LobbyColorStepProps) {
   return (
     <div>
       <h3>Choose Your Color</h3>
@@ -18,26 +19,31 @@ export default function LobbyColorStep({ gameId, name, color, setColor, onJoin }
       <p>Name: {name}</p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-        {PLAYER_COLORS.map((col, index) => (
-          <button
-            key={index}
-            onClick={() => setColor(col.color)}
-            style={{
-              width: '40px',
-              height: '40px',
-              backgroundColor: col.color,
-              color: col.textColor,
-              border: color === col.color ? '3px solid #000' : '2px solid #ccc',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: 'bold',
-            }}
-            title={`Color ${index + 1}`}
-          >
-            {index + 1}
-          </button>
-        ))}
+        {PLAYER_COLORS.map((col, index) => {
+          const isTaken = takenColors.includes(col.color);
+          return (
+            <button
+              key={index}
+              onClick={() => !isTaken && setColor(col.color)}
+              disabled={isTaken}
+              style={{
+                width: '40px',
+                height: '40px',
+                backgroundColor: col.color,
+                color: col.textColor,
+                border: color === col.color ? '3px solid #000' : '2px solid #ccc',
+                borderRadius: '4px',
+                cursor: isTaken ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                opacity: isTaken ? 0.3 : 1,
+              }}
+              title={isTaken ? 'Color taken' : `Color ${index + 1}`}
+            >
+              {index + 1}
+            </button>
+          );
+        })}
       </div>
 
       <button onClick={onJoin} disabled={!color} style={{ width: '100%', padding: '10px', backgroundColor: color || '#ccc' }}>

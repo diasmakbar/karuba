@@ -86,6 +86,26 @@ export async function startNegotiation(gameId: string) {
   });
 }
 
+// Mark player as done negotiating
+export async function markDoneNegotiating(gameId: string, playerId: string, players: Record<string, Player>) {
+  await update(ref(db, `games/rancang/${gameId}/players/${playerId}`), {
+    doneNegotiating: true,
+  });
+
+  // Count how many have done negotiating
+  const doneCount = Object.values(players).filter(p => p.doneNegotiating).length + 1; // +1 for current
+  const totalPlayers = Object.keys(players).length;
+
+  await update(ref(db, `games/rancang/${gameId}`), {
+    playersDoneNegotiating: doneCount,
+  });
+
+  // If all done, proceed to scoring
+  if (doneCount >= totalPlayers) {
+    await endNegotiation(gameId, players);
+  }
+}
+
 // End negotiation and score
 export async function endNegotiation(gameId: string, players: Record<string, Player>) {
   // For now, simple scoring: each attraction gives points based on size

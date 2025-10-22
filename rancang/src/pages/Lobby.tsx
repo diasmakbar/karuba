@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getPlayerId } from '../lib/playerId'
 import { handleCreateGame, handleJoinGame } from '../utils/lobby'
+import { db, ref, onValue } from '../firebase/client'
 import LobbyGameStep from './LobbyGameStep'
 import LobbyNameStep from './LobbyNameStep'
 import LobbyColorStep from './LobbyColorStep'
@@ -22,6 +23,16 @@ export default function Lobby() {
       await handleJoinGame(gameId, name, playerId, color)
     }
   }
+
+  // Get taken colors from existing players
+  const [existingPlayers, setExistingPlayers] = useState<Record<string, any>>({})
+  useEffect(() => {
+    if (!gameId) return
+    const cleanId = gameId.replace(/\s/g, '')
+    const off = onValue(ref(db, `games/rancang/${cleanId}/players`), (s) => setExistingPlayers(s.val() || {}))
+    return () => off()
+  }, [gameId])
+  const takenColors = Object.values(existingPlayers).map((p: any) => p.color).filter(Boolean)
 
   return (
     <main className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -47,7 +58,7 @@ export default function Lobby() {
             <LobbyNameStep name={name} setName={setName} setStep={setStep} />
           )}
           {step === 'color' && (
-            <LobbyColorStep gameId={gameId} name={name} color={color} setColor={setColor} onJoin={handleJoin} />
+            <LobbyColorStep gameId={gameId} name={name} color={color} setColor={setColor} onJoin={handleJoin} takenColors={takenColors} />
           )}
         </div>
       </div>
