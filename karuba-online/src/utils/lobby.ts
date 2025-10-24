@@ -1,6 +1,9 @@
 import { getPlayerId } from '../lib/playerId'
 import { makeRewards } from '../lib/rewards'
 import type { Game, Player, Board, ExplorerColor, Branch } from '../lib/types'
+import { getAuth } from "firebase/auth";
+
+const auth = getAuth();
 
 export type Layout = {
   explorers: Record<ExplorerColor, { side: Branch; index: number }>
@@ -64,7 +67,7 @@ export function emptyBoard(): Board {
   return Array.from({ length: 6 }, () => Array.from({ length: 6 }, () => -1 as const))
 }
 
-export function createPlayerPayload(id: string, pname: string, layout: Layout): Player {
+export function createPlayerPayload(id: string, pname: string, layout: Layout, ownerUid: string): Player {
   return {
     id,
     name: pname,
@@ -90,8 +93,38 @@ export function createPlayerPayload(id: string, pname: string, layout: Layout): 
     claimedRewards: { red: {}, blue: {}, brown: {}, yellow: {} },
     finishedAtRound: null,
     bonusPoints: 0,
-  } as unknown as Player
+    ownerUid: ownerUid
+  } as unknown as Player;
 }
+
+// export function createPlayerPayload(id: string, pname: string, layout: Layout): Player {
+//   return {
+//     id,
+//     name: pname,
+//     joinedAt: Date.now(),
+//     board: emptyBoard(),
+//     usedTiles: {},
+//     discardedTiles: [],
+//     explorers: {
+//       ...Object.fromEntries(
+//         (['red', 'blue', 'brown', 'yellow'] as ExplorerColor[]).map((c) => [
+//           c,
+//           { color: c, onEdge: layout.explorers[c] },
+//         ])
+//       ),
+//     },
+//     moves: 0,
+//     score: 0,
+//     actedForRound: false,
+//     doneForRound: false,
+//     lastAction: null,
+//     goldCount: 0,
+//     crystalCount: 0,
+//     claimedRewards: { red: {}, blue: {}, brown: {}, yellow: {} },
+//     finishedAtRound: null,
+//     bonusPoints: 0,
+//   } as unknown as Player
+// }
 
 export function newGameId(): string {
   const num = Math.floor(100000 + Math.random() * 900000).toString()
@@ -99,13 +132,11 @@ export function newGameId(): string {
 }
 
 export async function handleCreateGame(gameId: string, name: string, playerId: string) {
-  const cleanId = gameId.replace(/\s/g, '')
-  if (!name.trim()) {
-    alert('Enter your name!')
-    return
-  }
-  const rewards = makeRewards()
-  const layout = makeRandomLayout()
+  const cleanId = gameId.replace(/\s/g, '');
+  if (!name.trim()) { alert('Enter your name!'); return; }
+
+  const rewards = makeRewards();
+  const layout = makeRandomLayout();
 
   const gamePayload: Partial<Game> & any = {
     status: 'waiting',
@@ -119,50 +150,128 @@ export async function handleCreateGame(gameId: string, name: string, playerId: s
     layout,
     rewards,
     templeWins: [],
-    lastEvent: null,
-  }
+    lastEvent: null
+  };
 
-  const { db, ref, set } = await import('../firebase')
-  await set(ref(db, `games/karuba/${cleanId}`), gamePayload)
-  await set(
-    ref(db, `games/karuba/${cleanId}/players/${playerId}`),
-    createPlayerPayload(playerId, name.trim(), layout)
-  )
+  const { db, ref, set, update, authReady, get } = await import('../firebase');
+  await authReady;
+  const { auth } = await import('../firebase');
+  const uid = auth.currentUser?.uid;
+  if (!uid) { alert('Auth not ready'); return; }
 
-  history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`)
-  dispatchEvent(new PopStateEvent('popstate'))
+  await set(ref(db, `games/karuba/${cleanId}`), gamePayload);
+
+  const playerNode = createPlayerPayload(playerId, name.trim(), layout, uid);
+  await update(ref(db), {
+    [`games/karuba/${cleanId}/players/${playerId}`]: playerNode,
+    [`games/karuba/${cleanId}/owners/${uid}`]: playerId
+  });
+
+  history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`);
+  dispatchEvent(new PopStateEvent('popstate'));
 }
 
 export async function handleJoinGame(gameId: string, name: string, playerId: string) {
-  const cleanId = gameId.replace(/\s/g, '')
-  if (!name.trim()) {
-    alert('Enter your name!')
-    return
-  }
-  if (!/^\d{6}$/.test(cleanId)) {
-    alert('Invalid Game ID')
-    return
-  }
+  const cleanId = gameId.replace(/\s/g, '');
+  if (!name.trim()) { alert('Enter your name!'); return; }
+  if (!/^\d{6}$/.test(cleanId)) { alert('Invalid Game ID'); return; }
 
-  const { db, ref, get, set, update } = await import('../firebase')
-  const gSnap = await get(ref(db, `games/karuba/${cleanId}`))
-  if (!gSnap.exists()) {
-    alert('Game not found!')
-    return
-  }
+  const { db, ref, get, set, update, authReady } = await import('../firebase');
+  await authReady;
+  const { auth } = await import('../firebase');
+  const uid = auth.currentUser?.uid;
+  if (!uid) { alert('Auth not ready'); return; }
 
-  const layout: Layout = gSnap.val()?.layout
-  const pSnap = await get(ref(db, `games/karuba/${cleanId}/players/${playerId}`))
+  const gSnap = await get(ref(db, `games/karuba/${cleanId}`));
+  if (!gSnap.exists()) { alert('Game not found!'); return; }
+
+  const layout: Layout = gSnap.val()?.layout;
+  const pRef = ref(db, `games/karuba/${cleanId}/players/${playerId}`);
+  const pSnap = await get(pRef);
+
   if (!pSnap.exists()) {
-    await set(
-      ref(db, `games/karuba/${cleanId}/players/${playerId}`),
-      createPlayerPayload(playerId, name.trim(), layout)
-    )
-    const playersSnap = await get(ref(db, `games/karuba/${cleanId}/players`))
-    const count = playersSnap.exists() ? Object.keys(playersSnap.val() || {}).length : 1
-    await update(ref(db, `games/karuba/${cleanId}`), { playersCount: count })
+    const playerNode = createPlayerPayload(playerId, name.trim(), layout, uid);
+    const playersSnap = await get(ref(db, `games/karuba/${cleanId}/players`));
+    const nextCount = playersSnap.exists() ? Object.keys(playersSnap.val() || {}).length + 1 : 1;
+
+    // fan-out: player + owners + playersCount
+    await update(ref(db), {
+      [`games/karuba/${cleanId}/players/${playerId}`]: playerNode,
+      [`games/karuba/${cleanId}/owners/${uid}`]: playerId,
+      [`games/karuba/${cleanId}/playersCount`]: nextCount
+    });
   }
 
-  history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`)
-  dispatchEvent(new PopStateEvent('popstate'))
+  history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`);
+  dispatchEvent(new PopStateEvent('popstate'));
 }
+
+
+// export async function handleCreateGame(gameId: string, name: string, playerId: string) {
+//   const cleanId = gameId.replace(/\s/g, '')
+//   if (!name.trim()) {
+//     alert('Enter your name!')
+//     return
+//   }
+//   const rewards = makeRewards()
+//   const layout = makeRandomLayout()
+
+//   const gamePayload: Partial<Game> & any = {
+//     status: 'waiting',
+//     statusText: 'Waiting host to start the game',
+//     round: 0,
+//     currentTile: 0,
+//     playersCount: 1,
+//     shuffleTurnUid: playerId,
+//     generateTurnIndex: 0,
+//     generateTurnUid: '',
+//     layout,
+//     rewards,
+//     templeWins: [],
+//     lastEvent: null,
+//   }
+
+//   const { db, ref, set } = await import('../firebase')
+//   await set(ref(db, `games/karuba/${cleanId}`), gamePayload)
+//   await set(
+//     ref(db, `games/karuba/${cleanId}/players/${playerId}`),
+//     createPlayerPayload(playerId, name.trim(), layout)
+//   )
+
+//   history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`)
+//   dispatchEvent(new PopStateEvent('popstate'))
+// }
+
+// export async function handleJoinGame(gameId: string, name: string, playerId: string) {
+//   const cleanId = gameId.replace(/\s/g, '')
+//   if (!name.trim()) {
+//     alert('Enter your name!')
+//     return
+//   }
+//   if (!/^\d{6}$/.test(cleanId)) {
+//     alert('Invalid Game ID')
+//     return
+//   }
+
+//   const { db, ref, get, set, update } = await import('../firebase')
+//   const gSnap = await get(ref(db, `games/karuba/${cleanId}`))
+//   if (!gSnap.exists()) {
+//     alert('Game not found!')
+//     return
+//   }
+
+//   const layout: Layout = gSnap.val()?.layout
+//   const pSnap = await get(ref(db, `games/karuba/${cleanId}/players/${playerId}`))
+//   if (!pSnap.exists()) {
+//     await set(
+//       ref(db, `games/karuba/${cleanId}/players/${playerId}`),
+//       createPlayerPayload(playerId, name.trim(), layout)
+//     )
+//     const playersSnap = await get(ref(db, `games/karuba/${cleanId}/players`))
+//     const count = playersSnap.exists() ? Object.keys(playersSnap.val() || {}).length : 1
+//     await update(ref(db, `games/karuba/${cleanId}`), { playersCount: count })
+//   }
+
+//   history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`)
+//   dispatchEvent(new PopStateEvent('popstate'))
+// }
