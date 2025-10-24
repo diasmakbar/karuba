@@ -1,9 +1,9 @@
 import { getPlayerId } from '../lib/playerId'
 import { makeRewards } from '../lib/rewards'
 import type { Game, Player, Board, ExplorerColor, Branch } from '../lib/types'
-import { getAuth } from "firebase/auth";
+import { auth, authReady } from "../firebase";
 
-const auth = getAuth();
+await authReady;
 
 export type Layout = {
   explorers: Record<ExplorerColor, { side: Branch; index: number }>
