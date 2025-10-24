@@ -4,6 +4,7 @@
       "$game": {
         "$roomId": {
           ".read": true,
+          ".write": "!data.exists() && newData.exists()",
           "players": {
             "$playerId": {
               ".read": true,
