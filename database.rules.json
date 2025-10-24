@@ -1,0 +1,27 @@
+{
+  "rules": {
+    "games": {
+      "$game": {
+        "$roomId": {
+          ".read": true,
+          "players": {
+            "$playerId": {
+              ".read": true,
+              ".write": "newData.child('id').val() == $playerId"
+            }
+          },
+          "status": {
+            ".write": "root.child('games').child($game).child($roomId).child('players').hasChild(newData.parent().child('generateTurnUid').val())"
+          },
+          "statusText": {
+            ".write": "root.child('games').child($game).child($roomId).child('players').hasChild(newData.parent().child('generateTurnUid').val())"
+          },
+          "round": {
+            ".write": "root.child('games').child($game).child($roomId).child('players').hasChild(newData.parent().child('generateTurnUid').val())"
+          },
+          ".validate": "newData.hasChildren(['players', 'status', 'statusText'])"
+        }
+      }
+    }
+  }
+}
