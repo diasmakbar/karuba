@@ -4,7 +4,7 @@
       "$game": {
         "$roomId": {
           ".read": true,
-          ".write": "!data.exists() && newData.exists()",
+          ".write": "true",
           "players": {
             "$playerId": {
               ".read": true,
@@ -20,7 +20,7 @@
           "round": {
             ".write": "root.child('games').child($game).child($roomId).child('players').hasChild(newData.parent().child('generateTurnUid').val())"
           },
-          ".validate": "newData.hasChildren(['players', 'status', 'statusText'])"
+          ".validate": "newData.hasChildren(['players'])"
         }
       }
     }
