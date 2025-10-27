@@ -1,23 +1,50 @@
-// src/game/types.ts
+// src/game/types.ts - Welcome To: Your Perfect Home
 
-export type AttractionSize = 3 | 4 | 5;
+export type StreetType = 'A' | 'B' | 'C';
 
-export type AttractionType3 = 'rest-area' | 'minimarket' | 'tempat-ibadah';
-export type AttractionType4 = 'taman' | 'bioskop' | 'lapangan-olahraga';
-export type AttractionType5 = 'gedung-bisnis' | 'waterboom' | 'apartemen';
-
-export type AttractionType = AttractionType3 | AttractionType4 | AttractionType5;
-
-export interface Attraction {
-  size: AttractionSize;
-  type: AttractionType;
+export interface House {
+  number: number | null; // house number (1-15) or null if empty
+  hasPool: boolean;
+  hasPark: boolean;
+  hasFence: boolean; // for estate boundaries
 }
 
-export interface Tile {
-  n: number;                    // nomor tile (1, 2, 3, ...)
-  owner: string | null;         // uid pemain, atau null
-  built: boolean;               // true = tanah sudah "dibangun" (otomatis true saat dibagikan)
-  attraction: Attraction | null; // null = belum pasang atraksi
+export interface Street {
+  type: StreetType;
+  houses: House[]; // length: A=10, B=11, C=12
+}
+
+export type CardType = 'number' | 'effect';
+
+export type EffectType = 'pool' | 'temp-agency' | 'bis' | 'landscaper' | 'real-estate-agent' | 'surveyor';
+
+export interface ConstructionCard {
+  id: string;
+  type: CardType;
+  number?: number; // 1-15 for number cards
+  effect?: EffectType; // for effect cards
+}
+
+export interface CityPlan {
+  id: string;
+  objective: string;
+  type: 'estate' | 'street' | 'pool' | 'park' | 'effect';
+  allow_overlap: boolean;
+  classic: {
+    first: number;
+    later: number;
+  };
+  balanced: {
+    first: number;
+    later: number;
+  };
+}
+
+export interface Estate {
+  startIndex: number;
+  endIndex: number;
+  street: StreetType;
+  size: number;
 }
 
 export const PLAYER_COLORS = [
@@ -34,24 +61,30 @@ export const PLAYER_COLORS = [
 export interface Player {
   id: string;
   name: string;
-  color: string;                // chosen color
-  coins: number;
-  tiles: number[];              // array nomor tile yang dimiliki
-  attractions: Attraction[];    // kartu atraksi di tangan
-  doneNegotiating: boolean;
-  builtAttractions?: Record<number, Attraction>; // tile -> attraction built
+  color: string;
+  streets: Record<StreetType, Street>;
+  hand: ConstructionCard[];
+  cityPlans: CityPlan[];
+  completedPlans: string[]; // plan IDs
+  tempAgencyUses: number;
+  bisCount: number;
+  buildingPermitRefusals: number;
+  score: number;
 }
 
-export type GameStatus = 'lobby' | 'distributing' | 'negotiation' | 'scoring' | 'finished';
+export type GameMode = 'classic' | 'balanced';
 
-export interface GameConfig {
-  playerCount: number;
-  maxTiles: number;
-  currentRound: number;
-  totalRounds: 4;
+export type GameStatus = 'lobby' | 'playing' | 'finished';
+
+export interface GameState {
+  id: string;
+  players: Record<string, Player>;
+  currentPlayer: string;
+  deck: ConstructionCard[];
+  discardPile: ConstructionCard[];
+  round: number;
   status: GameStatus;
-  statusText: string;
-  negotiationEndTime: number | null; // timestamp (ms)
-  playersDoneNegotiating?: number; // count of players who clicked done
-  playersSelectedTiles?: number; // count of players who selected tiles
+  mode: GameMode;
+  availablePlans: CityPlan[];
+  startTime: number;
 }
