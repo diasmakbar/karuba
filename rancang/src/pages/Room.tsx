@@ -6,7 +6,7 @@ import type { PlayerBoard } from '../lib/types';
 
 export default function Room() {
   const { id } = useParams<{ id: string }>();
-  const [board, setBoard] = useState<PlayerBoard>(emptyPlayerBoard());
+  const [board] = useState<PlayerBoard>(emptyPlayerBoard());
 
   // Placeholder: in real implementation, sync with Firebase
   useEffect(() => {

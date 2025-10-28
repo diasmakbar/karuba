@@ -36,7 +36,7 @@ export function emptyPlayerBoard(): PlayerBoard {
   };
 }
 
-export function createPlayerPayload(id: string, pname: string, ownerUid: string): Player {
+export function createPlayerPayload(id: string, pname: string): Player {
   return {
     id,
     name: pname,
@@ -90,10 +90,10 @@ export async function handleCreateGame(
   const uid = auth.currentUser?.uid;
   if (!uid) { alert('Auth not ready'); return; }
 
-  await set(ref(db, `games/welcome/${cleanId}`), gamePayload);
+  await set(ref(db, `games/rancang/${cleanId}`), gamePayload);
 
-  const playerNode = createPlayerPayload(playerId, name.trim(), uid);
-  await update(ref(db, `games/welcome/${cleanId}`), {
+  const playerNode = createPlayerPayload(playerId, name.trim());
+  await update(ref(db, `games/rancang/${cleanId}`), {
     [`players/${playerId}`]: playerNode,
   });
 
@@ -110,20 +110,20 @@ export async function handleJoinGame(gameId: string, name: string, playerId: str
   const uid = auth.currentUser?.uid;
   if (!uid) { alert('Auth not ready'); return; }
 
-  const gSnap = await get(ref(db, `games/welcome/${cleanId}`));
+  const gSnap = await get(ref(db, `games/rancang/${cleanId}`));
   if (!gSnap.exists()) { alert('Game not found!'); return; }
 
   const gameData = gSnap.val();
   if (gameData.status !== 'waiting') { alert('Game already started!'); return; }
 
-  const pRef = ref(db, `games/welcome/${cleanId}/players/${playerId}`);
+  const pRef = ref(db, `games/rancang/${cleanId}/players/${playerId}`);
   const pSnap = await get(pRef);
 
   if (!pSnap.exists()) {
-    const playerNode = createPlayerPayload(playerId, name.trim(), uid);
+    const playerNode = createPlayerPayload(playerId, name.trim());
     const nextCount = gameData.playersCount + 1;
 
-    await update(ref(db, `games/welcome/${cleanId}`), {
+    await update(ref(db, `games/rancang/${cleanId}`), {
       [`players/${playerId}`]: playerNode,
       [`playersCount`]: nextCount
     });

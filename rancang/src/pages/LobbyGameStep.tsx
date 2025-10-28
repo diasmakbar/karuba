@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { newGameId } from '../utils/lobby';
 import { useLang } from '../contexts/LangContext';
 

@@ -1,4 +1,4 @@
-import type { PlayerBoard, StreetId, ConstructionCard } from './types';
+import type { PlayerBoard, StreetId } from './types';
 
 // Check if can place house number in street at position
 export function canPlaceHouse(
