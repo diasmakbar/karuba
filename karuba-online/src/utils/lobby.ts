@@ -162,9 +162,13 @@ export async function handleCreateGame(gameId: string, name: string, playerId: s
   await set(ref(db, `games/karuba/${cleanId}`), gamePayload);
 
   const playerNode = createPlayerPayload(playerId, name.trim(), layout, uid);
-  await update(ref(db), {
-    [`games/karuba/${cleanId}/players/${playerId}`]: playerNode,
-    [`games/karuba/${cleanId}/owners/${uid}`]: playerId
+  // await update(ref(db), {
+  //   [`games/karuba/${cleanId}/players/${playerId}`]: playerNode,
+  //   [`games/karuba/${cleanId}/owners/${uid}`]: playerId
+  // });
+  await update(ref(db, `games/karuba/${cleanId}`), {
+    [`players/${playerId}`]: playerNode,
+    [`owners/${uid}`]: playerId
   });
 
   history.pushState({ playerName: name.trim() }, '', `/room/${cleanId}`);
@@ -195,10 +199,15 @@ export async function handleJoinGame(gameId: string, name: string, playerId: str
     const nextCount = playersSnap.exists() ? Object.keys(playersSnap.val() || {}).length + 1 : 1;
 
     // fan-out: player + owners + playersCount
-    await update(ref(db), {
-      [`games/karuba/${cleanId}/players/${playerId}`]: playerNode,
-      [`games/karuba/${cleanId}/owners/${uid}`]: playerId,
-      [`games/karuba/${cleanId}/playersCount`]: nextCount
+    // await update(ref(db), {
+    //   [`games/karuba/${cleanId}/players/${playerId}`]: playerNode,
+    //   [`games/karuba/${cleanId}/owners/${uid}`]: playerId,
+    //   [`games/karuba/${cleanId}/playersCount`]: nextCount
+    // });
+    await update(ref(db, `games/karuba/${cleanId}`), {
+      [`players/${playerId}`]: playerNode,
+      [`owners/${uid}`]: playerId,
+      [`playersCount`]: nextCount
     });
   }
 
