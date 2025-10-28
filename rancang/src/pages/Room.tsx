@@ -5,22 +5,42 @@ import { emptyPlayerBoard } from '../utils/lobby';
 import { getRandomCityPlans } from '../lib/cityPlans';
 import type { PlayerBoard, CityPlan, GameStatus } from '../lib/types';
 import { useLang } from '../contexts/LangContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Room() {
   const { id } = useParams<{ id: string }>();
   const { t } = useLang();
+  const { theme } = useTheme();
   const [board] = useState<PlayerBoard>(emptyPlayerBoard());
   const [gameStatus, setGameStatus] = useState<GameStatus>('waiting');
   const [cityPlans, setCityPlans] = useState<CityPlan[]>([]);
   const [currentCard, setCurrentCard] = useState<string | null>(null);
   const [isHost] = useState(false); // Placeholder
+  const [gameMode, setGameMode] = useState<'classic' | 'balanced'>('balanced');
 
-  // Placeholder: in real implementation, sync with Firebase
+  // Load game data from Firebase
   useEffect(() => {
-    console.log('Room ID:', id);
-    // Generate city plans for demo
-    const plans = getRandomCityPlans(true);
-    setCityPlans(plans);
+    const loadGameData = async () => {
+      if (!id) return;
+
+      try {
+        const { get, ref, db } = await import('../firebase');
+        const gameRef = ref(db, `games/rancang/${id}`);
+        const snapshot = await get(gameRef);
+
+        if (snapshot.exists()) {
+          const gameData = snapshot.val();
+          setGameStatus(gameData.status || 'waiting');
+          setGameMode(gameData.mode || 'balanced');
+          setCityPlans(gameData.cityPlans || []);
+          setCurrentCard(gameData.currentCard?.number ? `Card ${gameData.currentCard.number}` : null);
+        }
+      } catch (error) {
+        console.error('Error loading game data:', error);
+      }
+    };
+
+    loadGameData();
   }, [id]);
 
   const handleSlotClick = (street: 1 | 2 | 3, index: number) => {
@@ -48,8 +68,10 @@ export default function Room() {
         textAlign: 'center',
         marginBottom: 20,
         padding: 10,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 8
+        backgroundColor: theme === 'dark' ? '#333' : '#f8f9fa',
+        border: theme === 'dark' ? '1px solid #555' : '1px solid #dee2e6',
+        borderRadius: 8,
+        color: theme === 'dark' ? '#fff' : '#000'
       }}>
         <strong>Status: {t(`ui.${gameStatus}`)}</strong>
         {currentCard && (
@@ -127,11 +149,13 @@ export default function Room() {
               key={plan.id}
               style={{
                 padding: 15,
-                border: '2px solid #dee2e6',
+                border: theme === 'dark' ? '2px solid #ffffff' : '2px solid #dee2e6',
                 borderRadius: 8,
-                backgroundColor: '#fff',
+                backgroundColor: theme === 'dark' ? 'transparent' : '#ffffff',
+                color: theme === 'dark' ? '#ffffff' : '#000000',
                 minWidth: 250,
-                textAlign: 'center'
+                textAlign: 'center',
+                boxShadow: theme === 'dark' ? '0 4px 12px rgba(255,255,255,0.1)' : '0 4px 12px rgba(0,0,0,0.15)'
               }}
             >
               <h3 style={{ margin: '0 0 10px 0', fontSize: 16 }}>
@@ -140,8 +164,15 @@ export default function Room() {
               <p style={{ margin: 0, fontSize: 14 }}>
                 {t(`cityPlans.${plan.id}`)}
               </p>
-              <div style={{ marginTop: 10, fontSize: 12, color: '#6c757d' }}>
-                Classic: {plan.classic.first}/{plan.classic.later} | Balanced: {plan.balanced.first}/{plan.balanced.later} pts
+              <div style={{
+                marginTop: 10,
+                fontSize: 12,
+                color: theme === 'dark' ? '#cccccc' : '#6c757d'
+              }}>
+                {gameMode === 'classic'
+                  ? `Classic: ${plan.classic.first}/${plan.classic.later} pts`
+                  : `Balanced: ${plan.balanced.first}/${plan.balanced.later} pts`
+                }
               </div>
             </div>
           ))}

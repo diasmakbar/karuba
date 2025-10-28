@@ -80,26 +80,26 @@ export default function Board({ board, onSlotClick }: BoardProps) {
       <div key={streetId} style={{ margin: '0 10px', textAlign: 'center' }}>
         <h3 style={{ marginBottom: 10, fontSize: 16 }}>{t(`streets.street${streetId}`)}</h3>
 
-        {/* House slots */}
+        {/* House slots with inline park slots */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 2,
-          marginBottom: 10
+          gap: 2
         }}>
-          {street.map((slot, index) => renderSlot(streetId, index, slot))}
-        </div>
-
-        {/* Park slots */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 2,
-          borderTop: '2px solid #90EE90',
-          paddingTop: 5
-        }}>
-          {parkSlots.map((hasPark, index) => renderParkSlot(index, hasPark))}
+          {street.map((slot, index) => (
+            <div key={`house-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {renderSlot(streetId, index, slot)}
+              {index < parkSlots.length && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>
+                    Park {index + 1}
+                  </div>
+                  {renderParkSlot(index, parkSlots[index])}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     );
