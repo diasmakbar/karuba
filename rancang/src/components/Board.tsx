@@ -54,7 +54,7 @@ export default function Board({ board, onSlotClick }: BoardProps) {
     );
   };
 
-  const renderParkSlot = (streetId: StreetId, index: number, hasPark: boolean) => (
+  const renderParkSlot = (index: number, hasPark: boolean) => (
     <div
       key={`park-${index}`}
       style={{
@@ -99,7 +99,7 @@ export default function Board({ board, onSlotClick }: BoardProps) {
           borderTop: '2px solid #90EE90',
           paddingTop: 5
         }}>
-          {parkSlots.map((hasPark, index) => renderParkSlot(streetId, index, hasPark))}
+          {parkSlots.map((hasPark, index) => renderParkSlot(index, hasPark))}
         </div>
       </div>
     );
