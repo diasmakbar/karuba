@@ -1,0 +1,150 @@
+{
+  "en": {
+    "game": {
+      "title": "Welcome to City Plan!",
+      "subtitle": "The newest Space in Radiasi"
+    },
+    "lobby": {
+      "welcome": "Welcome to City Plan!",
+      "enterGameId": "Enter Game ID",
+      "joinGame": "Join Game!",
+      "createNew": "New Game",
+      "gameMode": "Game Mode:",
+      "classic": "Classic",
+      "balanced": "Balanced",
+      "includeAdvanced": "Include Advanced City Plans",
+      "maxPlayers": "Max Players:",
+      "enterName": "Please input your name:",
+      "join": "Join!"
+    },
+    "streets": {
+      "street1": "Street 1",
+      "street2": "Street 2",
+      "street3": "Street 3"
+    },
+    "effects": {
+      "pool": "Pool Manufacturer",
+      "temp": "Temp Agency",
+      "bis": "BIS",
+      "landscaper": "Landscaper",
+      "realEstate": "Real Estate Agent",
+      "surveyor": "Surveyor"
+    },
+    "cityPlans": {
+      "n1-1": "6 estates of size 1",
+      "n1-2": "4 estates of size 2",
+      "n1-3": "3 estates of size 3",
+      "n1-4": "2 estates of size 4",
+      "n1-5": "2 estates of size 5",
+      "n1-6": "2 estates of size 6",
+      "n2-1": "1 estate size 3 and 1 estate size 6",
+      "n2-2": "2 estates size 3 and 1 estate size 4",
+      "n2-3": "1 estate size 4 and 1 estate size 5",
+      "n2-4": "1 estate size 4 and 3 estates size 1",
+      "n2-5": "1 estate size 5 and 2 estates size 2",
+      "n2-6": "1 estate size 6 and 3 estates size 1",
+      "n3-1": "1 estate size 3 and 1 estate size 4",
+      "n3-2": "1 estate size 2 and 1 estate size 5",
+      "n3-3": "1 estate size 1, 1 estate size 4, 1 estate size 5",
+      "n3-4": "1 estate size 2, 1 estate size 3, 1 estate size 5",
+      "n3-5": "1 estate size 1, 1 estate size 2, 1 estate size 6",
+      "n3-6": "1 estate size 1, 2 estates size 2, 1 estate size 3",
+      "a1-1": "All 12 houses built in street 3 (full street)",
+      "a1-2": "Use 7 Temp Agencies",
+      "a1-3": "All 10 houses built in street 1 (full street)",
+      "a1-4": "Use 5 BIS effects",
+      "a1-5": "First and last house in every street are built",
+      "a2-1": "Two streets each have 3 completed pools (6 total)",
+      "a2-2": "All pools and parks built in street 3",
+      "a2-3": "All pools and parks built in street 2",
+      "a2-4": "One street has all pools, all parks, and one roundabout",
+      "a2-5": "All parks or all pools completed in two different streets"
+    },
+    "ui": {
+      "roomTitle": "Welcome to Your City Plan",
+      "waiting": "Waiting for players to join",
+      "playing": "Game in progress",
+      "ended": "Game ended",
+      "yourTurn": "Your turn",
+      "waitingTurn": "Waiting for other players",
+      "ready": "Ready",
+      "placeHouse": "Place House",
+      "useEffect": "Use Effect",
+      "endTurn": "End Turn"
+    }
+  },
+  "id": {
+    "game": {
+      "title": "Selamat Datang di Rancang Kota!",
+      "subtitle": "Space baru di Radiasi"
+    },
+    "lobby": {
+      "welcome": "Selamat Datang di Rancang Kota!",
+      "enterGameId": "Masukkan ID Game",
+      "joinGame": "Gabung Game!",
+      "createNew": "Game Baru",
+      "gameMode": "Mode Game:",
+      "classic": "Klasik",
+      "balanced": "Lebih Seru",
+      "includeAdvanced": "Sertakan Rencana Kota Advanced",
+      "maxPlayers": "Maks Pemain:",
+      "enterName": "Silakan masukkan nama Anda:",
+      "join": "Gabung!"
+    },
+    "streets": {
+      "street1": "Jalan 1",
+      "street2": "Jalan 2",
+      "street3": "Jalan 3"
+    },
+    "effects": {
+      "pool": "Kolam Renang",
+      "temp": "Renovasi Nomor",
+      "bis": "Duplikat",
+      "landscaper": "Taman",
+      "realEstate": "Agen Properti",
+      "surveyor": "Surveyor"
+    },
+    "cityPlans": {
+      "n1-1": "6 kompleks rumah ukuran 1",
+      "n1-2": "4 kompleks rumah ukuran 2",
+      "n1-3": "3 kompleks rumah ukuran 3",
+      "n1-4": "2 kompleks rumah ukuran 4",
+      "n1-5": "2 kompleks rumah ukuran 5",
+      "n1-6": "2 kompleks rumah ukuran 6",
+      "n2-1": "1 kompleks rumah ukuran 3 dan 1 kompleks rumah ukuran 6",
+      "n2-2": "2 kompleks rumah ukuran 3 dan 1 kompleks rumah ukuran 4",
+      "n2-3": "1 kompleks rumah ukuran 4 dan 1 kompleks rumah ukuran 5",
+      "n2-4": "1 kompleks rumah ukuran 4 dan 3 kompleks rumah ukuran 1",
+      "n2-5": "1 kompleks rumah ukuran 5 dan 2 kompleks rumah ukuran 2",
+      "n2-6": "1 kompleks rumah ukuran 6 dan 3 kompleks rumah ukuran 1",
+      "n3-1": "1 kompleks rumah ukuran 3 dan 1 kompleks rumah ukuran 4",
+      "n3-2": "1 kompleks rumah ukuran 2 dan 1 kompleks rumah ukuran 5",
+      "n3-3": "1 kompleks rumah ukuran 1, 1 kompleks rumah ukuran 4, 1 kompleks rumah ukuran 5",
+      "n3-4": "1 kompleks rumah ukuran 2, 1 kompleks rumah ukuran 3, 1 kompleks rumah ukuran 5",
+      "n3-5": "1 kompleks rumah ukuran 1, 1 kompleks rumah ukuran 2, 1 kompleks rumah ukuran 6",
+      "n3-6": "1 kompleks rumah ukuran 1, 2 kompleks rumah ukuran 2, 1 kompleks rumah ukuran 3",
+      "a1-1": "Semua 12 rumah dibangun di jalan 3 (jalan penuh)",
+      "a1-2": "Lakukan 7x Renovasi",
+      "a1-3": "Semua 10 rumah dibangun di jalan 1 (jalan penuh)",
+      "a1-4": "Gunakan 5 efek Duplikat",
+      "a1-5": "Rumah pertama dan terakhir di setiap jalan dibangun",
+      "a2-1": "Dua jalan masing-masing memiliki 3 kolam selesai (6 total)",
+      "a2-2": "Semua kolam dan taman dibangun di jalan 3",
+      "a2-3": "Semua kolam dan taman dibangun di jalan 2",
+      "a2-4": "Satu jalan memiliki semua kolam, semua taman, dan satu bundaran",
+      "a2-5": "Semua taman atau semua kolam selesai di dua jalan berbeda"
+    },
+    "ui": {
+      "roomTitle": "Selamat Datang di Kotamu",
+      "waiting": "Menunggu pemain bergabung",
+      "playing": "Game sedang berlangsung",
+      "ended": "Game selesai",
+      "yourTurn": "Giliran Anda",
+      "waitingTurn": "Menunggu pemain lain",
+      "ready": "Siap",
+      "placeHouse": "Tempatkan Rumah",
+      "useEffect": "Gunakan Efek",
+      "endTurn": "Akhiri Giliran"
+    }
+  }
+}
