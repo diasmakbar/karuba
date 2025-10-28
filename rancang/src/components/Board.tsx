@@ -55,8 +55,8 @@ export default function Board({ board, onSlotClick }: BoardProps) {
   };
 
   const renderStreet = (streetId: StreetId, street: any[]) => (
-    <div key={streetId} style={{ marginBottom: 20 }}>
-      <h3 style={{ textAlign: 'center', marginBottom: 10 }}>{t(`streets.street${streetId}`)}</h3>
+    <div key={streetId} style={{ margin: '0 10px', textAlign: 'center' }}>
+      <h3 style={{ marginBottom: 10, fontSize: 16 }}>{t(`streets.street${streetId}`)}</h3>
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -71,11 +71,13 @@ export default function Board({ board, onSlotClick }: BoardProps) {
   return (
     <div style={{
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
       padding: 20,
-      maxWidth: 400,
-      margin: '0 auto'
+      maxWidth: 600,
+      margin: '0 auto',
+      overflowX: 'auto'
     }}>
       {renderStreet(1, board.street1)}
       {renderStreet(2, board.street2)}
