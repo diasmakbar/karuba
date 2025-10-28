@@ -54,19 +54,56 @@ export default function Board({ board, onSlotClick }: BoardProps) {
     );
   };
 
-  const renderStreet = (streetId: StreetId, street: any[]) => (
-    <div key={streetId} style={{ margin: '0 10px', textAlign: 'center' }}>
-      <h3 style={{ marginBottom: 10, fontSize: 16 }}>{t(`streets.street${streetId}`)}</h3>
-      <div style={{
+  const renderParkSlot = (streetId: StreetId, index: number, hasPark: boolean) => (
+    <div
+      key={`park-${index}`}
+      style={{
+        width: 35,
+        height: 35,
+        border: '1px solid #90EE90',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
-        gap: 2
-      }}>
-        {street.map((slot, index) => renderSlot(streetId, index, slot))}
-      </div>
+        justifyContent: 'center',
+        fontSize: 14,
+        backgroundColor: hasPark ? '#98FB98' : '#F0FFF0',
+        margin: '1px'
+      }}
+    >
+      {hasPark ? '🌳' : '⬜'}
     </div>
   );
+
+  const renderStreet = (streetId: StreetId, street: any[]) => {
+    const parkSlots = board.parkSlots[`street${streetId}` as keyof typeof board.parkSlots] as boolean[];
+
+    return (
+      <div key={streetId} style={{ margin: '0 10px', textAlign: 'center' }}>
+        <h3 style={{ marginBottom: 10, fontSize: 16 }}>{t(`streets.street${streetId}`)}</h3>
+
+        {/* House slots */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2,
+          marginBottom: 10
+        }}>
+          {street.map((slot, index) => renderSlot(streetId, index, slot))}
+        </div>
+
+        {/* Park slots */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 2,
+          borderTop: '2px solid #90EE90',
+          paddingTop: 5
+        }}>
+          {parkSlots.map((hasPark, index) => renderParkSlot(streetId, index, hasPark))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{

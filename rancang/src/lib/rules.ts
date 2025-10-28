@@ -7,8 +7,7 @@ export function canPlaceHouse(
   position: number,
   number: number
 ): boolean {
-  const streetKey = `street${street}` as keyof PlayerBoard;
-  const streetArray = board[streetKey];
+  const streetArray = board[`street${street}` as keyof PlayerBoard] as any[];
 
   if (position < 0 || position >= streetArray.length) return false;
 
@@ -54,8 +53,8 @@ export function canUseEffect(
   switch (effect) {
     case 'pool':
       if (!street || position === undefined) return false;
-      const streetKey = `street${street}` as keyof PlayerBoard;
-      return board[streetKey][position].number !== undefined && !board[streetKey][position].hasPool;
+      const streetArray = board[`street${street}` as keyof PlayerBoard] as any[];
+      return streetArray[position].number !== undefined && !streetArray[position].hasPool;
     case 'temp':
       return true; // can always adjust
     case 'bis':

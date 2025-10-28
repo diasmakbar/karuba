@@ -33,6 +33,11 @@ export function emptyPlayerBoard(): PlayerBoard {
     street3: Array(12).fill(null).map((_, i) => ({
       poolPosition: street3Pools[i]
     })),
+    parkSlots: {
+      street1: Array(3).fill(false), // 3 park slots for street 1
+      street2: Array(4).fill(false), // 4 park slots for street 2
+      street3: Array(5).fill(false), // 5 park slots for street 3
+    },
   };
 }
 

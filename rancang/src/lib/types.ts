@@ -13,9 +13,14 @@ export interface HouseSlot {
 export type Street = HouseSlot[];
 
 export interface PlayerBoard {
-  street1: Street; // 10 slots
-  street2: Street; // 11 slots
-  street3: Street; // 12 slots
+  street1: Street; // 10 house slots
+  street2: Street; // 11 house slots
+  street3: Street; // 12 house slots
+  parkSlots: {
+    street1: boolean[]; // 3 park slots
+    street2: boolean[]; // 4 park slots
+    street3: boolean[]; // 5 park slots
+  };
 }
 
 export type EffectType =

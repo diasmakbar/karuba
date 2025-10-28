@@ -13,7 +13,7 @@ export default function Room() {
   const [gameStatus, setGameStatus] = useState<GameStatus>('waiting');
   const [cityPlans, setCityPlans] = useState<CityPlan[]>([]);
   const [currentCard, setCurrentCard] = useState<string | null>(null);
-  const [isHost, setIsHost] = useState(false); // Placeholder
+  const [isHost] = useState(false); // Placeholder
 
   // Placeholder: in real implementation, sync with Firebase
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function Room() {
                 {t(`cityPlans.${plan.id}`)}
               </p>
               <div style={{ marginTop: 10, fontSize: 12, color: '#6c757d' }}>
-                {plan.mode === 'classic' ? 'Classic' : 'Balanced'}: {plan.classic.first}/{plan.classic.later} pts
+                Classic: {plan.classic.first}/{plan.classic.later} | Balanced: {plan.balanced.first}/{plan.balanced.later} pts
               </div>
             </div>
           ))}
