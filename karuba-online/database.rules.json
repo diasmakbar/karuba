@@ -1,24 +1,23 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
     "games": {
-      "decrypto": {
-        "$gid": {
-          ".read": "data.child('teams').hasChild(auth.uid) || true",
-          ".write": "true"
-        }
-      },
-      "karuba": {
-        "$gid": {
-          ".read": "data.child('players').hasChild(auth.uid)",
-          ".write": "data.child('players').hasChild(auth.uid)"
-        }
-      },
-      "rancang": {
-        "$gid": {
-          ".read": "data.child('players').hasChild(auth.uid)",
-          ".write": "data.child('players').hasChild(auth.uid)"
+      "$game": {
+        "$roomId": {
+          ".read": "auth!=null",
+          ".write": "auth!=null&&(!data.exists()||root.child('games').child($game).child($roomId).child('owners').child(auth.uid).exists())",
+          "players": {
+            "$playerId": {
+              ".read": "auth!=null",
+              ".write": "auth!=null&&((!data.exists()&&newData.child('ownerUid').val()==auth.uid)||(data.exists()&&data.child('ownerUid').val()==auth.uid))"
+            }
+          },
+          "owners": {
+            "$uid": {
+              ".read": "auth!=null",
+              ".write": "auth!=null&&$uid==auth.uid"
+            }
+          },
+          ".validate": "true"
         }
       }
     }

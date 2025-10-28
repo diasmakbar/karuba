@@ -1,0 +1,36 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "games": {
+      "decrypto": {
+        "$gid": {
+          ".read": "data.child('teams').hasChild(auth.uid) || true",
+          ".write": "true"
+        }
+      },
+      "karuba": {
+        "$gid": {
+          ".read": "data.child('players').hasChild(auth.uid)",
+          ".write": "data.child('players').hasChild(auth.uid)",
+          "players": {
+            "$playerId": {
+              ".write": "auth != null"
+            }
+          },
+          "owners": {
+            "$uid": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      },
+      "rancang": {
+        "$gid": {
+          ".read": "data.child('players').hasChild(auth.uid)",
+          ".write": "data.child('players').hasChild(auth.uid)"
+        }
+      }
+    }
+  }
+}
