@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Board from '../components/Board';
 import { emptyPlayerBoard } from '../utils/lobby';
-import { getRandomCityPlans } from '../lib/cityPlans';
 import type { PlayerBoard, CityPlan, GameStatus } from '../lib/types';
 import { useLang } from '../contexts/LangContext';
 import { useTheme } from '../contexts/ThemeContext';
