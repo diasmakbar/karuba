@@ -33,10 +33,10 @@ export default function Home({ isDarkMode, onToggleTheme }: { isDarkMode: boolea
           textAlign: "center"
         }}>
           <h1 style={{ margin: "0 0 8px 0", fontSize: "32px" }} className="font-display">
-            🏓 Pickleball Scorer
+            Pickleball Space
           </h1>
           <p style={{ margin: "0 0 32px 0", color: "var(--text-secondary)", fontSize: "16px" }}>
-            Real-time multiplayer pickleball scoring with voice announcements
+            Real-time multiplayer pickleball scoring. v.1.0.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
