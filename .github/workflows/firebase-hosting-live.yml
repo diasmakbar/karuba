@@ -8,6 +8,7 @@ on:
     paths:
       - 'karuba-online/**'
       - 'rancang/**'
+      - 'pickleball/**'
       - 'firebase.json'
       - '.firebaserc'
       - '.github/workflows/firebase-hosting-live.yml'
@@ -35,7 +36,12 @@ jobs:
         run: bun install && bun run build
         working-directory: ./rancang
 
-      # Deploy SEMUA target dari ROOT
+      # Build Pickleball
+      - name: Build Pickleball
+        run: bun install && bun run build
+        working-directory: ./pickleball
+
+      # Deploy All Apps to Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
