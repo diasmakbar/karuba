@@ -4,7 +4,7 @@ import { db, push, ref, update, auth } from "../firebase"
 type GameMode = 'singles' | 'doubles'
 type MatchFormat = 'bo1' | 'bo3' | 'bo5'
 
-export default function CreateGame() {
+export default function CreateGame({ isDarkMode, onToggleTheme }: { isDarkMode: boolean; onToggleTheme: () => void }) {
   const [gameName, setGameName] = useState("")
   const [gameMode, setGameMode] = useState<GameMode>('doubles')
   const [matchFormat, setMatchFormat] = useState<MatchFormat>('bo1')
@@ -68,6 +68,23 @@ export default function CreateGame() {
         alignItems: "center",
         justifyContent: "center"
       }}>
+        <div style={{ position: "absolute", top: "20px", right: "20px" }}>
+          <button
+            onClick={onToggleTheme}
+            style={{
+              padding: "8px 12px",
+              background: isDarkMode ? "#333" : "#f8f9fa",
+              color: isDarkMode ? "white" : "#333",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px"
+            }}
+          >
+            {isDarkMode ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        </div>
+
         <div className="card" style={{
           padding: 24,
           borderRadius: 12,

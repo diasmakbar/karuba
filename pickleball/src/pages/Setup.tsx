@@ -25,7 +25,7 @@ interface Player {
   team?: string
 }
 
-export default function Setup({ gameId }: { gameId: string }) {
+export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: string; isDarkMode: boolean; onToggleTheme: () => void }) {
   const [game, setGame] = useState<Game | null>(null)
   const [playerName, setPlayerName] = useState("")
   const [isJoining, setIsJoining] = useState(false)
@@ -164,6 +164,23 @@ export default function Setup({ gameId }: { gameId: string }) {
   return (
     <main className="page" style={{ padding: "20px" }}>
       <div className="page-inner" style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ position: "absolute", top: "20px", right: "20px" }}>
+          <button
+            onClick={onToggleTheme}
+            style={{
+              padding: "8px 12px",
+              background: isDarkMode ? "#333" : "#f8f9fa",
+              color: isDarkMode ? "white" : "#333",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px"
+            }}
+          >
+            {isDarkMode ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        </div>
+
         <div className="card" style={{ padding: 24, marginBottom: 20 }}>
           <h2 style={{ margin: "0 0 20px 0", textAlign: "center" }} className="font-display">
             {game.name} - Game Setup

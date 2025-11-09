@@ -34,7 +34,7 @@ function App() {
 
   if (path.startsWith("/setup/")) {
     const gameId = path.split("/").pop()!
-    return <Setup gameId={gameId} />
+    return <Setup gameId={gameId} isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)} />
   }
 
   if (path.startsWith("/game/")) {
@@ -43,14 +43,14 @@ function App() {
   }
 
   if (path === "/create") {
-    return <CreateGame />
+    return <CreateGame isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)} />
   }
 
   if (path === "/join") {
-    return <JoinGame />
+    return <JoinGame isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)} />
   }
 
-  return <Home />
+  return <Home isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)} />
 }
 
 export default App

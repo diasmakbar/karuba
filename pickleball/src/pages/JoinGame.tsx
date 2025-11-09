@@ -9,7 +9,7 @@ interface Game {
   players: Record<string, any>
 }
 
-export default function JoinGame() {
+export default function JoinGame({ isDarkMode, onToggleTheme }: { isDarkMode: boolean; onToggleTheme: () => void }) {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [joiningGameId, setJoiningGameId] = useState<string | null>(null)
@@ -57,6 +57,23 @@ export default function JoinGame() {
         flexDirection: "column",
         alignItems: "center"
       }}>
+        <div style={{ position: "absolute", top: "20px", right: "20px" }}>
+          <button
+            onClick={onToggleTheme}
+            style={{
+              padding: "8px 12px",
+              background: isDarkMode ? "#333" : "#f8f9fa",
+              color: isDarkMode ? "white" : "#333",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px"
+            }}
+          >
+            {isDarkMode ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        </div>
+
         <div className="card" style={{
           padding: 24,
           borderRadius: 12,
@@ -85,23 +102,23 @@ export default function JoinGame() {
                   key={game.id}
                   style={{
                     padding: "16px",
-                    border: "1px solid #ddd",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
                     borderRadius: "8px",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    background: "#fafafa"
+                    background: "transparent"
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 500, marginBottom: "4px" }}>
+                    <div style={{ fontWeight: 500, marginBottom: "4px", color: isDarkMode ? "white" : "black" }}>
                       {game.name}
                     </div>
-                    <div style={{ fontSize: "14px", color: "#666" }}>
-                      Created {new Date(game.createdAt).toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: "14px", color: "#666" }}>
+                    <div style={{ fontSize: "14px", color: isDarkMode ? "#ccc" : "#666" }}>
                       Players: {Object.keys(game.players || {}).length}
+                    </div>
+                    <div style={{ fontSize: "14px", color: isDarkMode ? "#ccc" : "#666" }}>
+                      Created {new Date(game.createdAt).toLocaleString()}
                     </div>
                   </div>
                   <button
@@ -135,8 +152,10 @@ export default function JoinGame() {
               width: "100%",
               padding: "10px",
               background: "transparent",
-              color: "#666",
-              border: "none",
+              // color: "#666",
+              color: isDarkMode ? "#ccc" : "#666",
+              // border: "none",
+              border: `1px solid ${isDarkMode ? "white" : "black"}`,
               borderRadius: "6px",
               fontSize: "14px",
               cursor: "pointer",
