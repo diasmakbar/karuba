@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Brankas!</title>
+<style>
+  :root{
+    --char-charcoal:#1F1611;
+    --char-burnt:#3D2417;
+    --ember-orange:#E8743B;
+    --butter-cream:#F6E7C9;
+    --smoke-grey:#8B8378;
+    --success-green:#5C8A52;
+    --fail-red:#C24E3A;
+    --vault-gold:#D4A843;
+    --vault-cold:#3A4A5C;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--char-charcoal);
+    overflow:hidden;
+    font-family:'Inter',-apple-system,sans-serif;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100dvh;
+  }
+
+  /* ---------- TOP: progress + timer ---------- */
+  .top-zone{
+    flex:0 0 16%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 22px;
+    background:linear-gradient(180deg, var(--char-charcoal), var(--char-burnt));
+    border-bottom:2px solid rgba(212,168,67,0.2);
+  }
+
+  .timer-block{
+    text-align:left;
+  }
+
+  .timer-value{
+    font-size:28px;
+    font-weight:800;
+    color:var(--butter-cream);
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-value.urgent{ color:var(--fail-red); }
+
+  .timer-caption{
+    font-size:11px;
+    color:var(--smoke-grey);
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-weight:700;
+  }
+
+  .combo-progress{
+    display:flex;
+    gap:8px;
+  }
+
+  .combo-dot{
+    width:14px; height:14px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    border:2px solid rgba(255,255,255,0.2);
+    transition:background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+  }
+  .combo-dot.done{
+    background:var(--success-green);
+    border-color:var(--success-green);
+    transform:scale(1.15);
+  }
+  .combo-dot.current{
+    border-color:var(--vault-gold);
+  }
+
+  /* ---------- MIDDLE: vault stage ---------- */
+  .stage{
+    flex:1;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    background: var(--vault-cold);
+    transition: background-color 0.15s ease;
+  }
+
+  .stage.success-flash{
+    background-color: var(--success-green) !important;
+  }
+
+  .action-zone{
+    flex:0 0 18%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--char-burnt);
+  }
+
+  .lock-btn{
+    width:80%;
+    max-width:320px;
+    height:72px;
+    border-radius:18px;
+    border:none;
+    background:linear-gradient(180deg, var(--vault-gold), #A9821F);
+    color:var(--char-charcoal);
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:0.5px;
+    box-shadow:0 7px 0 #7a611a, 0 10px 18px rgba(0,0,0,0.4);
+    transition:transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .lock-btn:active{
+    transform:translateY(5px);
+    box-shadow:0 2px 0 #7a611a, 0 4px 10px rgba(0,0,0,0.4);
+  }
+  .lock-btn:disabled{
+    background:linear-gradient(180deg,#5a5a5a,#3a3a3a);
+    box-shadow:0 7px 0 #2a2a2a, 0 10px 18px rgba(0,0,0,0.4);
+    color:#999;
+  }
+  .lock-btn.shake{
+    animation: shakeWrong 0.35s ease;
+  }
+  @keyframes shakeWrong{
+    0%, 100%{ transform:translateX(0); }
+    25%{ transform:translateX(-8px); }
+    75%{ transform:translateX(8px); }
+  }
+
+  .vault-ring{
+    position:relative;
+    width:min(72vw, 280px);
+    height:min(72vw, 280px);
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #2a2a2a, #0d0d0d 70%);
+    box-shadow:
+      0 0 0 10px #1a1a1a,
+      0 0 0 14px #3a3a3a,
+      inset 0 8px 20px rgba(0,0,0,0.6),
+      0 20px 50px rgba(0,0,0,0.5);
+  }
+
+  .vault-marks{
+    position:absolute;
+    inset:0;
+  }
+
+  .vault-mark{
+    position:absolute;
+    width:1.5px;
+    height:8px;
+    background:rgba(212,168,67,0.35);
+    left:50%;
+    top:3px;
+    transform-origin:50% calc(34vw);
+  }
+
+  .vault-needle{
+    position:absolute;
+    top:50%; left:50%;
+    width:4px;
+    height:42%;
+    background:linear-gradient(180deg, var(--vault-gold), transparent);
+    transform-origin:top center;
+    transform:translate(-50%, 0) rotate(0deg);
+    transition: transform 0.05s linear;
+    border-radius:2px;
+  }
+
+  .vault-center{
+    position:absolute;
+    top:50%; left:50%;
+    width:64px; height:64px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 35% 30%, #4a4a4a, #1a1a1a);
+    box-shadow:0 4px 12px rgba(0,0,0,0.5);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .vault-target-label{
+    color:var(--vault-gold);
+    font-size:13px;
+    font-weight:800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vault-reveal{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    background:conic-gradient(var(--success-green) 0deg, transparent 0deg);
+    opacity:0.35;
+    pointer-events:none;
+  }
+
+  .vault-status{
+    position:absolute;
+    bottom:6%;
+    left:50%;
+    transform:translateX(-50%);
+    color:var(--butter-cream);
+    font-size:14px;
+    font-weight:700;
+    text-align:center;
+    letter-spacing:0.5px;
+    z-index:5;
+  }
+
+  .click-flash{
+    position:absolute;
+    inset:0;
+    background:white;
+    opacity:0;
+    pointer-events:none;
+  }
+  .click-flash.flash{
+    animation: flashOut 0.35s ease-out;
+  }
+  @keyframes flashOut{
+    0%{ opacity:0.8; }
+    100%{ opacity:0; }
+  }
+
+  /* ---------- OVERLAYS ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:var(--char-charcoal);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+    z-index:50;
+  }
+
+  .overlay h1{
+    color:var(--butter-cream);
+    font-size:clamp(30px,9vw,44px);
+    font-weight:800;
+    margin:0 0 8px;
+    letter-spacing:-1px;
+  }
+  .overlay .accent{ color:var(--vault-gold); }
+
+  .overlay p{
+    color:var(--smoke-grey);
+    font-size:16px;
+    line-height:1.55;
+    max-width:320px;
+    margin:0 0 28px;
+  }
+
+  .overlay .big-btn{
+    width:200px;
+    height:64px;
+    border-radius:16px;
+    border:none;
+    background:var(--vault-gold);
+    color:var(--char-charcoal);
+    font-size:20px;
+    font-weight:800;
+    box-shadow:0 6px 0 #9c7a26;
+  }
+  .overlay .big-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #9c7a26; }
+
+  .home-link{
+    margin-top:18px;
+    color:var(--smoke-grey);
+    font-size:14px;
+    font-weight:600;
+    text-decoration:none;
+    padding:8px 16px;
+  }
+  .home-link:active{ opacity:0.6; }
+
+  #result-screen .result-icon{
+    font-size:64px;
+    margin-bottom:8px;
+  }
+
+  #result-screen .score-label{
+    color:var(--smoke-grey);
+    font-size:14px;
+    letter-spacing:1px;
+    margin-bottom:24px;
+  }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div class="overlay" id="start-screen">
+    <h1>Brankas<span class="accent">!</span></h1>
+    <p>Posisi HP saat ini jadi titik <strong>0°</strong>. Kamu punya <strong>1 menit</strong> untuk mencocokkan setiap sudut kombinasi. Putar HP ke posisi yang dirasa pas, lalu tekan <strong>Kunci Sudut Ini</strong> — kalau salah, gak ada penalti, coba lagi.</p>
+    <button class="big-btn" id="start-btn">Kalibrasi &amp; Mulai</button>
+    <p id="permission-note" style="font-size:13px; margin-top:14px; color:#8B8378;"></p>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="overlay hidden" id="result-screen">
+    <div class="result-icon" id="result-icon">🔓</div>
+    <h1 id="result-title">Hasil</h1>
+    <div class="score-label" id="score-label">-</div>
+    <button class="big-btn" id="retry-btn">Coba Lagi</button>
+    <a href="index.html" class="home-link">← Ke Menu</a>
+  </div>
+
+  <!-- GAME UI -->
+  <div class="top-zone">
+    <div class="timer-block">
+      <div class="timer-value" id="timer-value">2:00</div>
+      <div class="timer-caption">waktu</div>
+    </div>
+    <div class="combo-progress" id="combo-progress"></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="click-flash" id="click-flash"></div>
+    <div class="vault-ring">
+      <div class="vault-marks" id="vault-marks"></div>
+      <div class="vault-needle" id="vault-needle"></div>
+      <div class="vault-center">
+        <div class="vault-target-label" id="vault-target-label">--°</div>
+      </div>
+    </div>
+    <div class="vault-status" id="vault-status">putar HP perlahan</div>
+  </div>
+
+  <div class="action-zone">
+    <button class="lock-btn" id="lock-btn">Kunci Sudut Ini</button>
+  </div>
+
+<script>
+(function(){
+  const TOTAL_TIME_SEC = 60;
+  const TOLERANCE_DEG = 5;
+  const MIN_COMBO = 3;
+  const MAX_COMBO = 4;
+  // Pola sudut tiap urutan: 1=besar, 2=kecil, 3=tengah, 4(jika ada)=full random
+  const ANGLE_PATTERN_RANGES = [
+    [270, 330], // besar
+    [10, 60],   // kecil
+    [150, 210]  // tengah
+  ];
+
+  const startScreen = document.getElementById('start-screen');
+  const resultScreen = document.getElementById('result-screen');
+  const startBtn = document.getElementById('start-btn');
+  const retryBtn = document.getElementById('retry-btn');
+  const permissionNote = document.getElementById('permission-note');
+  const timerValue = document.getElementById('timer-value');
+  const comboProgress = document.getElementById('combo-progress');
+  const stage = document.getElementById('stage');
+  const vaultNeedle = document.getElementById('vault-needle');
+  const vaultTargetLabel = document.getElementById('vault-target-label');
+  const vaultStatus = document.getElementById('vault-status');
+  const vaultMarks = document.getElementById('vault-marks');
+  const clickFlash = document.getElementById('click-flash');
+  const lockBtn = document.getElementById('lock-btn');
+  const resultIcon = document.getElementById('result-icon');
+  const resultTitle = document.getElementById('result-title');
+  const scoreLabel = document.getElementById('score-label');
+
+  let combo = [];
+  let currentIndex = 0;
+  let baselineAlpha = null;
+  let currentAngle = 0; // sudut absolut player (0-360) relatif baseline
+  let roundActive = false;
+  let timeRemaining = TOTAL_TIME_SEC;
+  let timerIntervalId = null;
+  let orientationListenerAttached = false;
+  let locked = false; // mencegah double-trigger saat transisi antar combo
+
+  // Warna gradient dari dingin (jauh) ke hijau (dekat)
+  const COLD = [58, 74, 92];     // --vault-cold
+  const WARM = [232, 116, 59];   // ember (tengah)
+  const HOT = [92, 138, 82];     // --success-green (dekat banget)
+
+  function lerp(a, b, t){ return a + (b - a) * t; }
+
+  function colorForDistance(distDeg){
+    // distDeg: 0 (pas) - 180 (paling jauh)
+    const t = Math.min(1, distDeg / 90); // 0 = pas, 1 = >=90 derajat jauh
+    let c1, c2, localT;
+    if (t > 0.5){
+      c1 = COLD; c2 = WARM; localT = (t - 0.5) * 2; // dari hot midpoint mundur ke cold
+      // invert karena t besar = jauh
+      localT = 1 - localT;
+      return rgbToCss(lerpColor(COLD, WARM, localT));
+    } else {
+      localT = 1 - (t * 2); // t kecil = dekat -> localT mendekati 1
+      return rgbToCss(lerpColor(WARM, HOT, localT));
+    }
+  }
+
+  function lerpColor(c1, c2, t){
+    return [
+      Math.round(lerp(c1[0], c2[0], t)),
+      Math.round(lerp(c1[1], c2[1], t)),
+      Math.round(lerp(c1[2], c2[2], t))
+    ];
+  }
+
+  function rgbToCss(c){ return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+
+  function randomInRange(min, max){
+    return Math.floor(min + Math.random() * (max - min + 1));
+  }
+
+  function generateCombo(){
+    const count = MIN_COMBO + Math.floor(Math.random() * (MAX_COMBO - MIN_COMBO + 1));
+    const arr = [];
+    for (let i = 0; i < count; i++){
+      if (i < ANGLE_PATTERN_RANGES.length){
+        const [min, max] = ANGLE_PATTERN_RANGES[i];
+        arr.push(randomInRange(min, max));
+      } else {
+        // sasaran ke-4 dan seterusnya: full random
+        arr.push(Math.floor(Math.random() * 360));
+      }
+    }
+    return arr;
+  }
+
+  function buildComboDots(){
+    comboProgress.innerHTML = '';
+    combo.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'combo-dot';
+      dot.id = 'dot-' + i;
+      comboProgress.appendChild(dot);
+    });
+    updateComboDots();
+  }
+
+  function updateComboDots(){
+    combo.forEach((_, i) => {
+      const dot = document.getElementById('dot-' + i);
+      if (!dot) return;
+      dot.classList.remove('done', 'current');
+      if (i < currentIndex) dot.classList.add('done');
+      else if (i === currentIndex) dot.classList.add('current');
+    });
+  }
+
+  function buildVaultMarks(){
+    vaultMarks.innerHTML = '';
+    for (let i = 0; i < 24; i++){
+      const mark = document.createElement('div');
+      mark.className = 'vault-mark';
+      mark.style.transform = 'rotate(' + (i * 15) + 'deg)';
+      vaultMarks.appendChild(mark);
+    }
+  }
+
+  function normalizeAngle(deg){
+    let a = deg % 360;
+    if (a < 0) a += 360;
+    return a;
+  }
+
+  function angularDistance(a, b){
+    let diff = Math.abs(a - b) % 360;
+    if (diff > 180) diff = 360 - diff;
+    return diff;
+  }
+
+  function vibrate(pattern){
+    if (navigator.vibrate){
+      try{ navigator.vibrate(pattern); } catch(err){}
+    }
+  }
+
+  function playClick(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+
+      // Lapisan 1: nada "klik" terang (seperti mekanisme kunci)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+      gain.gain.setValueAtTime(0.5, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.18);
+
+      // Lapisan 2: nada rendah penegas (memberi bobot/kepuasan)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(180, now);
+      gain2.gain.setValueAtTime(0.35, now);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now);
+      osc2.stop(now + 0.12);
+    } catch(err){}
+  }
+
+  function handleOrientation(event){
+    if (!roundActive || locked) return;
+    if (event.alpha === null) return;
+
+    if (baselineAlpha === null){
+      baselineAlpha = event.alpha;
+    }
+
+    // alpha device orientation: 0-360, berkurang/bertambah tergantung arah putar.
+    // Kita hitung delta dari baseline sebagai "sudut absolut" player.
+    // Baseline ini HANYA di-set sekali di awal (saat null), jadi tetap absolut
+    // sepanjang ronde untuk semua target kombinasi.
+    let delta = event.alpha - baselineAlpha;
+    currentAngle = normalizeAngle(-delta); // dibalik agar searah jarum jam = nilai naik
+
+    vaultNeedle.style.transform = 'translate(-50%, 0) rotate(' + currentAngle + 'deg)';
+
+    const target = combo[currentIndex];
+    const dist = angularDistance(currentAngle, target);
+
+    stage.style.backgroundColor = colorForDistance(dist);
+
+  }
+
+  function handleLockAttempt(){
+    if (!roundActive || locked) return;
+    if (baselineAlpha === null) return; // belum ada data orientasi sama sekali
+
+    const target = combo[currentIndex];
+    const dist = angularDistance(currentAngle, target);
+
+    if (dist <= TOLERANCE_DEG){
+      handleComboHit();
+    } else {
+      // Submit salah: tidak ada penalti, cuma feedback visual+vibrate beda
+      lockBtn.classList.add('shake');
+      vibrate(40);
+      vaultStatus.textContent = 'belum pas, coba lagi';
+      setTimeout(() => lockBtn.classList.remove('shake'), 350);
+    }
+  }
+
+  function handleComboHit(){
+    locked = true;
+    vibrate([0, 80, 40, 80]);
+    playClick();
+    stage.classList.add('success-flash');
+    clickFlash.classList.add('flash');
+
+    setTimeout(() => {
+      clickFlash.classList.remove('flash');
+    }, 350);
+
+    setTimeout(() => {
+      stage.classList.remove('success-flash');
+      currentIndex += 1;
+      updateComboDots();
+
+      if (currentIndex >= combo.length){
+        finishRound('success');
+      } else {
+        vaultTargetLabel.textContent = combo[currentIndex] + '°';
+        vaultStatus.textContent = 'sasaran ' + (currentIndex + 1) + ' dari ' + combo.length;
+        locked = false;
+      }
+    }, 450);
+  }
+
+  async function requestOrientationPermission(){
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'){
+      try {
+        const result = await DeviceOrientationEvent.requestPermission();
+        return result === 'granted';
+      } catch (err){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function attachOrientationListener(){
+    if (orientationListenerAttached) return;
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    orientationListenerAttached = true;
+  }
+
+  function detachOrientationListener(){
+    if (!orientationListenerAttached) return;
+    window.removeEventListener('deviceorientation', handleOrientation, true);
+    orientationListenerAttached = false;
+  }
+
+  function formatTime(sec){
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function startTimer(){
+    timeRemaining = TOTAL_TIME_SEC;
+    timerValue.textContent = formatTime(timeRemaining);
+    timerValue.classList.remove('urgent');
+
+    timerIntervalId = setInterval(() => {
+      timeRemaining -= 1;
+      timerValue.textContent = formatTime(Math.max(0, timeRemaining));
+      if (timeRemaining <= 15) timerValue.classList.add('urgent');
+
+      if (timeRemaining <= 0){
+        finishRound('timeout');
+      }
+    }, 1000);
+  }
+
+  function resetState(){
+    combo = generateCombo();
+    currentIndex = 0;
+    baselineAlpha = null;
+    currentAngle = 0;
+    roundActive = false;
+    locked = false;
+    stage.style.backgroundColor = '';
+    stage.classList.remove('success-flash');
+    vaultStatus.textContent = 'putar HP perlahan';
+    vaultTargetLabel.textContent = combo[0] + '°';
+    buildComboDots();
+    if (timerIntervalId) clearInterval(timerIntervalId);
+  }
+
+  async function startRound(){
+    const granted = await requestOrientationPermission();
+    if (!granted){
+      permissionNote.textContent = 'Akses sensor gerak ditolak. Buka di Safari/Chrome dan izinkan akses motion & orientation, lalu coba lagi.';
+      return;
+    }
+    permissionNote.textContent = '';
+
+    resetState();
+    startScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
+
+    roundActive = true;
+    attachOrientationListener();
+    startTimer();
+  }
+
+  function finishRound(kind){
+    roundActive = false;
+    detachOrientationListener();
+    if (timerIntervalId) clearInterval(timerIntervalId);
+
+    if (kind === 'success'){
+      resultIcon.textContent = '🔓';
+      resultTitle.textContent = 'Brankas Terbuka!';
+      scoreLabel.textContent = 'semua ' + combo.length + ' kombinasi berhasil dengan sisa waktu ' + formatTime(Math.max(0, timeRemaining));
+    } else {
+      resultIcon.textContent = '🔒';
+      resultTitle.textContent = 'Waktu Habis';
+      scoreLabel.textContent = 'baru sampai kombinasi ' + (currentIndex + 1) + ' dari ' + combo.length;
+    }
+
+    resultScreen.classList.remove('hidden');
+  }
+
+  startBtn.addEventListener('click', startRound);
+  retryBtn.addEventListener('click', startRound);
+  lockBtn.addEventListener('click', handleLockAttempt);
+
+  buildVaultMarks();
+
+  if (typeof window.DeviceOrientationEvent === 'undefined'){
+    permissionNote.textContent = 'Browser ini tidak mendukung sensor gerak.';
+  }
+
+})();
+</script>
+</body>
+</html>

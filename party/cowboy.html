@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Draw!</title>
+<style>
+  :root{
+    --char-charcoal:#1F1611;
+    --char-burnt:#3D2417;
+    --ember-orange:#E8743B;
+    --butter-cream:#F6E7C9;
+    --smoke-grey:#8B8378;
+    --success-green:#5C8A52;
+    --fail-red:#C24E3A;
+    --dusty-tan:#C9A876;
+    --blood-red:#A8342A;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--char-charcoal);
+    overflow:hidden;
+    font-family:'Inter',-apple-system,sans-serif;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100dvh;
+  }
+
+  /* ---------- MAIN STAGE ---------- */
+  .stage{
+    flex:1;
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(168,52,42,0.10), transparent 60%),
+      linear-gradient(180deg, #2A1A12, #1A1109 70%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    transition: background-color 0.05s ease;
+  }
+
+  .stage.flash{
+    background-color: #fff;
+  }
+
+  .horizon{
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:32%;
+    background:linear-gradient(180deg, #5A3D26, #2E1E12);
+    border-top:4px solid rgba(201,168,118,0.3);
+  }
+
+  .sun{
+    position:absolute;
+    top:14%; left:50%;
+    transform:translateX(-50%);
+    width:70px; height:70px;
+    border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #E8B873, var(--ember-orange) 70%);
+    box-shadow:0 0 50px rgba(232,116,59,0.3);
+    opacity:0.7;
+  }
+
+  .status-label{
+    position:absolute;
+    top:7%;
+    left:50%;
+    transform:translateX(-50%);
+    color:var(--dusty-tan);
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    z-index:5;
+  }
+
+  .center-readout{
+    position:relative;
+    z-index:5;
+    text-align:center;
+  }
+
+  .bang-text{
+    font-size:clamp(56px,18vw,90px);
+    font-weight:900;
+    color:var(--blood-red);
+    letter-spacing:2px;
+    text-shadow:0 0 30px rgba(168,52,42,0.6);
+    opacity:0;
+    transform:scale(0.6);
+    transition:opacity 0.08s ease, transform 0.08s ease;
+  }
+  .bang-text.show{
+    opacity:1;
+    transform:scale(1.15);
+  }
+
+  .wait-icon{
+    font-size:64px;
+    transition:transform 0.1s ease;
+  }
+
+  .gun-angle-gauge{
+    margin-top:18px;
+    width:200px;
+  }
+
+  .gun-track{
+    width:100%;
+    height:10px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.08);
+    overflow:hidden;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);
+  }
+
+  .gun-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--blood-red), var(--ember-orange));
+    border-radius:6px;
+    transition:width 0.05s linear;
+  }
+
+  .gun-caption{
+    color:var(--smoke-grey);
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin-top:6px;
+    text-align:center;
+  }
+
+  /* ---------- START / RESULT OVERLAY ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:var(--char-charcoal);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+    z-index:50;
+  }
+
+  .overlay h1{
+    color:var(--butter-cream);
+    font-size:clamp(30px,9vw,44px);
+    font-weight:800;
+    margin:0 0 8px;
+    letter-spacing:-1px;
+  }
+  .overlay .accent{ color:var(--blood-red); }
+
+  .overlay p{
+    color:var(--smoke-grey);
+    font-size:16px;
+    line-height:1.55;
+    max-width:320px;
+    margin:0 0 28px;
+  }
+
+  .overlay .big-btn{
+    width:200px;
+    height:64px;
+    border-radius:16px;
+    border:none;
+    background:var(--blood-red);
+    color:var(--butter-cream);
+    font-size:20px;
+    font-weight:800;
+    box-shadow:0 6px 0 #6e2018;
+  }
+  .overlay .big-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #6e2018; }
+
+  .home-link{
+    margin-top:18px;
+    color:var(--smoke-grey);
+    font-size:14px;
+    font-weight:600;
+    text-decoration:none;
+    padding:8px 16px;
+  }
+  .home-link:active{ opacity:0.6; }
+
+  #result-screen .score-display{
+    font-size:clamp(48px,16vw,80px);
+    font-weight:800;
+    margin:6px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  #result-screen .score-display.win{ color:var(--success-green); }
+  #result-screen .score-display.miss{ color:var(--fail-red); }
+  #result-screen .score-display.none{ color:var(--smoke-grey); }
+
+  #result-screen .score-label{
+    color:var(--smoke-grey);
+    font-size:14px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-weight:600;
+    margin-bottom:24px;
+  }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div class="overlay" id="start-screen">
+    <h1>Draw<span class="accent">!</span></h1>
+    <p>Arahkan HP ke <strong>bawah</strong> kayak megang pistol di holster. Tahan posisi itu. Begitu denger <strong>BANG</strong>, langsung angkat HP ke depan secepat mungkin. Gerak sebelum BANG = curang, langsung kalah.</p>
+    <button class="big-btn" id="start-btn">Siap Tempur</button>
+    <p id="permission-note" style="font-size:13px; margin-top:14px; color:#8B8378;"></p>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="overlay hidden" id="result-screen">
+    <h1 id="result-title">Hasil</h1>
+    <div class="score-display" id="score-display">-</div>
+    <div class="score-label" id="score-label">waktu reaksi</div>
+    <button class="big-btn" id="retry-btn">Duel Lagi</button>
+    <a href="index.html" class="home-link">← Ke Menu</a>
+  </div>
+
+  <!-- GAME STAGE -->
+  <div class="stage" id="stage">
+    <div class="status-label" id="status-label">TAHAN POSISI...</div>
+    <div class="sun"></div>
+    <div class="horizon"></div>
+
+    <div class="center-readout">
+      <div class="wait-icon" id="wait-icon">🔫</div>
+      <div class="bang-text" id="bang-text">BANG!</div>
+      <div class="gun-angle-gauge">
+        <div class="gun-track">
+          <div class="gun-fill" id="gun-fill"></div>
+        </div>
+        <div class="gun-caption" id="gun-caption">posisi senjata</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const MIN_DELAY = 3.0;     // detik minimum sebelum BANG
+  const MAX_DELAY = 8.0;     // detik maksimum sebelum BANG
+  const FALSE_START_THRESHOLD_DEG = 35; // gerakan sebelum BANG melebihi ini = curang
+  const SHOOT_THRESHOLD_DEG = 55;       // seberapa jauh harus diangkat dari posisi 'low' untuk dianggap 'tembak'
+  const ROUND_TIMEOUT = 5.0; // detik maksimum nunggu gerakan setelah BANG sebelum dianggap gak nembak
+
+  const startScreen = document.getElementById('start-screen');
+  const resultScreen = document.getElementById('result-screen');
+  const startBtn = document.getElementById('start-btn');
+  const retryBtn = document.getElementById('retry-btn');
+  const permissionNote = document.getElementById('permission-note');
+  const stage = document.getElementById('stage');
+  const statusLabel = document.getElementById('status-label');
+  const waitIcon = document.getElementById('wait-icon');
+  const bangText = document.getElementById('bang-text');
+  const gunFill = document.getElementById('gun-fill');
+  const gunCaption = document.getElementById('gun-caption');
+  const scoreDisplay = document.getElementById('score-display');
+  const scoreLabel = document.getElementById('score-label');
+  const resultTitle = document.getElementById('result-title');
+
+  // Audio: BANG pakai oscillator sintetis biar gak perlu file aset
+  let audioCtx = null;
+  function playBang(){
+    try{
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = audioCtx.currentTime;
+
+      const noise = audioCtx.createBufferSource();
+      const bufferSize = audioCtx.sampleRate * 0.3;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++){
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+      }
+      noise.buffer = buffer;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1800, now);
+      filter.frequency.exponentialRampToValueAtTime(200, now + 0.25);
+
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      noise.start(now);
+      noise.stop(now + 0.3);
+    } catch(err){
+      // audio gagal, gak fatal — vibrate & visual tetap jalan
+    }
+  }
+
+  function vibrate(pattern){
+    if (navigator.vibrate){
+      try{ navigator.vibrate(pattern); } catch(err){}
+    }
+  }
+
+  let phase = 'idle'; // idle | waiting | armed | resolved
+  let startTimestamp = null;
+  let bangDelay = null;
+  let bangTimestamp = null;
+  let rafId = null;
+  let bangTimeoutId = null;
+  let roundTimeoutId = null;
+
+  let baselineBeta = null;
+  let baselineGamma = null;
+  let orientationListenerAttached = false;
+
+  function normalizeAngleDiff(diff){
+    while (diff > 180) diff -= 360;
+    while (diff < -180) diff += 360;
+    return diff;
+  }
+
+  function computeTiltDelta(beta, gamma){
+    if (baselineBeta === null){
+      baselineBeta = beta;
+      baselineGamma = gamma;
+      return 0;
+    }
+    const dBeta = Math.abs(normalizeAngleDiff(beta - baselineBeta));
+    const dGamma = Math.abs(normalizeAngleDiff(gamma - baselineGamma));
+    return Math.max(dBeta, dGamma);
+  }
+
+  function handleOrientation(event){
+    if (event.beta === null || event.gamma === null) return;
+    const tilt = computeTiltDelta(event.beta, event.gamma);
+
+    if (phase === 'waiting'){
+      // update gauge kecil biar ada feedback tapi tetap nunjukin "harus diam"
+      const pct = Math.min(100, (tilt / FALSE_START_THRESHOLD_DEG) * 100);
+      gunFill.style.width = pct + '%';
+      gunCaption.textContent = 'tahan diam...';
+
+      if (tilt >= FALSE_START_THRESHOLD_DEG){
+        triggerFalseStart();
+      }
+    } else if (phase === 'armed'){
+      const pct = Math.min(100, (tilt / SHOOT_THRESHOLD_DEG) * 100);
+      gunFill.style.width = pct + '%';
+      gunCaption.textContent = 'tembak sekarang!';
+
+      if (tilt >= SHOOT_THRESHOLD_DEG){
+        resolveShot();
+      }
+    }
+  }
+
+  async function requestGyroPermission(){
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'){
+      try {
+        const result = await DeviceOrientationEvent.requestPermission();
+        return result === 'granted';
+      } catch (err){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function attachOrientationListener(){
+    if (orientationListenerAttached) return;
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    orientationListenerAttached = true;
+  }
+
+  function detachOrientationListener(){
+    if (!orientationListenerAttached) return;
+    window.removeEventListener('deviceorientation', handleOrientation, true);
+    orientationListenerAttached = false;
+  }
+
+  function resetState(){
+    phase = 'idle';
+    startTimestamp = null;
+    bangDelay = null;
+    bangTimestamp = null;
+    baselineBeta = null;
+    baselineGamma = null;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (bangTimeoutId) clearTimeout(bangTimeoutId);
+    if (roundTimeoutId) clearTimeout(roundTimeoutId);
+
+    statusLabel.textContent = 'TAHAN POSISI...';
+    waitIcon.style.transform = 'scale(1)';
+    bangText.classList.remove('show');
+    stage.classList.remove('flash');
+    gunFill.style.width = '0%';
+    gunCaption.textContent = 'posisi senjata';
+  }
+
+  async function startRound(){
+    const granted = await requestGyroPermission();
+    if (!granted){
+      permissionNote.textContent = 'Akses sensor gerak ditolak. Buka di Safari/Chrome dan izinkan akses motion & orientation, lalu coba lagi.';
+      return;
+    }
+    permissionNote.textContent = '';
+
+    resetState();
+    startScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
+
+    attachOrientationListener();
+    phase = 'waiting';
+    startTimestamp = performance.now();
+    bangDelay = MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY);
+
+    bangTimeoutId = setTimeout(triggerBang, bangDelay * 1000);
+  }
+
+  function triggerBang(){
+    if (phase !== 'waiting') return;
+    phase = 'armed';
+    bangTimestamp = performance.now();
+
+    statusLabel.textContent = 'TEMBAK!';
+    bangText.classList.add('show');
+    stage.classList.add('flash');
+    playBang();
+    vibrate([0, 80, 30, 40]);
+
+    setTimeout(() => stage.classList.remove('flash'), 90);
+    setTimeout(() => bangText.classList.remove('show'), 500);
+
+    gunFill.style.width = '0%';
+
+    roundTimeoutId = setTimeout(() => {
+      if (phase === 'armed') resolveTimeout();
+    }, ROUND_TIMEOUT * 1000);
+  }
+
+  function triggerFalseStart(){
+    if (phase !== 'waiting') return;
+    phase = 'resolved';
+    if (bangTimeoutId) clearTimeout(bangTimeoutId);
+    detachOrientationListener();
+    vibrate([0, 200]);
+    showResult('falsestart');
+  }
+
+  function resolveShot(){
+    if (phase !== 'armed') return;
+    phase = 'resolved';
+    if (roundTimeoutId) clearTimeout(roundTimeoutId);
+    detachOrientationListener();
+    const reactionMs = performance.now() - bangTimestamp;
+    showResult('shot', reactionMs);
+  }
+
+  function resolveTimeout(){
+    if (phase !== 'armed') return;
+    phase = 'resolved';
+    detachOrientationListener();
+    showResult('timeout');
+  }
+
+  function showResult(kind, reactionMs){
+    if (kind === 'falsestart'){
+      resultTitle.textContent = 'Curang!';
+      scoreDisplay.textContent = '✗';
+      scoreDisplay.className = 'score-display miss';
+      scoreLabel.textContent = 'kamu gerak sebelum BANG';
+    } else if (kind === 'timeout'){
+      resultTitle.textContent = 'Kelamaan';
+      scoreDisplay.textContent = '—';
+      scoreDisplay.className = 'score-display none';
+      scoreLabel.textContent = 'gak sempat angkat senjata';
+    } else {
+      const seconds = reactionMs / 1000;
+      resultTitle.textContent = 'Kena!';
+      scoreDisplay.textContent = seconds.toFixed(3) + 's';
+
+      if (seconds <= 0.35){
+        scoreDisplay.className = 'score-display win';
+        scoreLabel.textContent = 'reaksi kilat \u2014 gunslinger sejati';
+      } else if (seconds <= 0.7){
+        scoreDisplay.className = 'score-display win';
+        scoreLabel.textContent = 'reaksi cepat';
+      } else {
+        scoreDisplay.className = 'score-display miss';
+        scoreLabel.textContent = 'agak lambat, coba lagi';
+      }
+    }
+    resultScreen.classList.remove('hidden');
+  }
+
+  startBtn.addEventListener('click', startRound);
+  retryBtn.addEventListener('click', startRound);
+
+  if (typeof window.DeviceOrientationEvent === 'undefined'){
+    permissionNote.textContent = 'Browser ini tidak mendukung sensor gerak.';
+  }
+
+})();
+</script>
+</body>
+</html>

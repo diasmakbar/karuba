@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pompa!</title>
+<style>
+  :root{
+    --char-charcoal:#1F1611;
+    --char-burnt:#3D2417;
+    --ember-orange:#E8743B;
+    --butter-cream:#F6E7C9;
+    --smoke-grey:#8B8378;
+    --success-green:#5C8A52;
+    --fail-red:#C24E3A;
+    --balloon-pink:#E85D75;
+    --party-yellow:#F2C14E;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--char-charcoal);
+    overflow:hidden;
+    font-family:'Inter',-apple-system,sans-serif;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100dvh;
+  }
+
+  /* ---------- TOP: counter zone ---------- */
+  .counter-zone{
+    flex:0 0 16%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    background:linear-gradient(180deg, var(--char-charcoal), var(--char-burnt));
+    border-bottom:2px solid rgba(232,116,59,0.2);
+  }
+
+  .pump-count{
+    font-size:clamp(40px,14vw,64px);
+    font-weight:900;
+    color:var(--butter-cream);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pump-label{
+    color:var(--smoke-grey);
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-top:6px;
+  }
+
+  /* ---------- MIDDLE: balloon stage ---------- */
+  .stage{
+    flex:1;
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(242,193,78,0.08), transparent 60%),
+      linear-gradient(180deg, #2A1D14, #1F1611 80%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+
+  .balloon-wrap{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    transform:scale(1);
+    transition:transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .balloon{
+    width:120px;
+    height:140px;
+    border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;
+    background:radial-gradient(circle at 35% 28%, #ff8a9c, var(--balloon-pink) 60%, #C7405A 100%);
+    box-shadow:
+      inset -10px -10px 24px rgba(255,255,255,0.25),
+      inset 10px 16px 30px rgba(0,0,0,0.25),
+      0 10px 30px rgba(0,0,0,0.4);
+    position:relative;
+    animation: wobble 2.4s ease-in-out infinite;
+  }
+
+  @keyframes wobble{
+    0%, 100%{ transform:rotate(-1.5deg); }
+    50%{ transform:rotate(1.5deg); }
+  }
+
+  .balloon::after{
+    content:'';
+    position:absolute;
+    bottom:-14px;
+    left:50%;
+    transform:translateX(-50%);
+    width:0; height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+    border-top:14px solid #C7405A;
+  }
+
+  .balloon-string{
+    width:2px;
+    height:60px;
+    background:var(--smoke-grey);
+    opacity:0.5;
+  }
+
+  .balloon-pop-effect{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    opacity:0;
+  }
+
+  .balloon-pop-effect.show{
+    animation: popBurst 0.5s ease-out forwards;
+  }
+
+  @keyframes popBurst{
+    0%{ opacity:1; transform:translate(-50%,-50%) scale(0.3); }
+    60%{ opacity:1; transform:translate(-50%,-50%) scale(1.3); }
+    100%{ opacity:0; transform:translate(-50%,-50%) scale(1.6); }
+  }
+
+  .pop-shard{
+    position:absolute;
+    width:10px; height:16px;
+    background:var(--balloon-pink);
+    border-radius:2px;
+  }
+
+  .motion-hint{
+    position:absolute;
+    bottom:6%;
+    left:50%;
+    transform:translateX(-50%);
+    color:var(--smoke-grey);
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    text-align:center;
+    opacity:0.85;
+    transition:opacity 0.2s ease;
+  }
+
+  /* pump motion gauge - kecil di bawah balon */
+  .motion-track{
+    position:absolute;
+    bottom:14%;
+    left:50%;
+    transform:translateX(-50%);
+    width:60%;
+    max-width:220px;
+    height:8px;
+    border-radius:5px;
+    background:rgba(255,255,255,0.08);
+    overflow:hidden;
+  }
+
+  .motion-fill{
+    height:100%;
+    width:50%;
+    background:linear-gradient(90deg, var(--party-yellow), var(--balloon-pink));
+    border-radius:5px;
+    transform:translateX(0%);
+    transition:transform 0.04s linear;
+  }
+
+  /* ---------- BOTTOM: action zone ---------- */
+  .action-zone{
+    flex:0 0 22%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--char-burnt);
+  }
+
+  .stop-btn{
+    width:78%;
+    max-width:320px;
+    height:80px;
+    border-radius:20px;
+    border:none;
+    background:linear-gradient(180deg, var(--party-yellow), #D9A028);
+    color:var(--char-charcoal);
+    font-size:26px;
+    font-weight:800;
+    letter-spacing:1px;
+    box-shadow:0 8px 0 #9c731c, 0 12px 20px rgba(0,0,0,0.4);
+    transition:transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .stop-btn:active{
+    transform:translateY(6px);
+    box-shadow:0 2px 0 #9c731c, 0 4px 10px rgba(0,0,0,0.4);
+  }
+  .stop-btn:disabled{
+    background:linear-gradient(180deg,#5a5a5a,#3a3a3a);
+    box-shadow:0 8px 0 #2a2a2a, 0 12px 20px rgba(0,0,0,0.4);
+    color:#999;
+  }
+
+  /* ---------- OVERLAYS ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:var(--char-charcoal);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+    z-index:50;
+  }
+
+  .overlay h1{
+    color:var(--butter-cream);
+    font-size:clamp(30px,9vw,44px);
+    font-weight:800;
+    margin:0 0 8px;
+    letter-spacing:-1px;
+  }
+  .overlay .accent{ color:var(--balloon-pink); }
+
+  .overlay p{
+    color:var(--smoke-grey);
+    font-size:16px;
+    line-height:1.55;
+    max-width:320px;
+    margin:0 0 28px;
+  }
+
+  .overlay .big-btn{
+    width:200px;
+    height:64px;
+    border-radius:16px;
+    border:none;
+    background:var(--balloon-pink);
+    color:var(--butter-cream);
+    font-size:20px;
+    font-weight:800;
+    box-shadow:0 6px 0 #9c2f42;
+  }
+  .overlay .big-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #9c2f42; }
+
+  .home-link{
+    margin-top:18px;
+    color:var(--smoke-grey);
+    font-size:14px;
+    font-weight:600;
+    text-decoration:none;
+    padding:8px 16px;
+  }
+  .home-link:active{ opacity:0.6; }
+
+  #result-screen .score-display{
+    font-size:clamp(48px,16vw,80px);
+    font-weight:800;
+    margin:6px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  #result-screen .score-display.win{ color:var(--success-green); }
+  #result-screen .score-display.miss{ color:var(--fail-red); }
+
+  #result-screen .score-label{
+    color:var(--smoke-grey);
+    font-size:14px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-weight:600;
+    margin-bottom:24px;
+  }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div class="overlay" id="start-screen">
+    <h1>Pompa<span class="accent">!</span></h1>
+    <p>Pegang HP <strong>horizontal</strong>, terus gerakkan ke bawah lalu ke atas berulang seperti memompa. Batas meletusnya balon ada di antara <strong>15-20 pompa</strong> (beda tiap ronde, angka pastinya rahasia). Pencet "Cukup!" sebelum kelewat batas.</p>
+    <button class="big-btn" id="start-btn">Mulai Pompa</button>
+    <p id="permission-note" style="font-size:13px; margin-top:14px; color:#8B8378;"></p>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="overlay hidden" id="result-screen">
+    <h1 id="result-title">Hasil</h1>
+    <div class="score-display" id="score-display">-</div>
+    <div class="score-label" id="score-label">selisih dari batas</div>
+    <button class="big-btn" id="retry-btn">Coba Lagi</button>
+    <a href="index.html" class="home-link">← Ke Menu</a>
+  </div>
+
+  <!-- GAME UI -->
+  <div class="counter-zone">
+    <div>
+      <div class="pump-count" id="pump-count">0</div>
+      <div class="pump-label">pompa</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="balloon-wrap" id="balloon-wrap">
+      <div class="balloon" id="balloon"></div>
+      <div class="balloon-string"></div>
+    </div>
+    <div class="balloon-pop-effect" id="pop-effect"></div>
+    <div class="motion-track">
+      <div class="motion-fill" id="motion-fill"></div>
+    </div>
+    <div class="motion-hint" id="motion-hint">gerakkan HP ke bawah &amp; atas</div>
+  </div>
+
+  <div class="action-zone">
+    <button class="stop-btn" id="stop-btn">CUKUP!</button>
+  </div>
+
+<script>
+(function(){
+  // ===== HARDCODE UNTUK TESTING =====
+  // ===== LIMIT RAHASIA =====
+  // Limit di-random tiap ronde dalam range ini. Range-nya ditampilkan ke
+  // player sebagai clue, tapi angka pastinya disembunyikan.
+  const LIMIT_RANGE_MIN = 15;
+  const LIMIT_RANGE_MAX = 20;
+  let SECRET_LIMIT = 17; // akan di-randomize ulang tiap startRound()
+  // ===========================
+  // ===================================
+
+  const MIN_SCALE = 0.4;  // ukuran awal balon, jauh lebih kecil biar growth-nya kerasa
+  const MAX_SCALE = 2.8;  // skala balon saat mendekati/lewat limit, dihitung relatif
+  let SCALE_HEADROOM = SECRET_LIMIT + 3; // titik referensi skala maksimum visual, dihitung ulang tiap ronde
+
+  // Parameter deteksi pump dari devicemotion
+  const PUMP_ACCEL_THRESHOLD = 4;   // m/s^2 deviasi dari gravitasi untuk dianggap gerakan kuat
+  const PUMP_COOLDOWN_MS = 220;     // jeda minimum antar pump terdeteksi (anti double-count)
+
+  const startScreen = document.getElementById('start-screen');
+  const resultScreen = document.getElementById('result-screen');
+  const startBtn = document.getElementById('start-btn');
+  const retryBtn = document.getElementById('retry-btn');
+  const stopBtn = document.getElementById('stop-btn');
+  const permissionNote = document.getElementById('permission-note');
+  const pumpCountEl = document.getElementById('pump-count');
+  const balloonWrap = document.getElementById('balloon-wrap');
+  const balloon = document.getElementById('balloon');
+  const popEffect = document.getElementById('pop-effect');
+  const motionFill = document.getElementById('motion-fill');
+  const motionHint = document.getElementById('motion-hint');
+  const scoreDisplay = document.getElementById('score-display');
+  const scoreLabel = document.getElementById('score-label');
+  const resultTitle = document.getElementById('result-title');
+
+  let pumpCount = 0;
+  let roundActive = false;
+  let lastPumpTime = 0;
+  let motionListenerAttached = false;
+
+  // State untuk deteksi pola naik-turun
+  let lastAccelMagnitudeDelta = 0;
+  let risingPhase = false;
+  let baselineGravity = 9.8;
+
+  function vibrate(pattern){
+    if (navigator.vibrate){
+      try{ navigator.vibrate(pattern); } catch(err){}
+    }
+  }
+
+  function updateBalloonVisual(){
+    const progress = Math.min(1, pumpCount / SCALE_HEADROOM);
+    const scale = MIN_SCALE + (MAX_SCALE - MIN_SCALE) * progress;
+    balloonWrap.style.transform = 'scale(' + scale.toFixed(3) + ')';
+  }
+
+  function handleMotion(event){
+    if (!roundActive) return;
+    const acc = event.accelerationIncludingGravity;
+    if (!acc || acc.y === null) return;
+
+    // Kita pantau magnitude total akselerasi (gabungan x,y,z) supaya tidak
+    // terlalu bergantung pada orientasi pegang HP yang presisi.
+    const magnitude = Math.sqrt(
+      (acc.x || 0) * (acc.x || 0) +
+      (acc.y || 0) * (acc.y || 0) +
+      (acc.z || 0) * (acc.z || 0)
+    );
+    const delta = magnitude - baselineGravity;
+
+    const now = performance.now();
+
+    // Deteksi siklus: gerakan kuat ke satu arah (delta negatif/turun cepat)
+    // diikuti gerakan kuat berlawanan (delta positif/naik cepat) dihitung 1 pump.
+    if (!risingPhase && delta < -PUMP_ACCEL_THRESHOLD){
+      risingPhase = true;
+    } else if (risingPhase && delta > PUMP_ACCEL_THRESHOLD){
+      if (now - lastPumpTime > PUMP_COOLDOWN_MS){
+        registerPump();
+        lastPumpTime = now;
+      }
+      risingPhase = false;
+    }
+
+    // Visual feedback kecil dari gauge (sekedar nunjukin sensor aktif)
+    const pct = Math.min(100, Math.max(0, 50 + delta * 3));
+    motionFill.style.transform = 'translateX(' + (pct - 50) + '%)';
+  }
+
+  function registerPump(){
+    pumpCount += 1;
+    pumpCountEl.textContent = pumpCount;
+    updateBalloonVisual();
+    vibrate(20);
+
+    // sedikit "kick" animasi tiap pump
+    balloon.style.animation = 'none';
+    requestAnimationFrame(() => {
+      balloon.style.animation = 'wobble 2.4s ease-in-out infinite';
+    });
+
+    if (pumpCount > SECRET_LIMIT){
+      popBalloon();
+    }
+  }
+
+  function popBalloon(){
+    roundActive = false;
+    detachMotionListener();
+    balloon.style.opacity = '0';
+    balloonWrap.style.transform = balloonWrap.style.transform; // freeze last scale
+    spawnPopShards();
+    popEffect.classList.add('show');
+    vibrate([0, 100, 40, 100]);
+
+    setTimeout(() => showResult('popped'), 600);
+  }
+
+  function spawnPopShards(){
+    popEffect.innerHTML = '';
+    const colors = ['#E85D75', '#F2C14E', '#ff8a9c', '#C7405A'];
+    for (let i = 0; i < 10; i++){
+      const shard = document.createElement('div');
+      shard.className = 'pop-shard';
+      const angle = (i / 10) * Math.PI * 2;
+      const dist = 60 + Math.random() * 40;
+      shard.style.background = colors[i % colors.length];
+      shard.style.transform = 'translate(' + (Math.cos(angle) * dist) + 'px,' + (Math.sin(angle) * dist) + 'px) rotate(' + (Math.random()*360) + 'deg)';
+      popEffect.appendChild(shard);
+    }
+  }
+
+  async function requestMotionPermission(){
+    if (typeof DeviceMotionEvent !== 'undefined' &&
+        typeof DeviceMotionEvent.requestPermission === 'function'){
+      try {
+        const result = await DeviceMotionEvent.requestPermission();
+        return result === 'granted';
+      } catch (err){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function attachMotionListener(){
+    if (motionListenerAttached) return;
+    window.addEventListener('devicemotion', handleMotion, true);
+    motionListenerAttached = true;
+  }
+
+  function detachMotionListener(){
+    if (!motionListenerAttached) return;
+    window.removeEventListener('devicemotion', handleMotion, true);
+    motionListenerAttached = false;
+  }
+
+  function resetState(){
+    SECRET_LIMIT = LIMIT_RANGE_MIN + Math.floor(Math.random() * (LIMIT_RANGE_MAX - LIMIT_RANGE_MIN + 1));
+    SCALE_HEADROOM = SECRET_LIMIT + 3;
+    pumpCount = 0;
+    pumpCountEl.textContent = '0';
+    roundActive = false;
+    lastPumpTime = 0;
+    risingPhase = false;
+    balloon.style.opacity = '1';
+    balloonWrap.style.transform = 'scale(' + MIN_SCALE + ')';
+    popEffect.classList.remove('show');
+    popEffect.innerHTML = '';
+    motionFill.style.transform = 'translateX(0%)';
+    stopBtn.disabled = false;
+  }
+
+  async function startRound(){
+    const granted = await requestMotionPermission();
+    if (!granted){
+      permissionNote.textContent = 'Akses sensor gerak ditolak. Buka di Safari/Chrome dan izinkan akses motion, lalu coba lagi.';
+      return;
+    }
+    permissionNote.textContent = '';
+
+    resetState();
+    startScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
+
+    roundActive = true;
+    attachMotionListener();
+  }
+
+  function handleStop(){
+    if (!roundActive) return;
+    roundActive = false;
+    detachMotionListener();
+    showResult('stopped');
+  }
+
+  function showResult(kind){
+    if (kind === 'popped'){
+      resultTitle.textContent = 'Meletus!';
+      scoreDisplay.textContent = pumpCount + ' pompa';
+      scoreDisplay.className = 'score-display miss';
+      scoreLabel.textContent = 'kelewat dari batas aman';
+    } else {
+      const diff = Math.abs(pumpCount - SECRET_LIMIT);
+      scoreDisplay.textContent = diff;
+      scoreLabel.textContent = 'selisih pompa dari batas (berhenti di ' + pumpCount + ')';
+
+      if (diff === 0){
+        resultTitle.textContent = 'Sempurna!';
+        scoreDisplay.className = 'score-display win';
+      } else if (diff <= 2){
+        resultTitle.textContent = 'Dekat Banget!';
+        scoreDisplay.className = 'score-display win';
+      } else {
+        resultTitle.textContent = 'Kurang Berani';
+        scoreDisplay.className = 'score-display miss';
+      }
+    }
+    resultScreen.classList.remove('hidden');
+  }
+
+  startBtn.addEventListener('click', startRound);
+  retryBtn.addEventListener('click', startRound);
+  stopBtn.addEventListener('click', handleStop);
+
+  if (typeof window.DeviceMotionEvent === 'undefined'){
+    permissionNote.textContent = 'Browser ini tidak mendukung sensor gerak.';
+  }
+
+})();
+</script>
+</body>
+</html>
