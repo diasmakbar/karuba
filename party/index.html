@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pesta Minigame</title>
+<style>
+  :root{
+    --char-charcoal:#1F1611;
+    --char-burnt:#3D2417;
+    --ember-orange:#E8743B;
+    --butter-cream:#F6E7C9;
+    --smoke-grey:#8B8378;
+    --blood-red:#A8342A;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background:var(--char-charcoal);
+    font-family:'Inter',-apple-system,sans-serif;
+    -webkit-user-select:none;
+  }
+
+  body{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:48px 20px 32px;
+  }
+
+  .header{
+    text-align:center;
+    margin-bottom:36px;
+  }
+
+  .header h1{
+    color:var(--butter-cream);
+    font-size:clamp(32px,9vw,44px);
+    font-weight:900;
+    margin:0 0 6px;
+    letter-spacing:-1px;
+  }
+
+  .header .accent{ color:var(--ember-orange); }
+
+  .header p{
+    color:var(--smoke-grey);
+    font-size:14px;
+    margin:0;
+    letter-spacing:0.5px;
+  }
+
+  .game-list{
+    width:100%;
+    max-width:380px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .game-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:18px 18px;
+    border-radius:18px;
+    background:linear-gradient(180deg, #2A1D14, #241710);
+    border:1px solid rgba(232,116,59,0.15);
+    text-decoration:none;
+    transition:transform 0.1s ease, border-color 0.1s ease;
+  }
+
+  .game-card:active{
+    transform:scale(0.97);
+  }
+
+  .game-card.active{
+    border-color:rgba(232,116,59,0.4);
+  }
+
+  .game-card.disabled{
+    opacity:0.45;
+    pointer-events:none;
+  }
+
+  .game-icon{
+    flex:0 0 56px;
+    width:56px; height:56px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    background:rgba(232,116,59,0.12);
+  }
+
+  .game-info{
+    flex:1;
+    min-width:0;
+  }
+
+  .game-name{
+    color:var(--butter-cream);
+    font-size:17px;
+    font-weight:800;
+    margin:0 0 2px;
+  }
+
+  .game-desc{
+    color:var(--smoke-grey);
+    font-size:13px;
+    margin:0;
+    line-height:1.3;
+  }
+
+  .game-badge{
+    flex:0 0 auto;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    padding:4px 10px;
+    border-radius:20px;
+    color:var(--butter-cream);
+  }
+
+  .badge-gyro{ background:rgba(92,138,82,0.25); color:#8FC487; }
+  .badge-soon{ background:rgba(139,131,120,0.2); color:var(--smoke-grey); }
+
+  .footer-note{
+    margin-top:auto;
+    padding-top:32px;
+    color:var(--smoke-grey);
+    font-size:12px;
+    text-align:center;
+    max-width:300px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Pesta<span class="accent">!</span></h1>
+    <p>Pilih minigame, mainkan di HP</p>
+  </div>
+
+  <div class="game-list">
+    <a href="masak.html" class="game-card active">
+      <div class="game-icon">🍳</div>
+      <div class="game-info">
+        <p class="game-name">Balik!</p>
+        <p class="game-desc">Tebak waktu yang pas untuk membalik masakan</p>
+      </div>
+      <div class="game-badge badge-gyro">Gyro</div>
+    </a>
+
+    <a href="cowboy.html" class="game-card active">
+      <div class="game-icon">🤠</div>
+      <div class="game-info">
+        <p class="game-name">Draw!</p>
+        <p class="game-desc">Duel cowboy, angkat senjata pas dengar BANG</p>
+      </div>
+      <div class="game-badge badge-gyro">Gyro</div>
+    </a>
+
+    <a href="balon.html" class="game-card active">
+      <div class="game-icon">🎈</div>
+      <div class="game-info">
+        <p class="game-name">Pompa!</p>
+        <p class="game-desc">Pompa balon, jangan sampai meletus duluan</p>
+      </div>
+      <div class="game-badge badge-gyro">Motion</div>
+    </a>
+
+    <a href="putar.html" class="game-card active">
+      <div class="game-icon">🧭</div>
+      <div class="game-info">
+        <p class="game-name">Brankas!</p>
+        <p class="game-desc">Putar HP sesuai kombinasi sudut sebelum waktu habis</p>
+      </div>
+      <div class="game-badge badge-gyro">Gyro</div>
+    </a>
+  </div>
+
+</body>
+</html>
