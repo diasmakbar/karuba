@@ -1,19 +1,34 @@
 import { useState, useEffect, useRef } from "react"
 import { db, ref, onValue, update } from "../firebase"
-import type { GameState } from "../lib/gameLogic"
-import {
-  getServeInfo,
-  switchServe,
-  rallyWon,
-  rallyLost,
-  isGameFinished,
-  canTeamScore,
-  getGameStatus,
-  getWinner
-} from "../lib/gameLogic"
+
+interface Game {
+  id: string
+  name: string
+  gameMode: 'singles' | 'doubles'
+  matchFormat: 'bo1' | 'bo3' | 'bo5'
+  status: string
+  teams: {
+    team1: { name: string; players: string[]; score: number }
+    team2: { name: string; players: string[]; score: number }
+  }
+  players: Record<string, { id: string; name: string; team?: string }>
+  // Court positions: actual player positions that change with switching
+  courtPositions: {
+    team1: { left: string; right: string }  // player IDs in their current positions
+    team2: { left: string; right: string }
+  }
+  currentServer: string | null
+  gameStarted: boolean
+  serverNumber: 1 | 2  // 1 or 2 for doubles, always 1 for singles
+  serverSide: 'left' | 'right'  // Court side based on serving team's score parity
+  maxScore: number
+  currentGame: number
+  games: any[]
+  matchWinner: string | null
+}
 
 export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: string; isDarkMode: boolean; onToggleTheme: () => void }) {
-  const [game, setGame] = useState<GameState | null>(null)
+  const [game, setGame] = useState<Game | null>(null)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const speechSynthRef = useRef<SpeechSynthesis | null>(null)
 
@@ -37,13 +52,7 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
               score: data.teams?.team2?.score || 0
             }
           },
-          players: data.players || {},
-          court: data.court || {
-            p1: '',
-            p2: '',
-            p3: '',
-            p4: ''
-          }
+          players: data.players || {}
         }
         setGame(gameData)
       }
@@ -74,17 +83,15 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
         : "Unknown"
 
       const receiverTeam = game.currentServer === "team1" ? "team2" : "team1"
-      // Special start logic: serve to first player of receiving team
-      const receiverIndex = 0
       const receiverName = game.gameMode === 'doubles'
-        ? game.teams[receiverTeam as keyof typeof game.teams].players[receiverIndex]
-          ? game.players[game.teams[receiverTeam as keyof typeof game.teams].players[receiverIndex]]?.name
+        ? game.teams[receiverTeam as keyof typeof game.teams].players[0]
+          ? game.players[game.teams[receiverTeam as keyof typeof game.teams].players[0]]?.name
           : "Player"
         : game.teams[receiverTeam as keyof typeof game.teams].players[0]
         ? game.players[game.teams[receiverTeam as keyof typeof game.teams].players[0]]?.name
         : "Player"
 
-      const serveSide = game.serverSide === 'L' ? 'left' : 'right'
+      const serveSide = game.serverSide === 'left' ? 'left' : 'right'
 
       speak(`The score is 0-0, ${serverName} serve on the ${serveSide} side to ${receiverName}`)
     }
@@ -97,52 +104,157 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
     speechSynthRef.current.speak(utterance)
   }
 
-  const handleRallyWon = async (teamId: string) => {
-    if (!game) return
+  const rallyWon = async (teamId: string) => {
+    if (!game || game.currentServer !== teamId) return
 
-    // Announce the rally result with voice
-    const serveInfo = getServeInfo(game)
     const servingTeam = game.currentServer!
-    const opponentTeam = servingTeam === "team1" ? "team2" : "team1"
     const servingTeamScore = game.teams[servingTeam as keyof typeof game.teams].score
+    const newScore = servingTeamScore + 1
+
+    // Check for win condition
+    const opponentTeam = servingTeam === "team1" ? "team2" : "team1"
     const opponentScore = game.teams[opponentTeam as keyof typeof game.teams].score
+    const hasWon = newScore >= game.maxScore && (newScore - opponentScore >= 2 || newScore >= game.maxScore + 1)
 
-    speak(`${servingTeamScore + 1} - ${opponentScore}, ${serveInfo.serverName} serve on the ${serveInfo.serverSide === 'L' ? 'left' : 'right'} side to ${serveInfo.receiverName}`)
+    if (hasWon) {
+      speak(`${game.teams[servingTeam as keyof typeof game.teams].name} wins the game!`)
 
-    await rallyWon(gameId, teamId, game)
-  }
+      // Save completed game result
+      const completedGame = {
+        gameNumber: game.currentGame,
+        winner: servingTeam,
+        score: {
+          team1: servingTeam === "team1" ? newScore : game.teams.team1.score,
+          team2: servingTeam === "team2" ? newScore : game.teams.team2.score
+        },
+        completedAt: Date.now()
+      }
 
-  const handleRallyLost = async (teamId: string) => {
-    if (!game) return
+      const updatedGames = [...(game.games || []), completedGame]
 
-    // Announce side-out if switching to other team
-    const serveUpdates = switchServe(game)
-    if (serveUpdates.currentServer !== game.currentServer) {
-      speak(`${game.teams[serveUpdates.currentServer! as keyof typeof game.teams].name} to serve`)
+      // Calculate match winner based on match format
+      let matchWinner = null
+      const team1Wins = updatedGames.filter(g => g.winner === "team1").length
+      const team2Wins = updatedGames.filter(g => g.winner === "team2").length
+
+      const requiredWins = game.matchFormat === 'bo1' ? 1 :
+                          game.matchFormat === 'bo3' ? 2 : 3
+
+      if (team1Wins >= requiredWins) {
+        matchWinner = "team1"
+        speak(`${game.teams.team1.name} wins the match!`)
+      } else if (team2Wins >= requiredWins) {
+        matchWinner = "team2"
+        speak(`${game.teams.team2.name} wins the match!`)
+      }
+
+      if (matchWinner) {
+        // Match is complete
+        await update(ref(db, `games/pickle/${gameId}`), {
+          [`teams/${servingTeam}/score`]: newScore,
+          status: "match_finished",
+          winner: servingTeam,
+          games: updatedGames,
+          matchWinner,
+          finishedAt: Date.now()
+        })
+      } else {
+        // Continue to next game automatically
+        const nextGame = game.currentGame + 1
+        speak(`Game ${game.currentGame} complete. Starting game ${nextGame}.`)
+
+        await update(ref(db, `games/pickle/${gameId}`), {
+          [`teams/${servingTeam}/score`]: newScore,
+          status: "playing",
+          winner: servingTeam,
+          games: updatedGames,
+          currentGame: nextGame,
+          // Reset for next game
+          "teams/team1/score": 0,
+          "teams/team2/score": 0,
+          currentServer: nextGame % 2 === 1 ? "team1" : "team2",
+          serverNumber: 2 // Always start with server 2
+        })
+      }
+      return
     }
 
-    await rallyLost(gameId, teamId, game)
+    // Serving team scores - they keep serving, court side changes based on new score parity
+    const newServerSide = newScore % 2 === 0 ? "right" : "left"
+
+    await update(ref(db, `games/pickle/${gameId}`), {
+      [`teams/${servingTeam}/score`]: newScore,
+      serverSide: newServerSide
+    })
+
+    // Enhanced voice announcement with server and receiver info
+    const serverName = game.currentServer && game.gameMode === 'doubles'
+      ? game.teams[game.currentServer as keyof typeof game.teams].players[game.serverNumber - 1]
+        ? game.players[game.teams[game.currentServer as keyof typeof game.teams].players[game.serverNumber - 1]]?.name
+        : `Server ${game.serverNumber}`
+      : game.currentServer
+      ? game.teams[game.currentServer as keyof typeof game.teams].players[0]
+        ? game.players[game.teams[game.currentServer as keyof typeof game.teams].players[0]]?.name
+        : "Player"
+      : "Unknown"
+
+    const receiverTeam = game.currentServer === "team1" ? "team2" : "team1"
+    const receiverName = game.gameMode === 'doubles'
+      ? game.teams[receiverTeam as keyof typeof game.teams].players[0]
+        ? game.players[game.teams[receiverTeam as keyof typeof game.teams].players[0]]?.name
+        : "Player"
+      : game.teams[receiverTeam as keyof typeof game.teams].players[0]
+      ? game.players[game.teams[receiverTeam as keyof typeof game.teams].players[0]]?.name
+      : "Player"
+
+    const serveSide = game.serverSide === 'left' ? 'left' : 'right'
+
+    speak(`${newScore} - ${opponentScore}, ${serverName} serve on the ${serveSide} side to ${receiverName}`)
   }
 
+  const rallyLost = async (teamId: string) => {
+    if (!game || game.currentServer !== teamId) return
+
+    const servingTeam = game.currentServer!
+    let newServer = servingTeam
+    let newServerNumber = game.serverNumber
+
+    if (game.gameMode === 'doubles') {
+      if (game.serverNumber === 1) {
+        // Switch to server 2 on same team
+        newServerNumber = 2
+      } else {
+        // Switch to other team, start with server 1
+        newServer = servingTeam === "team1" ? "team2" : "team1"
+        newServerNumber = 1
+        speak(`${game.teams[newServer as keyof typeof game.teams].name} to serve`)
+      }
+    } else {
+      // Singles - just switch to other team
+      newServer = servingTeam === "team1" ? "team2" : "team1"
+      speak(`${game.teams[newServer as keyof typeof game.teams].name} to serve`)
+    }
+
+    // Court side is determined by current serving team's score parity
+    const servingTeamScore = game.teams[newServer as keyof typeof game.teams].score
+    const newServerSide = servingTeamScore % 2 === 0 ? "right" : "left"
+
+    await update(ref(db, `games/pickle/${gameId}`), {
+      currentServer: newServer,
+      serverNumber: newServerNumber,
+      serverSide: newServerSide
+    })
+  }
 
   const resetGame = async () => {
     if (!game) return
-
-    // Initialize court positions: p1=R, p2=L, p3=L, p4=R
-    const initialCourt = {
-      p1: 'R' as const,
-      p2: 'L' as const,
-      p3: 'L' as const,
-      p4: 'R' as const
-    }
 
     await update(ref(db, `games/pickle/${gameId}`), {
       "teams/team1/score": 0,
       "teams/team2/score": 0,
       currentServer: "team1",
-      serverNumber: 1, // Start with server 1 (p1)
-      serverSide: "R", // Even score = R side
-      court: initialCourt,
+      serverNumber: 2,
+      serverSide: "right",
       status: "playing",
       currentGame: 1,
       games: [],
@@ -300,14 +412,13 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
             <div style={{ fontSize: "48px", fontWeight: "bold", marginBottom: "15px", color: "#007bff" }}>
               {game.teams.team1.score}
             </div>
-            <div style={{ fontSize: "14px", color: "#007bff", marginBottom: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-              <div>[{game.players[game.court.p1]?.name || "Player"}] (L)</div>
-              <div>[{game.players[game.court.p2]?.name || "Player"}] (R)</div>
+            <div style={{ fontSize: "14px", color: "#007bff", marginBottom: "20px" }}>
+              {team1Players.map(p => p.name).join(", ")}
             </div>
             {game.status !== "finished" && game.status !== "match_finished" && (
               <div style={{ display: "flex", gap: "10px" }}>
                 <button
-                  onClick={() => handleRallyWon("team1")}
+                  onClick={() => rallyWon("team1")}
                   disabled={game.currentServer !== "team1"}
                   style={{
                     flex: 1,
@@ -325,7 +436,7 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
                   IN
                 </button>
                 <button
-                  onClick={() => handleRallyLost("team1")}
+                  onClick={() => rallyLost("team1")}
                   disabled={game.currentServer !== "team1"}
                   style={{
                     flex: 1,
@@ -376,14 +487,13 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
             <div style={{ fontSize: "48px", fontWeight: "bold", marginBottom: "15px", color: "#28a745" }}>
               {game.teams.team2.score}
             </div>
-            <div style={{ fontSize: "14px", color: "#28a745", marginBottom: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-              <div>[{game.players[game.court.p3]?.name || "Player"}] (L)</div>
-              <div>[{game.players[game.court.p4]?.name || "Player"}] (R)</div>
+            <div style={{ fontSize: "14px", color: "#28a745", marginBottom: "20px" }}>
+              {team2Players.map(p => p.name).join(", ")}
             </div>
             {game.status !== "finished" && game.status !== "match_finished" && (
               <div style={{ display: "flex", gap: "10px" }}>
                 <button
-                  onClick={() => handleRallyWon("team2")}
+                  onClick={() => rallyWon("team2")}
                   disabled={game.currentServer !== "team2"}
                   style={{
                     flex: 1,
@@ -401,7 +511,7 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
                   IN
                 </button>
                 <button
-                  onClick={() => handleRallyLost("team2")}
+                  onClick={() => rallyLost("team2")}
                   disabled={game.currentServer !== "team2"}
                   style={{
                     flex: 1,
@@ -440,7 +550,7 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
           {/* Serve Information */}
           <div style={{ marginBottom: "20px", padding: "15px", background: "transparent", borderRadius: "8px" }}>
             <h4 style={{ margin: "0 0 10px 0", textAlign: "center", color: "var(--text-black)" }}>Serve Information</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "14px", color: "var(--text-black)", marginBottom: "5px" }}>Serving Team</div>
                 <div style={{
@@ -470,41 +580,109 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
                   }
                 </div>
               </div>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "14px", color: "var(--text-black)", marginBottom: "5px" }}>Receiver</div>
-                <div style={{
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  color: game.currentServer === "team1" ? "#28a745" : "#007bff"
-                }}>
-                  {(() => {
-                    if (!game.currentServer) return "None"
-                    // Find receiver based on server position and side
-                    let receiverPlayerId = ""
-                    if (game.currentServer === "team1") {
-                      // Team 1 is serving, find receiver on opposite side
-                      const serverPos = game.court.p1 === game.teams.team1.players[game.serverNumber - 1] ? "p1" : "p2"
-                      if (serverPos === "p1") {
-                        receiverPlayerId = game.serverSide === "R" ? game.court.p3 : game.court.p4
-                      } else {
-                        receiverPlayerId = game.serverSide === "R" ? game.court.p3 : game.court.p4
-                      }
-                    } else {
-                      // Team 2 is serving, find receiver on opposite side
-                      const serverPos = game.court.p3 === game.teams.team2.players[game.serverNumber - 1] ? "p3" : "p4"
-                      if (serverPos === "p3") {
-                        receiverPlayerId = game.serverSide === "R" ? game.court.p1 : game.court.p2
-                      } else {
-                        receiverPlayerId = game.serverSide === "R" ? game.court.p1 : game.court.p2
-                      }
-                    }
-                    return game.players[receiverPlayerId]?.name || "Player"
-                  })()}
-                </div>
-              </div>
             </div>
 
+                    {game.gameMode === 'doubles' && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", maxWidth: "500px", margin: "0 auto" }}>
+              {/* Team 1 Court */}
+              <div style={{ textAlign: "center", padding: "15px", border: "2px solid #007bff", borderRadius: "8px" }}>
+                <div style={{ fontSize: "14px", color: "#007bff", marginBottom: "10px", fontWeight: "bold" }}>
+                  {game.teams.team1.name} Court
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{
+                    flex: 1,
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "left" && game.currentServer === "team1" ? "bold" : "normal",
+                    color: game.serverSide === "left" && game.currentServer === "team1" ? "#007bff" : "",
+                    background: game.serverSide === "left" && game.currentServer === "team1" ? "#e3f2fd" : "transparent"
+                  }}>
+                    {game.teams.team1.players.length >= 2 ?
+                      (game.teams.team1.score % 2 === 0 ?
+                        game.players[game.teams.team1.players[0]]?.name || "Player 1" :
+                        game.players[game.teams.team1.players[1]]?.name || "Player 2"
+                      ) : "Player 1"
+                    }
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    marginLeft: "8px",
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "right" && game.currentServer === "team1" ? "bold" : "normal",
+                    color: game.serverSide === "right" && game.currentServer === "team1" ? "#007bff" : "",
+                    background: game.serverSide === "right" && game.currentServer === "team1" ? "#e3f2fd" : "transparent"
+                  }}>
+                    {game.teams.team1.players.length >= 2 ?
+                      (game.teams.team1.score % 2 === 0 ?
+                        game.players[game.teams.team1.players[1]]?.name || "Player 2" :
+                        game.players[game.teams.team1.players[0]]?.name || "Player 1"
+                      ) : "Player 2"
+                    }
+                  </div>
+                </div>
+                {game.currentServer === "team1" && (
+                  <div style={{ fontSize: "12px", color: "#007bff", marginTop: "5px", fontWeight: "bold" }}>
+                    Server: {game.teams.team1.players[game.serverNumber - 1] ? game.players[game.teams.team1.players[game.serverNumber - 1]]?.name : `Player ${game.serverNumber}`}
+                  </div>
+                )}
+              </div>
 
+              {/* Team 2 Court */}
+              <div style={{ textAlign: "center", padding: "15px", border: "2px solid #28a745", borderRadius: "8px" }}>
+                <div style={{ fontSize: "14px", color: "#28a745", marginBottom: "10px", fontWeight: "bold" }}>
+                  {game.teams.team2.name} Court
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{
+                    flex: 1,
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "left" && game.currentServer === "team2" ? "bold" : "normal",
+                    color: game.serverSide === "left" && game.currentServer === "team2" ? "#28a745" : "",
+                    background: game.serverSide === "left" && game.currentServer === "team2" ? "#e8f5e8" : "transparent"
+                  }}>
+                    {game.teams.team2.players.length >= 2 ?
+                      (game.teams.team2.score % 2 === 0 ?
+                        game.players[game.teams.team2.players[0]]?.name || "Player 3" :
+                        game.players[game.teams.team2.players[1]]?.name || "Player 4"
+                      ) : "Player 3"
+                    }
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    marginLeft: "8px",
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "right" && game.currentServer === "team2" ? "bold" : "normal",
+                    color: game.serverSide === "right" && game.currentServer === "team2" ? "#28a745" : "",
+                    background: game.serverSide === "right" && game.currentServer === "team2" ? "#e8f5e8" : "transparent"
+                  }}>
+                    {game.teams.team2.players.length >= 2 ?
+                      (game.teams.team2.score % 2 === 0 ?
+                        game.players[game.teams.team2.players[1]]?.name || "Player 4" :
+                        game.players[game.teams.team2.players[0]]?.name || "Player 3"
+                      ) : "Player 4"
+                    }
+                  </div>
+                </div>
+                {game.currentServer === "team2" && (
+                  <div style={{ fontSize: "12px", color: "#28a745", marginTop: "5px", fontWeight: "bold" }}>
+                    Server: {game.teams.team2.players[game.serverNumber - 1] ? game.players[game.teams.team2.players[game.serverNumber - 1]]?.name : `Player ${game.serverNumber + 2}`}
+                  </div>
+                )}
+              </div>
+            </div>
+        )}
 
             {/* Serve Direction Indicator */}
             <div style={{ textAlign: "center", marginTop: "15px" }}>
@@ -513,20 +691,20 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
                 <div style={{
                   padding: "10px 20px",
                   borderRadius: "8px",
-                  background: game.serverSide === "L" ? (game.currentServer === "team1" ? "#007bff" : "#28a745") : "#e9ecef",
-                  color: game.serverSide === "L" ? "white" : "#666",
+                  background: game.serverSide === "left" ? (game.currentServer === "team1" ? "#007bff" : "#28a745") : "#e9ecef",
+                  color: game.serverSide === "left" ? "white" : "#666",
                   fontWeight: "bold",
-                  border: game.serverSide === "L" ? `2px solid ${game.currentServer === "team1" ? "#0056b3" : "#1e7e34"}` : "2px solid #dee2e6"
+                  border: game.serverSide === "left" ? `2px solid ${game.currentServer === "team1" ? "#0056b3" : "#1e7e34"}` : "2px solid #dee2e6"
                 }}>
                   ← Left Side
                 </div>
                 <div style={{
                   padding: "10px 20px",
                   borderRadius: "8px",
-                  background: game.serverSide === "R" ? (game.currentServer === "team1" ? "#007bff" : "#28a745") : "#e9ecef",
-                  color: game.serverSide === "R" ? "white" : "#666",
+                  background: game.serverSide === "right" ? (game.currentServer === "team1" ? "#007bff" : "#28a745") : "#e9ecef",
+                  color: game.serverSide === "right" ? "white" : "#666",
                   fontWeight: "bold",
-                  border: game.serverSide === "R" ? `2px solid ${game.currentServer === "team1" ? "#0056b3" : "#1e7e34"}` : "2px solid #dee2e6"
+                  border: game.serverSide === "right" ? `2px solid ${game.currentServer === "team1" ? "#0056b3" : "#1e7e34"}` : "2px solid #dee2e6"
                 }}>
                   Right Side →
                 </div>
@@ -622,6 +800,112 @@ export default function Game({ gameId, isDarkMode, onToggleTheme }: { gameId: st
             </div>
           )}
         </div>
+
+        {/* Court Visualization */}
+        {game.gameMode === 'doubles' && (
+          <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+            <h3 style={{ margin: "0 0 20px 0", textAlign: "center" }}>Court Layout</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", maxWidth: "500px", margin: "0 auto" }}>
+              {/* Team 1 Court */}
+              <div style={{ textAlign: "center", padding: "15px", border: "2px solid #007bff", borderRadius: "8px" }}>
+                <div style={{ fontSize: "14px", color: "#007bff", marginBottom: "10px", fontWeight: "bold" }}>
+                  {game.teams.team1.name} Court
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{
+                    flex: 1,
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "left" && game.currentServer === "team1" ? "bold" : "normal",
+                    color: game.serverSide === "left" && game.currentServer === "team1" ? "#007bff" : "",
+                    background: game.serverSide === "left" && game.currentServer === "team1" ? "#e3f2fd" : "transparent"
+                  }}>
+                    {game.teams.team1.players.length >= 2 ?
+                      (game.teams.team1.score % 2 === 0 ?
+                        game.players[game.teams.team1.players[0]]?.name || "Player 1" :
+                        game.players[game.teams.team1.players[1]]?.name || "Player 2"
+                      ) : "Player 1"
+                    }
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    marginLeft: "8px",
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "right" && game.currentServer === "team1" ? "bold" : "normal",
+                    color: game.serverSide === "right" && game.currentServer === "team1" ? "#007bff" : "",
+                    background: game.serverSide === "right" && game.currentServer === "team1" ? "#e3f2fd" : "transparent"
+                  }}>
+                    {game.teams.team1.players.length >= 2 ?
+                      (game.teams.team1.score % 2 === 0 ?
+                        game.players[game.teams.team1.players[1]]?.name || "Player 2" :
+                        game.players[game.teams.team1.players[0]]?.name || "Player 1"
+                      ) : "Player 2"
+                    }
+                  </div>
+                </div>
+                {game.currentServer === "team1" && (
+                  <div style={{ fontSize: "12px", color: "#007bff", marginTop: "5px", fontWeight: "bold" }}>
+                    Server: {game.teams.team1.players[game.serverNumber - 1] ? game.players[game.teams.team1.players[game.serverNumber - 1]]?.name : `Player ${game.serverNumber}`}
+                  </div>
+                )}
+              </div>
+
+              {/* Team 2 Court */}
+              <div style={{ textAlign: "center", padding: "15px", border: "2px solid #28a745", borderRadius: "8px" }}>
+                <div style={{ fontSize: "14px", color: "#28a745", marginBottom: "10px", fontWeight: "bold" }}>
+                  {game.teams.team2.name} Court
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{
+                    flex: 1,
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "left" && game.currentServer === "team2" ? "bold" : "normal",
+                    color: game.serverSide === "left" && game.currentServer === "team2" ? "#28a745" : "",
+                    background: game.serverSide === "left" && game.currentServer === "team2" ? "#e8f5e8" : "transparent"
+                  }}>
+                    {game.teams.team2.players.length >= 2 ?
+                      (game.teams.team2.score % 2 === 0 ?
+                        game.players[game.teams.team2.players[0]]?.name || "Player 3" :
+                        game.players[game.teams.team2.players[1]]?.name || "Player 4"
+                      ) : "Player 3"
+                    }
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    marginLeft: "8px",
+                    padding: "12px",
+                    border: `1px solid ${isDarkMode ? "white" : "black"}`,
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: game.serverSide === "right" && game.currentServer === "team2" ? "bold" : "normal",
+                    color: game.serverSide === "right" && game.currentServer === "team2" ? "#28a745" : "",
+                    background: game.serverSide === "right" && game.currentServer === "team2" ? "#e8f5e8" : "transparent"
+                  }}>
+                    {game.teams.team2.players.length >= 2 ?
+                      (game.teams.team2.score % 2 === 0 ?
+                        game.players[game.teams.team2.players[1]]?.name || "Player 4" :
+                        game.players[game.teams.team2.players[0]]?.name || "Player 3"
+                      ) : "Player 4"
+                    }
+                  </div>
+                </div>
+                {game.currentServer === "team2" && (
+                  <div style={{ fontSize: "12px", color: "#28a745", marginTop: "5px", fontWeight: "bold" }}>
+                    Server: {game.teams.team2.players[game.serverNumber - 1] ? game.players[game.teams.team2.players[game.serverNumber - 1]]?.name : `Player ${game.serverNumber + 2}`}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <div style={{ textAlign: "center", marginTop: "20px" }}>

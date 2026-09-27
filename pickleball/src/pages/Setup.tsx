@@ -120,8 +120,8 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
     }
   }
 
-  const startGame = async () => {
-    if (!game) return
+  const startGame = async (startAsServer: boolean) => {
+    if (!game || !currentPlayerId) return
 
     const team1Players = game.teams.team1.players.length
     const team2Players = game.teams.team2.players.length
@@ -132,14 +132,82 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
     }
 
     try {
-      // Set initial server (team1 serves first with server 2 from right side)
+      const currentPlayerTeam = game.players[currentPlayerId]?.team
+      if (!currentPlayerTeam) {
+        alert("You must be on a team to start the game.")
+        return
+      }
+
+      // Determine court positions based on who clicked the button
+      let court, currentServer, serverNumber, serverSide
+
+      if (startAsServer) {
+        // Player who clicked "Start as First Server" becomes p1 (right side)
+        // Their teammate becomes p2 (left side)
+        // Other team: p3 (right side), p4 (left side)
+        if (currentPlayerTeam === "team1") {
+          const teammateId = game.teams.team1.players.find(id => id !== currentPlayerId)
+          const otherTeamPlayers = game.teams.team2.players
+          court = {
+            p1: currentPlayerId, // Current player (right side)
+            p2: teammateId || currentPlayerId, // Teammate (left side)
+            p3: otherTeamPlayers[0] || currentPlayerId, // Other team player (right side)
+            p4: otherTeamPlayers[1] || otherTeamPlayers[0] || currentPlayerId // Other team player (left side)
+          }
+          currentServer = "team1"
+        } else {
+          const teammateId = game.teams.team2.players.find(id => id !== currentPlayerId)
+          const otherTeamPlayers = game.teams.team1.players
+          court = {
+            p1: otherTeamPlayers[0] || currentPlayerId, // Other team player (right side)
+            p2: otherTeamPlayers[1] || otherTeamPlayers[0] || currentPlayerId, // Other team player (left side)
+            p3: currentPlayerId, // Current player (right side)
+            p4: teammateId || currentPlayerId // Teammate (left side)
+          }
+          currentServer = "team2"
+        }
+        serverNumber = 1 // p1 or p3 serves first
+        serverSide = "R"
+      } else {
+        // Player who clicked "Start Game" becomes p3 (right side)
+        // Their teammate becomes p4 (left side)
+        // Other team: p1 (right side), p2 (left side)
+        if (currentPlayerTeam === "team1") {
+          const teammateId = game.teams.team1.players.find(id => id !== currentPlayerId)
+          const otherTeamPlayers = game.teams.team2.players
+          court = {
+            p1: otherTeamPlayers[0] || currentPlayerId, // Other team player (right side)
+            p2: otherTeamPlayers[1] || otherTeamPlayers[0] || currentPlayerId, // Other team player (left side)
+            p3: currentPlayerId, // Current player (right side)
+            p4: teammateId || currentPlayerId // Teammate (left side)
+          }
+          currentServer = "team2" // Other team serves first
+        } else {
+          const teammateId = game.teams.team2.players.find(id => id !== currentPlayerId)
+          const otherTeamPlayers = game.teams.team1.players
+          court = {
+            p1: teammateId || currentPlayerId, // Teammate (right side)
+            p2: currentPlayerId, // Current player (left side)
+            p3: otherTeamPlayers[0] || currentPlayerId, // Other team player (right side)
+            p4: otherTeamPlayers[1] || otherTeamPlayers[0] || currentPlayerId // Other team player (left side)
+          }
+          currentServer = "team1" // Other team serves first
+        }
+        serverNumber = 1 // p1 or p3 serves first
+        serverSide = "R"
+      }
+
       await update(ref(db, `games/pickle/${gameId}`), {
         status: "playing",
         gameStarted: true,
-        currentServer: "team1",
-        serverNumber: 2, // Always start with server 2
-        serverSide: "right", // Right side for even scores (0 is even)
-        maxScore: 11 // Default to 11 points to win
+        court,
+        currentServer,
+        serverNumber,
+        serverSide,
+        maxScore: 11, // Default to 11 points to win
+        currentGame: 1,
+        games: [],
+        matchWinner: null
       })
 
       // Navigate to game page
@@ -235,7 +303,7 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
               padding: "20px",
               border: "2px solid #007bff",
               borderRadius: "8px",
-              background: "#f8f9ff"
+              // background: "#f8f9ff"
             }}>
               <h3 style={{ margin: "0 0 15px 0", color: "#007bff" }}>
                 {game.teams.team1.name}
@@ -253,7 +321,7 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
                   <div style={{ color: "#999", fontStyle: "italic" }}>No players yet</div>
                 )}
               </div>
-              {currentPlayerId && !game.teams.team1.players.includes(currentPlayerId) && (
+              {currentPlayerId && !game.teams.team1.players.includes(currentPlayerId) && game.teams.team1.players.length < (game.gameMode === 'singles' ? 1 : 2) && (
                 <button
                   onClick={() => joinTeam("team1")}
                   style={{
@@ -276,7 +344,7 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
               padding: "20px",
               border: "2px solid #28a745",
               borderRadius: "8px",
-              background: "#f8fff8"
+              // background: "#f8fff8"
             }}>
               <h3 style={{ margin: "0 0 15px 0", color: "#28a745" }}>
                 {game.teams.team2.name}
@@ -294,7 +362,7 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
                   <div style={{ color: "#999", fontStyle: "italic" }}>No players yet</div>
                 )}
               </div>
-              {currentPlayerId && !game.teams.team2.players.includes(currentPlayerId) && (
+              {currentPlayerId && !game.teams.team2.players.includes(currentPlayerId) && game.teams.team2.players.length < (game.gameMode === 'singles' ? 1 : 2) && (
                 <button
                   onClick={() => joinTeam("team2")}
                   style={{
@@ -313,26 +381,46 @@ export default function Setup({ gameId, isDarkMode, onToggleTheme }: { gameId: s
             </div>
           </div>
 
-          {/* Start Game Button */}
-          <div style={{ textAlign: "center" }}>
-            <button
-              onClick={startGame}
-              disabled={!currentPlayerId || game.teams.team1.players.length === 0 || game.teams.team2.players.length === 0}
-              style={{
-                padding: "12px 32px",
-                background: "#dc3545",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "18px",
-                fontWeight: 500,
-                cursor: (!currentPlayerId || game.teams.team1.players.length === 0 || game.teams.team2.players.length === 0) ? "not-allowed" : "pointer",
-                opacity: (!currentPlayerId || game.teams.team1.players.length === 0 || game.teams.team2.players.length === 0) ? 0.6 : 1
-              }}
-            >
-              Start Game
-            </button>
-          </div>
+          {/* Start Game Buttons */}
+          {currentPlayerId && game.teams.team1.players.length > 0 && game.teams.team2.players.length > 0 && (
+            <div style={{ textAlign: "center" }}>
+              <p style={{ marginBottom: "15px", color: "#666" }}>
+                Choose who serves first:
+              </p>
+              <div style={{ display: "flex", gap: "15px", justifyContent: "center" }}>
+                <button
+                  onClick={() => startGame(true)}
+                  style={{
+                    padding: "12px 24px",
+                    background: "#28a745",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    cursor: "pointer"
+                  }}
+                >
+                  Start as First Server
+                </button>
+                <button
+                  onClick={() => startGame(false)}
+                  style={{
+                    padding: "12px 24px",
+                    background: "#007bff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    cursor: "pointer"
+                  }}
+                >
+                  Start Game
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* All Players List */}
