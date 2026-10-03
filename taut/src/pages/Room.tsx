@@ -142,6 +142,7 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
                 disabled={room.status !== "PLAYING"}
                 submit={submit}
                 patch={patch}
+                secondsLeft={countdown.secondsLeft}
               />
             </div>
           ) : (

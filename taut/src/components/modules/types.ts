@@ -11,4 +11,6 @@ export interface ModuleConsoleProps {
   disabled: boolean;
   submit: (answer: ModuleAnswerMap[ModuleId]) => Promise<ModuleOutcome>;
   patch: (vars: LocalVarsMap[ModuleId]) => Promise<void>;
+  /** Shared countdown seconds, derived from `globalEndTime` by the Room. Read-only clock. */
+  secondsLeft: number;
 }

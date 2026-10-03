@@ -6,7 +6,6 @@ on:
   push:
     branches: [main]
     paths:
-      - 'karuba-online/**'
       - 'taut/**'
       - 'firebase.json'
       - '.firebaserc'
@@ -25,23 +24,19 @@ jobs:
         with:
           bun-version: latest
 
-      # Build Karuba
-      - name: Build Karuba
-        run: bun install && bun run build
-        working-directory: ./karuba-online
-
-      # Build Taut
+      # Build Taut only
       - name: Build Taut
         run: bun install && bun run build
         working-directory: ./taut
 
-      # Deploy All Apps to Firebase Hosting
-      - name: Deploy to Firebase Hosting
+      # Deploy only the Taut hosting target
+      - name: Deploy Taut to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DECRYPTOR_GAME }}'
           projectId: decryptor-game
+          target: taut
           channelId: live
 
 # name: Deploy Firebase Hosting (Live)

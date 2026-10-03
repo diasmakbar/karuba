@@ -1,40 +1,31 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ButtonAction } from "../../types/db-schema";
 import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
-import { countdownValue } from "../../lib/modules/mod03Button";
+import { clockLabel } from "../../lib/modules/mod03Button";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
 /**
- * MOD_03_BUTTON — a big cipher button plus a serial. The holder presses and holds; the local
- * countdown screen rolls 1-9 once per second. Releasing too soon is a strike; the correct release
- * rule comes from Info 1 (cipher → command) and Info 2 (command → release timing). The owner's
- * hold state is mirrored to Firebase via `patch` so informants see it. Answer: `{ action, elapsedMs }`.
+ * MOD_03_BUTTON — a big cipher button plus a serial. The holder presses and holds; the release
+ * rule keys off the SHARED room clock (a digit contained anywhere in MM:SS, or the seconds'
+ * parity), so there is no private screen. The owner's hold state is mirrored to Firebase via
+ * `patch` so informants can see it. Answer: `{ action, secondsLeft }` measured against the clock.
  */
-export function ButtonConsole({ state, disabled, submit, patch }: ModuleConsoleProps) {
+export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_03_BUTTON");
   const [holding, setHolding] = useState(false);
-  const [elapsedMs, setElapsedMs] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const startedAt = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!holding) return undefined;
-    const id = window.setInterval(() => {
-      if (startedAt.current !== null) setElapsedMs(Date.now() - startedAt.current);
-    }, 200);
-    return () => window.clearInterval(id);
-  }, [holding]);
+  // Guards against pointerUp + pointerLeave both firing a release for the same press.
+  const released = useRef(false);
 
   const startHold = async () => {
     if (disabled || pending || state.isSolved || holding) return;
-    startedAt.current = Date.now();
-    setElapsedMs(0);
+    released.current = false;
     setHolding(true);
     try {
-      await patch({ ...localVars, isHolding: true, holdStartedAt: startedAt.current });
+      await patch({ ...localVars, isHolding: true, holdStartedAt: Date.now() });
     } catch {
       // Non-fatal: the hold still works locally even if the mirror write lags.
     }
@@ -42,13 +33,13 @@ export function ButtonConsole({ state, disabled, submit, patch }: ModuleConsoleP
 
   const release = async (action: ButtonAction) => {
     if (disabled || pending || state.isSolved) return;
-    const elapsed = startedAt.current === null ? 0 : Date.now() - startedAt.current;
-    startedAt.current = null;
+    if (released.current) return;
+    released.current = true;
     setHolding(false);
     setPending(true);
     setFeedback(null);
     try {
-      const outcome = await submit({ action, elapsedMs: elapsed });
+      const outcome = await submit({ action, secondsLeft });
       setFeedback(outcomeMessage(outcome));
       await patch({ ...localVars, isHolding: false, holdStartedAt: null });
     } finally {
@@ -56,25 +47,7 @@ export function ButtonConsole({ state, disabled, submit, patch }: ModuleConsoleP
     }
   };
 
-  const pressNow = async () => {
-    // Quick tap: depending on the rule this is either "release now" (DROP) or an early strike.
-    await release("RELEASE_NOW");
-  };
-
-  const drop = async () => {
-    // Press and let go at once for the DROP rule.
-    if (disabled || pending || state.isSolved) return;
-    setPending(true);
-    setFeedback(null);
-    try {
-      const outcome = await submit({ action: "EARLY", elapsedMs: 0 });
-      setFeedback(outcomeMessage(outcome));
-    } finally {
-      setPending(false);
-    }
-  };
-
-  const screen = countdownValue(elapsedMs);
+  const clock = clockLabel(secondsLeft);
 
   return (
     <BaseModuleWrapper
@@ -85,9 +58,9 @@ export function ButtonConsole({ state, disabled, submit, patch }: ModuleConsoleP
     >
       <div className="serial">SN {localVars.serialNumber}</div>
       <div className="screen">
-        <span className="tag">{holding ? "Hold — release on your number" : "Countdown screen"}</span>
+        <span className="tag">Shared clock</span>
         <div className="font-display" style={{ fontSize: 40 }}>
-          {screen}
+          {clock}
         </div>
       </div>
       <button
@@ -96,29 +69,19 @@ export function ButtonConsole({ state, disabled, submit, patch }: ModuleConsoleP
         disabled={disabled || pending || state.isSolved}
         aria-pressed={holding}
         onPointerDown={startHold}
-        onPointerUp={() => holding && release("HOLD_TO_TARGET")}
-        onPointerLeave={() => holding && release("HOLD_TO_TARGET")}
+        onPointerUp={() => release("HOLD_TO_TARGET")}
+        onPointerLeave={() => (holding ? release("HOLD_TO_TARGET") : undefined)}
       >
         {holding ? "RELEASE" : localVars.cipher}
       </button>
-      <div className="row" style={{ gap: 8 }}>
-        <button
-          type="button"
-          className="btn btn-ghost btn-block"
-          disabled={disabled || pending || state.isSolved || holding}
-          onClick={pressNow}
-        >
-          Tap release
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-block"
-          disabled={disabled || pending || state.isSolved || holding}
-          onClick={drop}
-        >
-          Drop at once
-        </button>
-      </div>
+      <button
+        type="button"
+        className="btn btn-ghost btn-block"
+        disabled={disabled || pending || state.isSolved || holding}
+        onClick={() => release("RELEASE_NOW")}
+      >
+        Tap release now
+      </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>
   );

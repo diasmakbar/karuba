@@ -384,6 +384,30 @@ disproportionately important.
 
 ---
 
+## 10. POST-MVP FIXES (after first live test)
+
+### F1 — RTDB update path collision (fixed)
+[`levelWrites()`](src/utils/room.ts:90) set both `activeModules = null` and
+`activeModules/<id>` in one `update()`, which RTDB rejects (ancestor + child). Now `activeModules`
+is written as a single whole-object value. Blocked every level deal, including Beginner.
+
+### F2 — MOD_03_BUTTON timing rework (fixed)
+The button used a private elapsed-time counter and a private screen, so the owner's number and the
+rule could disagree, and pointerUp+pointerLeave could double-submit.
+- Rule source is now the **shared room clock** (`ModuleConsoleProps.secondsLeft`, derived from
+  `globalEndTime` by the Room).
+- `HOLD` → clock **contains 4** anywhere in `MM:SS`; `WAIT` → contains 1; `PUSH` → **seconds even**;
+  `DROP` → release immediately.
+- Answer changed from `{ action, elapsedMs }` to `{ action, secondsLeft }` in
+  [`db-schema.ts`](src/types/db-schema.ts:125).
+- [`ButtonConsole.tsx`](src/components/modules/ButtonConsole.tsx:1) shows the shared clock, submits
+  with the shared seconds, and guards against double release.
+- Helpers: [`clockLabel`](src/lib/modules/mod03Button.ts:15), [`clockContains`](src/lib/modules/mod03Button.ts:23),
+  [`secondsAreEven`](src/lib/modules/mod03Button.ts:28).
+- Verify: `tsc -b`, `eslint`, `vite build` all green. Manual multi-device playtest still pending.
+
+---
+
 ## 6. SCREEN / STATE FLOW
 
 ```mermaid

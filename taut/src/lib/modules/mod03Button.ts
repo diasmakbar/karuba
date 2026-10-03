@@ -11,24 +11,33 @@ export function decryptCipher(cipher: Cipher, serialNumber: string): ButtonComma
   return even ? "PUSH" : "DROP";
 }
 
-/** The countdown screen rolls 1 → 9 forever, one second per value. */
-export function countdownValue(elapsedMs: number): number {
-  return (Math.max(0, Math.floor(elapsedMs / 1000)) % 9) + 1;
+/** The MM:SS the room clock shows for a given number of seconds left. */
+export function clockLabel(secondsLeft: number): string {
+  const total = Math.max(0, Math.floor(secondsLeft));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
-export function isEvenSecond(elapsedMs: number): boolean {
-  return countdownValue(elapsedMs) % 2 === 0;
+/** "Contains N" — the digit N appears anywhere in the displayed MM:SS. */
+export function clockContains(secondsLeft: number, digit: number): boolean {
+  return clockLabel(secondsLeft).includes(String(digit));
+}
+
+/** The seconds part of the clock is even (spec: "release on even seconds"). */
+export function secondsAreEven(secondsLeft: number): boolean {
+  return Math.max(0, Math.floor(secondsLeft)) % 2 === 0;
 }
 
 /** Info2_Modifier: what the decrypted command actually requires from the holder. */
 export function timingRule(command: ButtonCommand): string {
   switch (command) {
     case "HOLD":
-      return "Press to start holding, keep holding, and release only while the countdown screen shows 4.";
+      return "Press to start holding, keep holding, and release only while the shared clock CONTAINS the digit 4 anywhere in MM:SS.";
     case "WAIT":
-      return "Press to start holding, keep holding, and release only while the countdown screen shows 1.";
+      return "Press to start holding, keep holding, and release only while the shared clock CONTAINS the digit 1 anywhere in MM:SS.";
     case "PUSH":
-      return "Press to start holding, then release only while the countdown screen shows an EVEN number (2, 4, 6, 8).";
+      return "Press to start holding, then release only while the shared clock's SECONDS are even.";
     case "DROP":
       return "Release immediately — press and let go at once.";
   }
@@ -65,7 +74,7 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
           cells: [item, timingRule(item)],
           highlight: item === command,
         })),
-        note: "The countdown screen rolls 1-9, one number per second, and the owner cannot see it.",
+        note: "Everyone reads the same shared clock. Call out the full MM:SS as it ticks and trust the room clock.",
       },
     ];
   },
@@ -77,12 +86,15 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
       case "DROP":
         return releasedNow;
       case "PUSH":
-        return releasedNow && isEvenSecond(answer.elapsedMs);
+        return releasedNow && secondsAreEven(answer.secondsLeft);
       case "HOLD":
-        return answer.action === "HOLD_TO_TARGET" && countdownValue(answer.elapsedMs) === 4;
+        return answer.action === "HOLD_TO_TARGET" && clockContains(answer.secondsLeft, 4);
       case "WAIT":
-        return answer.action === "HOLD_TO_TARGET" && countdownValue(answer.elapsedMs) === 1;
+        return answer.action === "HOLD_TO_TARGET" && clockContains(answer.secondsLeft, 1);
     }
   },
-  status: (vars) => (vars.isHolding ? "Holding — release on the number your informant calls" : "Idle — press to start the hold"),
+  status: (vars) =>
+    vars.isHolding
+      ? "Holding — release when the shared clock matches your informant"
+      : "Idle — press to start the hold",
 };

@@ -122,7 +122,7 @@ export type ModuleId = keyof LocalVarsMap;
 export interface ModuleAnswerMap {
   MOD_01_WIRE: { wireIndex: number };
   MOD_02_INVISIBLE_MAZE: { direction: Direction };
-  MOD_03_BUTTON: { action: ButtonAction; elapsedMs: number };
+  MOD_03_BUTTON: { action: ButtonAction; secondsLeft: number };
   MOD_04_SEQUENCE_PROTOCOL: { position: number };
   MOD_05_CHEMISTRY: { buttonsPressed: ShapeId[] };
   MOD_06_POWER_GRID: { switches: Switches };
