@@ -404,7 +404,46 @@ rule could disagree, and pointerUp+pointerLeave could double-submit.
   with the shared seconds, and guards against double release.
 - Helpers: [`clockLabel`](src/lib/modules/mod03Button.ts:15), [`clockContains`](src/lib/modules/mod03Button.ts:23),
   [`secondsAreEven`](src/lib/modules/mod03Button.ts:28).
-- Verify: `tsc -b`, `eslint`, `vite build` all green. Manual multi-device playtest still pending.
+- Verify: `tsc -b`, `eslint` green. Manual multi-device playtest still pending.
+
+### F7 — Dev module sandbox (added)
+A dev-only, in-memory page for testing modules one by one without a real multiplayer room.
+- Route: `?dev=modules` (handled in [`App.tsx`](src/App.tsx:1)); also a "Dev: test modules" button on
+  [`Home.tsx`](src/pages/Home.tsx:1).
+- [`ModuleSandbox.tsx`](src/pages/ModuleSandbox.tsx:1) deals a single module, renders its console
+  **and** its Info 1 / Info 2 pages side by side, and verifies answers in memory via
+  [`runVerify`](src/lib/modules/contract.ts:63)/[`runAdvance`](src/lib/modules/contract.ts:71)/
+  [`runReset`](src/lib/modules/contract.ts:83). Prev/Next module, Re-deal, and a live SOLVED/STRIKE
+  badge. It never touches Firebase.
+- A throwaway shared clock ticks so [`MOD_03_BUTTON`](src/lib/modules/mod03Button.ts:1) can be tested.
+
+### F3 — MOD_04_SEQUENCE_PROTOCOL crash + full revamp (fixed)
+- **Crash cause:** RTDB drops empty arrays, so the generated `history: []` read back as `undefined`
+  and `history[0]` threw `undefined is not an object`. Fixed with a `historyOf()` normalizer.
+- **Revamp** to match the original gameplan exactly:
+  - Stage 1 & 2 rules on Info 1; Stage 3 & 4 rules on Info 2 (as specified).
+  - Display = 1 digit (1-4); four buttons labelled 1-4 in randomised **positions**.
+  - Stage 1: 1/2→pos2, 3→pos3, 4→pos4. Stage 2: 1→label "4", 2→same pos as stage 1, 3→pos1,
+    4→same pos as stage 1. Stage 3: 1→same label as stage 2, 2→same label as stage 1, 3→pos3,
+    4→label "4". Stage 4: 1→same pos as stage 1, 2→pos1, 3→same pos as stage 2, 4→same pos as stage 2.
+  - Final stage now returns `null` from `advance` so the module is marked **solved** (previously it
+    advanced to stage 5 and never completed).
+  - Console shows each button's **position** under its label; strike resets to stage 1 (via `reset`).
+
+### F4 — MOD_10_PRESSURE_VALVES hardening (fixed)
+Generated `valves: []` also vanishes on round-trip. `resultingPressure()` / `toggleValve()` now
+treat a missing `valves` as `[]`.
+
+### F5 — UI: landing + difficulty moved to lobby (fixed)
+- [`Home.tsx`](src/pages/Home.tsx:1): only name + Create Room + Join-by-code. Difficulty removed.
+- [`createRoom()`](src/utils/room.ts:120) now defaults difficulty (STANDARD); added host-only
+  [`setDifficulty()`](src/utils/room.ts:121).
+- [`Lobby.tsx`](src/pages/Lobby.tsx:1): host picks difficulty via chips; everyone sees the current
+  difficulty + blurb live.
+
+### F6 — Manual pages no longer highlight the answer (fixed)
+[`InfoPanel.tsx`](src/components/InfoPanel.tsx:1) stopped rendering the highlighted (`is-active`)
+row, so manuals read as plain tables and informants must reason rather than read off the answer.
 
 ---
 

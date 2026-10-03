@@ -4,6 +4,24 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+---
+
+## PROJECT ENVIRONMENT (Taut)
+
+- **Do NOT run builds locally.** Building (`bun run build` / `vite build` / `tsc -b`) and deploying
+  happen on the **GitHub Actions side** ([`.github/workflows/deploy-taut.yml`](../../.github/workflows/deploy-taut.yml)).
+  The agent should edit code and push; CI is the single source of build truth. Do not spend time on
+  local production builds.
+- If a quick sanity check is truly needed before push, keep it to the compiler/linter only and note
+  that CI is authoritative. Prefer pushing and checking the Actions run.
+- **Two independent workflows:** `deploy-taut.yml` (paths `taut/**`) and `deploy-karuba.yml`
+  (paths `karuba-online/**`). They deploy per-site targets and must not depend on each other.
+- **Firebase**: RTDB is the single source of truth. Remember RTDB **drops empty arrays** — never
+  assume a stored `[]` reads back as an array; normalize with `Array.isArray(x) ? x : []`.
+- The combined `firebase-hosting-live.yml.old` is a disabled backup; do not re-enable it.
+
+---
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

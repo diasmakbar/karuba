@@ -4,10 +4,12 @@ import { createRoom, joinRoom } from "../utils/room";
 
 interface HomeProps {
   onEnterRoom: (code: string) => void;
+  /** Dev-only: open the in-memory module sandbox. */
+  onOpenDev?: () => void;
 }
 
 /** Landing screen: name, create a room, or join by 6-digit code. Difficulty is chosen in the lobby. */
-export function Home({ onEnterRoom }: HomeProps) {
+export function Home({ onEnterRoom, onOpenDev }: HomeProps) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -83,6 +85,16 @@ export function Home({ onEnterRoom }: HomeProps) {
         <p className="muted" style={{ margin: 0, fontSize: 12 }}>
           Rooms need 3–6 players, all on separate devices.
         </p>
+        {onOpenDev ? (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ fontSize: 12 }}
+            onClick={onOpenDev}
+          >
+            Dev: test modules
+          </button>
+        ) : null}
       </div>
     </main>
   );
