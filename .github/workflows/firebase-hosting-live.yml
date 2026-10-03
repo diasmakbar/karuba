@@ -8,7 +8,6 @@ on:
     paths:
       - 'karuba-online/**'
       - 'rancang/**'
-      - 'pickleball/**'
       - 'taut/**'
       - 'firebase.json'
       - '.firebaserc'
@@ -37,11 +36,6 @@ jobs:
         run: bun install && bun run build
         working-directory: ./rancang
 
-      # Build Pickleball
-      - name: Build Pickleball
-        run: bun install && bun run build
-        working-directory: ./pickleball
-      
       # Build Taut
       - name: Build Taut
         run: bun install && bun run build

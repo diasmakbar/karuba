@@ -7,7 +7,6 @@
       "hosting": {
         "karuba": ["decryptor-game"],
         "rancang": ["rancang"],
-        "pickleball": ["pickleradiasi"],
         "taut": ["taut-space"]
       }
     }
