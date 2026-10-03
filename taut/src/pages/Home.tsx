@@ -1,16 +1,14 @@
 import { useState } from "react";
-import type { Difficulty } from "../types/db-schema";
-import { DIFFICULTIES, DIFFICULTY_IDS, MAX_ROOM_NAME_LENGTH } from "../lib/gameConfig";
+import { MAX_ROOM_NAME_LENGTH } from "../lib/gameConfig";
 import { createRoom, joinRoom } from "../utils/room";
 
 interface HomeProps {
   onEnterRoom: (code: string) => void;
 }
 
-/** Entry screen: name, difficulty, create a room, or join by 6-digit code. */
+/** Landing screen: name, create a room, or join by 6-digit code. Difficulty is chosen in the lobby. */
 export function Home({ onEnterRoom }: HomeProps) {
   const [name, setName] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty>("STANDARD");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,30 +51,11 @@ export function Home({ onEnterRoom }: HomeProps) {
           />
         </label>
 
-        <div className="field">
-          <span className="tag">Difficulty</span>
-          <div className="chip-group">
-            {DIFFICULTY_IDS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={`chip ${difficulty === id ? "is-active" : ""}`}
-                onClick={() => setDifficulty(id)}
-              >
-                {DIFFICULTIES[id].label}
-              </button>
-            ))}
-          </div>
-          <p className="muted" style={{ margin: "6px 0 0", fontSize: 13 }}>
-            {DIFFICULTIES[difficulty].blurb}
-          </p>
-        </div>
-
         <button
           type="button"
           className="btn btn-block"
           disabled={!canCreate}
-          onClick={() => run(() => createRoom(name, difficulty))}
+          onClick={() => run(() => createRoom(name))}
         >
           Create room
         </button>

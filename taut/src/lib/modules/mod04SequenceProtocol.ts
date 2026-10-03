@@ -3,36 +3,103 @@ import { pickDistinct } from "../rng";
 
 type HistoryEntry = { positionPressed: number; labelPressed: number };
 type SequenceVars = {
+  /** Button labels as they appear left→right, i.e. physicalLabels[0] is position 1. */
   physicalLabels: number[];
+  /** The digit shown for each of the 4 stages. */
   stageDisplays: number[];
   currentStage: number;
   history: HistoryEntry[];
 };
 
-/** Info1_Baseline, stage 1: display digit → position to press (1 = leftmost). */
-const STAGE_ONE_POSITION: Record<number, number> = { 1: 2, 2: 3, 3: 4, 4: 1 };
+/**
+ * Firebase RTDB drops empty arrays, so `history: []` reads back as `undefined`. Normalise before
+ * reading so the first press (empty history) never crashes.
+ */
+function historyOf(vars: SequenceVars): HistoryEntry[] {
+  return Array.isArray(vars.history) ? vars.history : [];
+}
 
+/** 1-based left→right position that holds the given label. */
 export function positionOfLabel(vars: SequenceVars, label: number): number {
   return vars.physicalLabels.indexOf(label) + 1;
 }
 
+/** The label printed on the button at a 1-based position. */
+function labelAtPosition(vars: SequenceVars, position: number): number {
+  return vars.physicalLabels[position - 1];
+}
+
 /**
- * The single source of truth for which physical position is correct on the current
- * stage. Stages 1-2 are Info1, stages 3-4 are Info2 — the informants read these rules,
- * the owner only sees the digits and the buttons.
+ * The authoritative target for the current stage, per the module gameplan.
+ * Stage 1-2 rules live on Info 1; stage 3-4 rules live on Info 2. Informants read these tables,
+ * the owner only sees the display digit and the randomised buttons.
  */
 export function targetPosition(vars: SequenceVars): number {
-  const { currentStage, history } = vars;
-  const first = history[0];
-  const second = history[1];
-  const third = history[2];
-  if (currentStage === 1) return STAGE_ONE_POSITION[vars.stageDisplays[0]] ?? 1;
-  if (currentStage === 2) return first ? positionOfLabel(vars, first.labelPressed) : 1;
-  if (currentStage === 3) {
-    const sum = Math.min(4, (first?.positionPressed ?? 0) + (second?.positionPressed ?? 0));
-    return positionOfLabel(vars, sum);
+  const stage = vars.currentStage;
+  const display = vars.stageDisplays[stage - 1];
+  const history = historyOf(vars);
+  const s1 = history[0];
+  const s2 = history[1];
+
+  if (stage === 1) {
+    switch (display) {
+      case 1:
+      case 2:
+        return 2;
+      case 3:
+        return 3;
+      case 4:
+        return 4;
+      default:
+        return -1;
+    }
   }
-  if (currentStage === 4) return third ? positionOfLabel(vars, third.positionPressed) : 1;
+
+  if (stage === 2) {
+    switch (display) {
+      case 1:
+        return positionOfLabel(vars, 4);
+      case 2:
+        return s1 ? s1.positionPressed : 1;
+      case 3:
+        return 1;
+      case 4:
+        return s1 ? s1.positionPressed : 1;
+      default:
+        return -1;
+    }
+  }
+
+  if (stage === 3) {
+    switch (display) {
+      case 1:
+        return s2 ? positionOfLabel(vars, s2.labelPressed) : 1;
+      case 2:
+        return s1 ? positionOfLabel(vars, s1.labelPressed) : 1;
+      case 3:
+        return 3;
+      case 4:
+        return positionOfLabel(vars, 4);
+      default:
+        return -1;
+    }
+  }
+
+  if (stage === 4) {
+    switch (display) {
+      case 1:
+        return s1 ? s1.positionPressed : 1;
+      case 2:
+        return 1;
+      case 3:
+        return s2 ? s2.positionPressed : 1;
+      case 4:
+        return s2 ? s2.positionPressed : 1;
+      default:
+        return -1;
+    }
+  }
+
   return -1;
 }
 
@@ -46,49 +113,128 @@ export const mod04SequenceProtocol: ModuleDefinition<"MOD_04_SEQUENCE_PROTOCOL">
     currentStage: 1,
     history: [],
   }),
-  info1: (vars) => [
+  info1: () => [
     {
-      title: "Stage 1 — first press (Info 1)",
-      columns: ["Displayed digit", "Press this position"],
+      title: "Stage 1 (Info 1)",
+      columns: ["Display", "Press"],
       rows: [1, 2, 3, 4].map((digit) => ({
-        cells: [String(digit), String(STAGE_ONE_POSITION[digit])],
-        highlight: vars.currentStage === 1 && vars.stageDisplays[0] === digit,
+        cells: [`${digit}`, stageOneRule(digit)],
+        highlight: false,
       })),
-      note: "Position 1 is the leftmost button. Positions are not labels.",
+      note: "Positions are counted left to right (position 1 is the leftmost button).",
     },
     {
-      title: "Stage 2",
-      columns: ["Rule"],
-      rows: [{ cells: ["Press the position whose LABEL is the same as the label pressed in stage 1."], highlight: vars.currentStage === 2 }],
+      title: "Stage 2 (Info 1)",
+      columns: ["Display", "Press"],
+      rows: [1, 2, 3, 4].map((digit) => ({
+        cells: [`${digit}`, stageTwoRule(digit)],
+        highlight: false,
+      })),
+      note: "Read out the rule for the digit the owner shows you.",
     },
   ],
-  info2: (vars) => [
+  info2: () => [
     {
       title: "Stage 3 (Info 2)",
-      columns: ["Rule"],
-      rows: [
-        {
-          cells: ["Add the stage-1 position number to the stage-2 position number. Press the position whose LABEL equals that sum; if the sum is more than 4, press the position labelled 4."],
-          highlight: vars.currentStage === 3,
-        },
-      ],
+      columns: ["Display", "Press"],
+      rows: [1, 2, 3, 4].map((digit) => ({
+        cells: [`${digit}`, stageThreeRule(digit)],
+        highlight: false,
+      })),
+      note: "You may need the buttons pressed in stages 1 and 2 — ask the other informant.",
     },
     {
-      title: "Stage 4",
-      columns: ["Rule"],
-      rows: [{ cells: ["Press the position whose LABEL is the stage-3 position number."], highlight: vars.currentStage === 4 }],
+      title: "Stage 4 (Info 2)",
+      columns: ["Display", "Press"],
+      rows: [1, 2, 3, 4].map((digit) => ({
+        cells: [`${digit}`, stageFourRule(digit)],
+        highlight: false,
+      })),
+      note: "You may need the buttons pressed earlier — coordinate with the other informant.",
     },
   ],
-  verify: (vars, answer) => vars.currentStage >= 1 && vars.currentStage <= 4 && answer.position === targetPosition(vars),
+  verify: (vars, answer) => {
+    const stage = vars.currentStage;
+    if (stage < 1 || stage > 4) return stage >= 5;
+    return answer.position === targetPosition(vars);
+  },
   advance: (vars, answer) => {
     if (answer.position !== targetPosition(vars)) return null;
-    const labelPressed = vars.physicalLabels[answer.position - 1];
+    const labelPressed = labelAtPosition(vars, answer.position);
+    const history = historyOf(vars);
+    const nextStage = vars.currentStage + 1;
+    // Final stage: return null so the module is marked solved (runAdvance: null = finished).
+    if (nextStage > 4) return null;
     return {
       ...vars,
-      currentStage: vars.currentStage + 1,
-      history: [...vars.history, { positionPressed: answer.position, labelPressed }],
+      currentStage: nextStage,
+      history: [...history, { positionPressed: answer.position, labelPressed }],
     };
   },
   reset: (vars) => ({ ...vars, currentStage: 1, history: [] }),
-  status: (vars) => `Stage ${Math.min(vars.currentStage, 4)} of 4 · display shows ${vars.stageDisplays[Math.min(vars.currentStage, 4) - 1]}`,
+  status: (vars) =>
+    `Stage ${Math.min(vars.currentStage, 4)} of 4 · display shows ${vars.stageDisplays[Math.min(vars.currentStage, 4) - 1]}`,
 };
+
+/* ------------------------------------------------------------------ *
+ * Human-readable rules (informant-facing).
+ * ------------------------------------------------------------------ */
+
+function stageOneRule(digit: number): string {
+  switch (digit) {
+    case 1:
+    case 2:
+      return "Press the button in the 2nd position.";
+    case 3:
+      return "Press the button in the 3rd position.";
+    case 4:
+      return "Press the button in the 4th position.";
+    default:
+      return "—";
+  }
+}
+
+function stageTwoRule(digit: number): string {
+  switch (digit) {
+    case 1:
+      return 'Press the button labeled "4".';
+    case 2:
+      return "Press the button in the same position as stage 1.";
+    case 3:
+      return "Press the button in the 1st position.";
+    case 4:
+      return "Press the button in the same position as stage 1.";
+    default:
+      return "—";
+  }
+}
+
+function stageThreeRule(digit: number): string {
+  switch (digit) {
+    case 1:
+      return "Press the button with the same LABEL as the stage-2 press.";
+    case 2:
+      return "Press the button with the same LABEL as the stage-1 press.";
+    case 3:
+      return "Press the button in the 3rd position.";
+    case 4:
+      return 'Press the button labeled "4".';
+    default:
+      return "—";
+  }
+}
+
+function stageFourRule(digit: number): string {
+  switch (digit) {
+    case 1:
+      return "Press the button in the same position as stage 1.";
+    case 2:
+      return "Press the button in the 1st position.";
+    case 3:
+      return "Press the button in the same position as stage 2.";
+    case 4:
+      return "Press the button in the same position as stage 2.";
+    default:
+      return "—";
+  }
+}

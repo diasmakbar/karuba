@@ -117,8 +117,25 @@ export function levelWrites(
   return updates;
 }
 
+/** Host-only: change the room difficulty while still in the lobby. Visible to everyone live. */
+export async function setDifficulty(code: string, difficulty: Difficulty): Promise<void> {
+  const uid = await requireUid();
+  const snapshot = await get(ref(db, roomPath(code)));
+  if (!snapshot.exists()) throw new Error("Room not found.");
+  const room = snapshot.val() as RoomState;
+  if (room.hostId !== uid) throw new Error("Only the host can change the difficulty.");
+  if (room.status !== "LOBBY") throw new Error("The game has already started.");
+
+  const config = DIFFICULTIES[difficulty];
+  await update(ref(db, roomPath(code)), {
+    difficulty,
+    totalLevels: config.levels,
+    maxStrikes: config.maxStrikes,
+  });
+}
+
 /** Create a room keyed by a 6-digit code so it can be read out loud across the table. */
-export async function createRoom(name: string, difficulty: Difficulty): Promise<string> {
+export async function createRoom(name: string, difficulty: Difficulty = "STANDARD"): Promise<string> {
   const uid = await requireUid();
   let code = "";
   for (let attempt = 0; attempt < 5; attempt += 1) {

@@ -35,7 +35,7 @@ export function InfoPanel({ moduleName, ownerName, page, tables }: InfoPanelProp
             </thead>
             <tbody>
               {table.rows.map((row, index) => (
-                <tr key={`${table.title}-${index}`} className={row.highlight ? "is-active" : undefined}>
+                <tr key={`${table.title}-${index}`}>
                   {row.cells.map((cell, cellIndex) => (
                     <td key={`${index}-${cellIndex}`}>{cell}</td>
                   ))}

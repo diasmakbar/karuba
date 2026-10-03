@@ -12,12 +12,14 @@ export function targetPressure(serialNumber: string): number {
   return endsWithEven(serialNumber) ? 75 : 90;
 }
 
-export function resultingPressure(startPressure: number, active: readonly ValveId[]): number {
-  return active.reduce((total, valve) => total + FLOW_RATE[valve], startPressure);
+export function resultingPressure(startPressure: number, active: readonly ValveId[] | undefined): number {
+  // RTDB drops empty arrays, so `valves: []` reads back as undefined.
+  return (active ?? []).reduce((total, valve) => total + FLOW_RATE[valve], startPressure);
 }
 
-export function toggleValve(active: readonly ValveId[], valve: ValveId): ValveId[] {
-  return active.includes(valve) ? active.filter((item) => item !== valve) : [...active, valve];
+export function toggleValve(active: readonly ValveId[] | undefined, valve: ValveId): ValveId[] {
+  const current = active ?? [];
+  return current.includes(valve) ? current.filter((item) => item !== valve) : [...current, valve];
 }
 
 export const mod10PressureValves: ModuleDefinition<"MOD_10_PRESSURE_VALVES"> = {

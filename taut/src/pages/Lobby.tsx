@@ -1,8 +1,9 @@
 import { useState } from "react";
+import type { Difficulty } from "../types/db-schema";
 import { useRoom } from "../hooks/useRoom";
 import { useUid } from "../hooks/useUid";
-import { MIN_PLAYERS_TO_START } from "../lib/gameConfig";
-import { playerList, setReady, leaveLobby, startGame } from "../utils/room";
+import { DIFFICULTIES, DIFFICULTY_IDS, MIN_PLAYERS_TO_START } from "../lib/gameConfig";
+import { playerList, setReady, setDifficulty, leaveLobby, startGame } from "../utils/room";
 
 interface LobbyProps {
   roomCode: string;
@@ -10,7 +11,7 @@ interface LobbyProps {
   onLeave: () => void;
 }
 
-/** Pre-game lobby: share the code, ready up, host starts. Live-synced through Firebase. */
+/** Pre-game lobby: share the code, pick difficulty, ready up, host starts. Live-synced via Firebase. */
 export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
   const uid = useUid();
   const { room, loading, error, connected } = useRoom(roomCode);
@@ -88,6 +89,32 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
         </header>
 
         {!connected ? <p className="banner is-warn">Reconnecting…</p> : null}
+
+        <div className="field">
+          <span className="tag">Difficulty</span>
+          {isHost ? (
+            <div className="chip-group">
+              {DIFFICULTY_IDS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`chip ${room.difficulty === id ? "is-active" : ""}`}
+                  disabled={busy}
+                  onClick={() => act(() => setDifficulty(roomCode, id as Difficulty))}
+                >
+                  {DIFFICULTIES[id].label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="hud-value font-display" style={{ margin: 0 }}>
+              {DIFFICULTIES[room.difficulty].label}
+            </p>
+          )}
+          <p className="muted" style={{ margin: "6px 0 0", fontSize: 13 }}>
+            {DIFFICULTIES[room.difficulty].blurb}
+          </p>
+        </div>
 
         <div className="stack" style={{ gap: 6 }}>
           <span className="tag">

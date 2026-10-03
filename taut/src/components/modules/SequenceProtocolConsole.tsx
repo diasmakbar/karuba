@@ -5,7 +5,7 @@ import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
 /**
- * MOD_04_SEQUENCE_PROTOCOL — a display digit and four labelled buttons in randomised order, with
+ * MOD_04_SEQUENCE_PROTOCOL — a display digit and four numbered buttons in randomised order, with
  * four stage LEDs. The owner presses a position; stages 1-2 rules live on Info 1, stages 3-4 on
  * Info 2. A wrong press resets to stage 1. Answer: `{ position }`.
  */
@@ -56,12 +56,15 @@ export function SequenceProtocolConsole({ state, disabled, submit }: ModuleConso
             disabled={disabled || pending || state.isSolved}
             onClick={() => press(index + 1)}
           >
-            {label}
+            <span className="font-display" style={{ fontSize: 22 }}>
+              {label}
+            </span>
+            <span className="tag">pos {index + 1}</span>
           </button>
         ))}
       </div>
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        Stage {stage} of 4
+        Stage {stage} of 4 · display shows {display}
       </p>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>
