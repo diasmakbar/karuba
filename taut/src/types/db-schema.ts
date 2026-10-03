@@ -64,12 +64,14 @@ export interface LocalVarsMap {
     holdStartedAt: number | null;
   };
   MOD_04_SEQUENCE_PROTOCOL: {
-    /** Labels of the 4 physical buttons, left to right (randomised 1-4). */
+    /** Labels of the 4 physical buttons, left to right (reshuffled every stage). */
     physicalLabels: number[];
     /** Digit shown on the display for each of the 4 stages. */
     stageDisplays: number[];
     currentStage: number;
     history: { positionPressed: number; labelPressed: number }[];
+    /** Advances each stage; used to reshuffle the labels deterministically. */
+    labelSeed: number;
   };
   MOD_05_CHEMISTRY: {
     hazardSymbol: HazardSymbol;

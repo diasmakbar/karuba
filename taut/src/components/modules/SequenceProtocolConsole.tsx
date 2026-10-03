@@ -50,16 +50,15 @@ export function SequenceProtocolConsole({ state, disabled, submit }: ModuleConso
       <div className="pad-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         {localVars.physicalLabels.map((label, index) => (
           <button
-            key={label}
+            key={`${stage}-${label}`}
             type="button"
             className="pad-btn"
             disabled={disabled || pending || state.isSolved}
             onClick={() => press(index + 1)}
           >
-            <span className="font-display" style={{ fontSize: 22 }}>
+            <span className="font-display" style={{ fontSize: 24 }}>
               {label}
             </span>
-            <span className="tag">pos {index + 1}</span>
           </button>
         ))}
       </div>
