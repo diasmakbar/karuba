@@ -513,31 +513,56 @@ body {
   justify-content: center;
 }
 
-.wires {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.wire-board {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
 }
 
-.wire {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.wire-board .pin {
+  fill: #2b3140;
+  stroke: #9aa3b2;
+  stroke-width: 1.5;
+}
+
+.wire-board .pin-label {
+  fill: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wire-board .wire {
   cursor: pointer;
+  outline: none;
 }
 
-.wire-visual {
-  position: relative;
-  flex: 1;
-  height: 12px;
-  border-radius: 999px;
-  background: linear-gradient(#9aa3b2, #6f7887);
-  border: 1px solid #00000030;
+.wire-board .wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
 }
 
-.wire.is-cut .wire-visual {
-  background: repeating-linear-gradient(90deg, #6f7887 0 14px, transparent 14px 22px);
+.wire-board .wire-path {
+  fill: none;
+  stroke: url(#wireGrad);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.wire-board .wire:hover .wire-path,
+.wire-board .wire:focus-visible .wire-path {
+  stroke: var(--accent);
+}
+
+.wire-board .wire-path.is-cut {
+  stroke: #6f7887;
+  stroke-dasharray: 10 8;
   opacity: 0.5;
+}
+
+.wire-board.is-locked .wire {
+  cursor: default;
 }
 
 .switches,

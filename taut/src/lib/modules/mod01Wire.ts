@@ -1,88 +1,208 @@
 import type { ModuleDefinition } from "./contract";
-import { endsWithEven, randomSerialNumber } from "../rng";
+import { endsWithEven, pickDistinct, randomSerialNumber } from "../rng";
 
-type WireVars = { serialNumber: string; wireCount: 3 | 4; cutIndex: number | null };
+type WireVars = {
+  serialNumber: string;
+  wireCount: 3 | 4 | 5 | 6;
+  wireColors: string[];
+  rightPins: number[];
+  cutIndex: number | null;
+};
 
 const RED = "Red";
+const WHITE = "White";
 const BLUE = "Blue";
 const YELLOW = "Yellow";
-const WHITE_BLUE = "White with Blue stripe";
-const WHITE_RED = "White with Red stripe";
+const BLACK = "Black";
 
-/** Info1_Baseline: the color chart each wire position *should* have had. */
-export function wireBaseline(serialNumber: string, wireCount: 3 | 4): string[] {
-  const even = endsWithEven(serialNumber);
-  if (even && wireCount === 3) return [RED, BLUE, YELLOW];
-  if (even) return [RED, BLUE, WHITE_BLUE, YELLOW];
-  if (wireCount === 3) return [BLUE, YELLOW, RED];
-  return [YELLOW, RED, WHITE_RED, BLUE];
+/** Every wire color is drawn from this pool, regardless of wire count. */
+export const WIRE_COLORS = [RED, WHITE, BLUE, YELLOW, BLACK] as const;
+
+/** Right pins B1..B6; a strictly increasing assignment guarantees no wire crossing. */
+const RIGHT_PIN_POOL = [1, 2, 3, 4, 5, 6] as const;
+
+/** Firebase RTDB drops empty arrays, so normalise before reading. */
+function colorsOf(vars: WireVars): string[] {
+  return Array.isArray(vars.wireColors) ? vars.wireColors : [];
 }
 
-export const CUTTING_RULES = [
-  "Exactly one wire in the baseline is Red → cut the LAST wire",
-  "Otherwise, if more than one wire is Blue → cut the FIRST Blue wire",
-  "Otherwise, if the last wire is Yellow → cut the FIRST wire",
-  "Otherwise → cut the SECOND wire",
-] as const;
+function countColor(colors: string[], color: string): number {
+  return colors.filter((c) => c === color).length;
+}
+
+function lastIndexOfColor(colors: string[], color: string): number {
+  for (let i = colors.length - 1; i >= 0; i -= 1) {
+    if (colors[i] === color) return i;
+  }
+  return -1;
+}
+
+type WireRule = {
+  text: string;
+  matches: (colors: string[], serialOdd: boolean) => boolean;
+  target: (colors: string[]) => number;
+};
 
 /**
- * Info2_Modifier applied on top of Info1_Baseline. Rules are evaluated strictly in
- * order and match the exact color names of the baseline chart (striped wires are a
- * different color, so they never count as Red or Blue).
+ * Info2_Manual: the cutting rules for each wire count. Rules are evaluated strictly
+ * in order and the first match wins; the final rule of every set always matches, so
+ * a target always exists.
  */
-export function wireTargetIndex(serialNumber: string, wireCount: 3 | 4): number {
-  const baseline = wireBaseline(serialNumber, wireCount);
-  const redCount = baseline.filter((color) => color === RED).length;
-  if (redCount === 1) return baseline.length - 1;
-  if (baseline.filter((color) => color === BLUE).length > 1) return baseline.indexOf(BLUE);
-  if (baseline[baseline.length - 1] === YELLOW) return 0;
-  return 1;
-}
+const WIRE_RULES: Record<WireVars["wireCount"], readonly WireRule[]> = {
+  3: [
+    {
+      text: "If there are no red wires, cut the second wire.",
+      matches: (colors) => countColor(colors, RED) === 0,
+      target: () => 1,
+    },
+    {
+      text: "Otherwise, if the last wire is white, cut the last wire.",
+      matches: (colors) => colors[colors.length - 1] === WHITE,
+      target: (colors) => colors.length - 1,
+    },
+    {
+      text: "Otherwise, if there is more than one blue wire, cut the last blue wire.",
+      matches: (colors) => countColor(colors, BLUE) > 1,
+      target: (colors) => lastIndexOfColor(colors, BLUE),
+    },
+    {
+      text: "Otherwise, cut the last wire.",
+      matches: () => true,
+      target: (colors) => colors.length - 1,
+    },
+  ],
+  4: [
+    {
+      text: "If there is more than one red wire and the last digit of the serial number is odd, cut the last red wire.",
+      matches: (colors, serialOdd) => countColor(colors, RED) > 1 && serialOdd,
+      target: (colors) => lastIndexOfColor(colors, RED),
+    },
+    {
+      text: "Otherwise, if the last wire is yellow and there are no red wires, cut the first wire.",
+      matches: (colors) => colors[colors.length - 1] === YELLOW && countColor(colors, RED) === 0,
+      target: () => 0,
+    },
+    {
+      text: "Otherwise, if there is exactly one blue wire, cut the first wire.",
+      matches: (colors) => countColor(colors, BLUE) === 1,
+      target: () => 0,
+    },
+    {
+      text: "Otherwise, if there is more than one yellow wire, cut the last wire.",
+      matches: (colors) => countColor(colors, YELLOW) > 1,
+      target: (colors) => colors.length - 1,
+    },
+    {
+      text: "Otherwise, cut the second wire.",
+      matches: () => true,
+      target: () => 1,
+    },
+  ],
+  5: [
+    {
+      text: "If the last wire is black and the last digit of the serial number is odd, cut the fourth wire.",
+      matches: (colors, serialOdd) => colors[colors.length - 1] === BLACK && serialOdd,
+      target: () => 3,
+    },
+    {
+      text: "Otherwise, if there is exactly one red wire and there is more than one yellow wire, cut the first wire.",
+      matches: (colors) => countColor(colors, RED) === 1 && countColor(colors, YELLOW) > 1,
+      target: () => 0,
+    },
+    {
+      text: "Otherwise, if there are no black wires, cut the second wire.",
+      matches: (colors) => countColor(colors, BLACK) === 0,
+      target: () => 1,
+    },
+    {
+      text: "Otherwise, cut the first wire.",
+      matches: () => true,
+      target: () => 0,
+    },
+  ],
+  6: [
+    {
+      text: "If there are no yellow wires and the last digit of the serial number is odd, cut the third wire.",
+      matches: (colors, serialOdd) => countColor(colors, YELLOW) === 0 && serialOdd,
+      target: () => 2,
+    },
+    {
+      text: "Otherwise, if there is exactly one yellow wire and there is more than one white wire, cut the fourth wire.",
+      matches: (colors) => countColor(colors, YELLOW) === 1 && countColor(colors, WHITE) > 1,
+      target: () => 3,
+    },
+    {
+      text: "Otherwise, if there are no red wires, cut the last wire.",
+      matches: (colors) => countColor(colors, RED) === 0,
+      target: (colors) => colors.length - 1,
+    },
+    {
+      text: "Otherwise, cut the fourth wire.",
+      matches: () => true,
+      target: () => 3,
+    },
+  ],
+};
 
-export function cuttingRuleIndex(serialNumber: string, wireCount: 3 | 4): number {
-  const baseline = wireBaseline(serialNumber, wireCount);
-  if (baseline.filter((color) => color === RED).length === 1) return 0;
-  if (baseline.filter((color) => color === BLUE).length > 1) return 1;
-  if (baseline[baseline.length - 1] === YELLOW) return 2;
-  return 3;
+/** The wire index (0-based, top to bottom) that must be cut for this instance. */
+export function wireTargetIndex(vars: WireVars): number {
+  const colors = colorsOf(vars);
+  const serialOdd = !endsWithEven(vars.serialNumber);
+  for (const rule of WIRE_RULES[vars.wireCount]) {
+    if (rule.matches(colors, serialOdd)) return rule.target(colors);
+  }
+  return 0;
 }
 
 export const mod01Wire: ModuleDefinition<"MOD_01_WIRE"> = {
   id: "MOD_01_WIRE",
   name: "Wire Cutters",
   kind: "Logic Component",
-  generate: (rng) => ({
-    serialNumber: randomSerialNumber(rng),
-    wireCount: rng.pick([3, 4] as const),
-    cutIndex: null,
-  }),
+  generate: (rng) => {
+    const wireCount = rng.pick([3, 4, 5, 6] as const);
+    const wireColors = Array.from({ length: wireCount }, () => rng.pick(WIRE_COLORS));
+    // Strictly increasing right pins => no wire crossing.
+    const rightPins = pickDistinct(rng, RIGHT_PIN_POOL, wireCount).sort((a, b) => a - b);
+    return {
+      serialNumber: randomSerialNumber(rng),
+      wireCount,
+      wireColors,
+      rightPins,
+      cutIndex: null,
+    };
+  },
   info1: (vars) => {
+    const colors = colorsOf(vars);
     return [
       {
-        title: "Wire color chart (Info 1)",
-        columns: ["Serial ends in", "Wires", "Baseline colors, left to right"],
-        rows: [
-          { cells: ["EVEN digit", "3", "Red · Blue · Yellow"], highlight: endsWithEven(vars.serialNumber) && vars.wireCount === 3 },
-          { cells: ["EVEN digit", "4", "Red · Blue · White with Blue stripe · Yellow"], highlight: endsWithEven(vars.serialNumber) && vars.wireCount === 4 },
-          { cells: ["ODD digit", "3", "Blue · Yellow · Red"], highlight: !endsWithEven(vars.serialNumber) && vars.wireCount === 3 },
-          { cells: ["ODD digit", "4", "Yellow · Red · White with Red stripe · Blue"], highlight: !endsWithEven(vars.serialNumber) && vars.wireCount === 4 },
-        ],
-        note: `The console has ${vars.wireCount} wires. Read the highlighted baseline out loud.`,
+        title: "Wire colors (Info 1)",
+        columns: ["Wire", "Color"],
+        rows: colors.map((color, index) => ({
+          cells: [`Wire ${index + 1}`, color],
+          highlight: false,
+        })),
+        note: "Wires are listed top to bottom. Read every color out loud.",
       },
     ];
   },
-  info2: (vars) => [
-    {
-      title: "Cutting protocol (Info 2)",
-      columns: ["#", "Rule"],
-      rows: CUTTING_RULES.map((rule, index) => ({
-        cells: [String(index + 1), rule],
-        highlight: index === cuttingRuleIndex(vars.serialNumber, vars.wireCount),
-      })),
-      note: "Rules are checked in order; stop at the first one that matches. Striped wires are not Red and not Blue.",
-    },
-  ],
-  verify: (vars, answer) => wireTargetIndex(vars.serialNumber, vars.wireCount) === answer.wireIndex,
+  info2: (vars) => {
+    const colors = colorsOf(vars);
+    const serialOdd = !endsWithEven(vars.serialNumber);
+    const rules = WIRE_RULES[vars.wireCount];
+    const active = rules.findIndex((rule) => rule.matches(colors, serialOdd));
+    return [
+      {
+        title: `Cutting manual — ${vars.wireCount} wires (Info 2)`,
+        columns: ["#", "Rule"],
+        rows: rules.map((rule, index) => ({
+          cells: [String(index + 1), rule.text],
+          highlight: index === active,
+        })),
+        note: "Rules are checked in order; stop at the first one that matches. 'Last digit' refers to the serial number.",
+      },
+    ];
+  },
+  verify: (vars, answer) => wireTargetIndex(vars) === answer.wireIndex,
   status: (vars) => (vars.cutIndex === null ? `Wires attached: ${vars.wireCount}` : `Wire ${vars.cutIndex + 1} cut`),
 };
 

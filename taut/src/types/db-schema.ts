@@ -48,7 +48,11 @@ export type Sliders = { readonly bass: number; readonly mid: number; readonly tr
 export interface LocalVarsMap {
   MOD_01_WIRE: {
     serialNumber: string;
-    wireCount: 3 | 4;
+    wireCount: 3 | 4 | 5 | 6;
+    /** Actual color of each wire, top to bottom, from {Red, White, Blue, Yellow, Black}. */
+    wireColors: string[];
+    /** Right pin (1..6) for each wire, strictly increasing so no wires cross. */
+    rightPins: number[];
     cutIndex: number | null;
   };
   MOD_02_INVISIBLE_MAZE: {
