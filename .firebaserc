@@ -6,7 +6,7 @@
     "decryptor-game": {
       "hosting": {
         "karuba": ["decryptor-game"],
-        "taut": ["taut-space"]
+        "taut": ["taut-game"]
       }
     }
   }
