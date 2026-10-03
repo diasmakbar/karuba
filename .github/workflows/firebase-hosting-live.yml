@@ -7,7 +7,6 @@ on:
     branches: [main]
     paths:
       - 'karuba-online/**'
-      - 'rancang/**'
       - 'taut/**'
       - 'firebase.json'
       - '.firebaserc'
@@ -30,11 +29,6 @@ jobs:
       - name: Build Karuba
         run: bun install && bun run build
         working-directory: ./karuba-online
-
-      # Build Rancang
-      - name: Build Rancang
-        run: bun install && bun run build
-        working-directory: ./rancang
 
       # Build Taut
       - name: Build Taut

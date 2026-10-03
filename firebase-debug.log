@@ -1,0 +1,138 @@
+[debug] [2026-10-03T06:34:15.113Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T06:34:15.119Z] Command:       /Users/dias_/.nvm/versions/node/v20.19.0/bin/node /Users/dias_/.nvm/versions/node/v20.19.0/bin/firebase login:list
+[debug] [2026-10-03T06:34:15.119Z] CLI Version:   14.24.1
+[debug] [2026-10-03T06:34:15.119Z] Platform:      darwin
+[debug] [2026-10-03T06:34:15.120Z] Node Version:  v20.19.0
+[debug] [2026-10-03T06:34:15.120Z] Time:          Sat Oct 03 2026 13:34:15 GMT+0700 (Western Indonesia Time)
+[debug] [2026-10-03T06:34:15.120Z] ----------------------------------------------------------------------
+[debug] 
+[info] Logged in as officialdias@gmail.com
+[debug] [2026-10-03T06:34:16.644Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T06:34:16.646Z] Command:       /Users/dias_/.nvm/versions/node/v20.19.0/bin/node /Users/dias_/.nvm/versions/node/v20.19.0/bin/firebase hosting:sites:list --project decryptor-game
+[debug] [2026-10-03T06:34:16.646Z] CLI Version:   14.24.1
+[debug] [2026-10-03T06:34:16.647Z] Platform:      darwin
+[debug] [2026-10-03T06:34:16.647Z] Node Version:  v20.19.0
+[debug] [2026-10-03T06:34:16.647Z] Time:          Sat Oct 03 2026 13:34:16 GMT+0700 (Western Indonesia Time)
+[debug] [2026-10-03T06:34:16.647Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-03T06:34:16.756Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-03T06:34:16.756Z] > authorizing via signed-in user (officialdias@gmail.com)
+[debug] [2026-10-03T06:34:16.757Z] [iam] checking project decryptor-game for permissions ["firebase.projects.get","firebasehosting.sites.get"]
+[debug] [2026-10-03T06:34:16.757Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:34:16.757Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:34:16.758Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions [none]
+[debug] [2026-10-03T06:34:16.758Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions x-goog-quota-user=projects/decryptor-game
+[debug] [2026-10-03T06:34:16.759Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-03T06:34:17.386Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions 200
+[debug] [2026-10-03T06:34:17.386Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-03T06:34:17.387Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:34:17.387Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:34:17.387Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/decryptor-game/sites pageToken=&pageSize=10
+[debug] [2026-10-03T06:34:18.846Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/decryptor-game/sites 200
+[debug] [2026-10-03T06:34:18.847Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/decryptor-game/sites {"sites":[{"name":"projects/decryptor-game/sites/decryptor-game","defaultUrl":"https://decryptor-game.web.app","type":"DEFAULT_SITE"},{"name":"projects/decryptor-game/sites/taut-space","defaultUrl":"https://taut-space.web.app","type":"USER_SITE"}]}
+[info] 
+[info] Sites for project decryptor-game
+[info] 
+[info] ┌────────────────┬────────────────────────────────┬─────────────────┐
+│ Site ID        │ Default URL                    │ App ID (if set) │
+├────────────────┼────────────────────────────────┼─────────────────┤
+│ decryptor-game │ https://decryptor-game.web.app │ --              │
+├────────────────┼────────────────────────────────┼─────────────────┤
+│ taut-space     │ https://taut-space.web.app     │ --              │
+└────────────────┴────────────────────────────────┴─────────────────┘
+[debug] [2026-10-03T06:36:42.663Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T06:36:42.666Z] Command:       /Users/dias_/.nvm/versions/node/v20.19.0/bin/node /Users/dias_/.nvm/versions/node/v20.19.0/bin/firebase deploy --only hosting:taut --project decryptor-game
+[debug] [2026-10-03T06:36:42.666Z] CLI Version:   14.24.1
+[debug] [2026-10-03T06:36:42.666Z] Platform:      darwin
+[debug] [2026-10-03T06:36:42.666Z] Node Version:  v20.19.0
+[debug] [2026-10-03T06:36:42.666Z] Time:          Sat Oct 03 2026 13:36:42 GMT+0700 (Western Indonesia Time)
+[debug] [2026-10-03T06:36:42.667Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-03T06:36:42.780Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-03T06:36:42.781Z] > authorizing via signed-in user (officialdias@gmail.com)
+[debug] [2026-10-03T06:36:42.781Z] [iam] checking project decryptor-game for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-10-03T06:36:42.782Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:36:42.782Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:36:42.782Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions [none]
+[debug] [2026-10-03T06:36:42.782Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions x-goog-quota-user=projects/decryptor-game
+[debug] [2026-10-03T06:36:42.783Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-10-03T06:36:43.425Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions 200
+[debug] [2026-10-03T06:36:43.425Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-10-03T06:36:43.426Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:36:43.427Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:36:43.427Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/decryptor-game [none]
+[debug] [2026-10-03T06:36:44.137Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/decryptor-game 200
+[debug] [2026-10-03T06:36:44.137Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/decryptor-game {"projectId":"decryptor-game","projectNumber":"285400526933","displayName":"decryptor-game","name":"projects/decryptor-game","resources":{"hostingSite":"decryptor-game","realtimeDatabaseInstance":"decryptor-game-default-rtdb"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_926b6ac2-593a-452c-a0fe-507b782f4c3a"}
+[info] 
+[info] === Deploying to 'decryptor-game'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-10-03T06:36:44.144Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:36:44.144Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:36:44.144Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/taut-space/versions [none]
+[debug] [2026-10-03T06:36:44.144Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/taut-space/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-10-03T06:36:45.409Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/taut-space/versions 429
+[debug] [2026-10-03T06:36:45.409Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/taut-space/versions {"error":{"code":429,"message":"You have exceeded the Hosting storage quota for your Firebase project, so you cannot deploy to your site right now. Visit the Firebase console to either manage your Hosting storage or upgrade to the Blaze plan.\n \nTip: Manage your Hosting storage by setting the number of releases to keep for each channel so that older releases are automatically deleted. Learn more: https://firebase.google.com/docs/hosting/manage-releases#release-storage-settings","status":"RESOURCE_EXHAUSTED"}}
+[error] 
+[error] Error: Request to https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/taut-space/versions had HTTP Error: 429, You have exceeded the Hosting storage quota for your Firebase project, so you cannot deploy to your site right now. Visit the Firebase console to either manage your Hosting storage or upgrade to the Blaze plan.
+ 
+Tip: Manage your Hosting storage by setting the number of releases to keep for each channel so that older releases are automatically deleted. Learn more: https://firebase.google.com/docs/hosting/manage-releases#release-storage-settings
+[debug] [2026-10-03T06:36:45.784Z] Error Context: {
+  "body": {
+    "error": {
+      "code": 429,
+      "message": "You have exceeded the Hosting storage quota for your Firebase project, so you cannot deploy to your site right now. Visit the Firebase console to either manage your Hosting storage or upgrade to the Blaze plan.\n \nTip: Manage your Hosting storage by setting the number of releases to keep for each channel so that older releases are automatically deleted. Learn more: https://firebase.google.com/docs/hosting/manage-releases#release-storage-settings",
+      "status": "RESOURCE_EXHAUSTED"
+    }
+  },
+  "response": {
+    "statusCode": 429
+  }
+}
+[debug] [2026-10-03T06:37:06.938Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T06:37:06.940Z] Command:       /Users/dias_/.nvm/versions/node/v20.19.0/bin/node /Users/dias_/.nvm/versions/node/v20.19.0/bin/firebase login:list --json
+[debug] [2026-10-03T06:37:06.941Z] CLI Version:   14.24.1
+[debug] [2026-10-03T06:37:06.941Z] Platform:      darwin
+[debug] [2026-10-03T06:37:06.941Z] Node Version:  v20.19.0
+[debug] [2026-10-03T06:37:06.941Z] Time:          Sat Oct 03 2026 13:37:06 GMT+0700 (Western Indonesia Time)
+[debug] [2026-10-03T06:37:06.941Z] ----------------------------------------------------------------------
+[debug] 
+[info] Logged in as officialdias@gmail.com
+[debug] [2026-10-03T06:37:26.487Z] ----------------------------------------------------------------------
+[debug] [2026-10-03T06:37:26.489Z] Command:       /Users/dias_/.nvm/versions/node/v20.19.0/bin/node /Users/dias_/.npm/_npx/ba4f1959e38407b5/node_modules/.bin/firebase --json hosting:sites:get taut-space --project decryptor-game
+[debug] [2026-10-03T06:37:26.489Z] CLI Version:   15.32.1
+[debug] [2026-10-03T06:37:26.489Z] Platform:      darwin
+[debug] [2026-10-03T06:37:26.489Z] Node Version:  v20.19.0
+[debug] [2026-10-03T06:37:26.489Z] Detected Agent: unknown
+[debug] [2026-10-03T06:37:26.490Z] Time:          Sat Oct 03 2026 13:37:26 GMT+0700 (Western Indonesia Time)
+[debug] [2026-10-03T06:37:26.490Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-03T06:37:26.619Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-03T06:37:26.619Z] > authorizing via signed-in user (officialdias@gmail.com)
+[debug] [2026-10-03T06:37:26.619Z] [iam] checking project decryptor-game for permissions ["firebase.projects.get","firebasehosting.sites.get"]
+[debug] [2026-10-03T06:37:26.624Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:37:26.625Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:37:26.625Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions [none]
+[debug] [2026-10-03T06:37:26.625Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions  x-goog-user-project=decryptor-game
+[debug] [2026-10-03T06:37:26.625Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-03T06:37:27.217Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions 200
+[debug] [2026-10-03T06:37:27.217Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/decryptor-game:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-10-03T06:37:27.218Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:37:27.218Z] Checked if tokens are valid: true, expires at: 1791011651831
+[debug] [2026-10-03T06:37:27.219Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/decryptor-game/sites/taut-space [none]
+[debug] [2026-10-03T06:37:28.144Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/decryptor-game/sites/taut-space 200
+[debug] [2026-10-03T06:37:28.144Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/decryptor-game/sites/taut-space {"name":"projects/decryptor-game/sites/taut-space","defaultUrl":"https://taut-space.web.app","type":"USER_SITE"}
+[info] 
+[info] ┌──────────────┬────────────────────────────┐
+│ Site ID:     │ taut-space                 │
+├──────────────┼────────────────────────────┤
+│ Default URL: │ https://taut-space.web.app │
+├──────────────┼────────────────────────────┤
+│ App ID:      │                            │
+└──────────────┴────────────────────────────┘
+[debug] [2026-10-03T06:37:34.746Z] Error: Timed out.
+    at Timeout.<anonymous> (/Users/dias_/.npm/_npx/ba4f1959e38407b5/node_modules/firebase-tools/lib/utils.js:298:49)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+[error] 
+[error] Error: An unexpected error has occurred.
