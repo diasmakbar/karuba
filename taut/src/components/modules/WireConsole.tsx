@@ -31,10 +31,14 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
 
   const wireCount = localVars.wireCount;
   // RTDB drops empty arrays; fall back to the identity mapping (A1->B1, ...) if missing.
+  const leftPins = Array.isArray(localVars.leftPins) ? localVars.leftPins : [];
   const rightPins = Array.isArray(localVars.rightPins) ? localVars.rightPins : [];
-  const pins = Array.from({ length: wireCount }, (_, i) => rightPins[i] ?? i + 1);
+  const wires = Array.from({ length: wireCount }, (_, i) => ({
+    left: leftPins[i] ?? i + 1,
+    right: rightPins[i] ?? i + 1,
+  }));
 
-  // Board geometry: 6 slots (B1..B6), left pins occupy the top N slots.
+  // Board geometry: 6 slots on each side (A1..A6, B1..B6).
   const SLOT = 40;
   const TOP = 24;
   const LEFT_X = 30;
@@ -42,8 +46,7 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
   const MID_X = (LEFT_X + RIGHT_X) / 2;
   const height = TOP * 2 + 6 * SLOT;
   const yFor = (slot: number) => TOP + (slot - 1) * SLOT;
-  const leftSlots = Array.from({ length: wireCount }, (_, i) => i + 1);
-  const rightSlots = Array.from({ length: 6 }, (_, i) => i + 1);
+  const allSlots = Array.from({ length: 6 }, (_, i) => i + 1);
   const locked = disabled || pending || state.isSolved;
 
   return (
@@ -60,14 +63,7 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
         role="group"
         aria-label={`Wire board with ${wireCount} wires`}
       >
-        <defs>
-          <linearGradient id="wireGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#9aa3b2" />
-            <stop offset="100%" stopColor="#6f7887" />
-          </linearGradient>
-        </defs>
-
-        {leftSlots.map((slot) => (
+        {allSlots.map((slot) => (
           <g key={`a${slot}`}>
             <circle cx={LEFT_X} cy={yFor(slot)} r={5} className="pin" />
             <text x={LEFT_X - 12} y={yFor(slot) + 4} className="pin-label" textAnchor="end">
@@ -75,7 +71,7 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
             </text>
           </g>
         ))}
-        {rightSlots.map((slot) => (
+        {allSlots.map((slot) => (
           <g key={`b${slot}`}>
             <circle cx={RIGHT_X} cy={yFor(slot)} r={5} className="pin" />
             <text x={RIGHT_X + 12} y={yFor(slot) + 4} className="pin-label">
@@ -84,9 +80,9 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
           </g>
         ))}
 
-        {pins.map((rightSlot, i) => {
-          const y1 = yFor(i + 1);
-          const y2 = yFor(rightSlot);
+        {wires.map(({ left, right }, i) => {
+          const y1 = yFor(left);
+          const y2 = yFor(right);
           const d = `M ${LEFT_X} ${y1} C ${MID_X} ${y1}, ${MID_X} ${y2}, ${RIGHT_X} ${y2}`;
           const isCut = localVars.cutIndex === i;
           return (

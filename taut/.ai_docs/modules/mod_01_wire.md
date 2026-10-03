@@ -8,16 +8,19 @@ LocalVars:
   wireCount: 3 | 4 | 5 | 6
   wireColors: string[] (length == wireCount, top to bottom, each drawn randomly from
     {Red, White, Blue, Yellow, Black})
+  leftPins: number[] (length == wireCount, distinct values from 1..6, strictly
+    increasing — wire i starts at left pin A(leftPins[i]))
   rightPins: number[] (length == wireCount, distinct values from 1..6, strictly
-    increasing — wire i connects left pin A(i+1) to right pin B(rightPins[i]+1))
+    increasing — wire i ends at right pin B(rightPins[i]))
   cutIndex: number | null
 
 [VISUAL_RULES]
 - Wires are colourless (grey) connections between a left pin column (A1..A6) and a
   right pin column (B1..B6).
+- All 6 pins on each side are ALWAYS rendered; unused pins stay empty.
 - Wire ordering begins with the first on the top (wire 1 = topmost).
-- No wire crossing: because rightPins is strictly increasing, a wire originating
-  below another can never connect to a pin above it.
+- No wire crossing: because leftPins and rightPins are both strictly increasing, a
+  wire originating below another can never connect to a pin above it.
 
 [EXTERNAL_INFO_MAPPING]
 Info1_Colors (held by informant1Id — the ACTUAL colors, not a chart):

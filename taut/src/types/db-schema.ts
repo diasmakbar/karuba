@@ -51,6 +51,8 @@ export interface LocalVarsMap {
     wireCount: 3 | 4 | 5 | 6;
     /** Actual color of each wire, top to bottom, from {Red, White, Blue, Yellow, Black}. */
     wireColors: string[];
+    /** Left pin (1..6) for each wire, strictly increasing so no wires cross. */
+    leftPins: number[];
     /** Right pin (1..6) for each wire, strictly increasing so no wires cross. */
     rightPins: number[];
     cutIndex: number | null;

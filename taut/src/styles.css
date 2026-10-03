@@ -545,7 +545,7 @@ body {
 
 .wire-board .wire-path {
   fill: none;
-  stroke: url(#wireGrad);
+  stroke: #8a93a3;
   stroke-width: 7;
   stroke-linecap: round;
 }

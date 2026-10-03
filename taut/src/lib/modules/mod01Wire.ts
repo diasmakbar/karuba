@@ -5,6 +5,7 @@ type WireVars = {
   serialNumber: string;
   wireCount: 3 | 4 | 5 | 6;
   wireColors: string[];
+  leftPins: number[];
   rightPins: number[];
   cutIndex: number | null;
 };
@@ -18,8 +19,9 @@ const BLACK = "Black";
 /** Every wire color is drawn from this pool, regardless of wire count. */
 export const WIRE_COLORS = [RED, WHITE, BLUE, YELLOW, BLACK] as const;
 
-/** Right pins B1..B6; a strictly increasing assignment guarantees no wire crossing. */
-const RIGHT_PIN_POOL = [1, 2, 3, 4, 5, 6] as const;
+/** Left pins A1..A6 and right pins B1..B6; strictly increasing assignments on both
+ * sides guarantee no wire crossing. */
+const PIN_POOL = [1, 2, 3, 4, 5, 6] as const;
 
 /** Firebase RTDB drops empty arrays, so normalise before reading. */
 function colorsOf(vars: WireVars): string[] {
@@ -161,12 +163,14 @@ export const mod01Wire: ModuleDefinition<"MOD_01_WIRE"> = {
   generate: (rng) => {
     const wireCount = rng.pick([3, 4, 5, 6] as const);
     const wireColors = Array.from({ length: wireCount }, () => rng.pick(WIRE_COLORS));
-    // Strictly increasing right pins => no wire crossing.
-    const rightPins = pickDistinct(rng, RIGHT_PIN_POOL, wireCount).sort((a, b) => a - b);
+    // Strictly increasing pins on both sides => no wire crossing.
+    const leftPins = pickDistinct(rng, PIN_POOL, wireCount).sort((a, b) => a - b);
+    const rightPins = pickDistinct(rng, PIN_POOL, wireCount).sort((a, b) => a - b);
     return {
       serialNumber: randomSerialNumber(rng),
       wireCount,
       wireColors,
+      leftPins,
       rightPins,
       cutIndex: null,
     };
