@@ -9,6 +9,7 @@ on:
       - 'karuba-online/**'
       - 'rancang/**'
       - 'pickleball/**'
+      - 'taut/**'
       - 'firebase.json'
       - '.firebaserc'
       - '.github/workflows/firebase-hosting-live.yml'
@@ -40,6 +41,11 @@ jobs:
       - name: Build Pickleball
         run: bun install && bun run build
         working-directory: ./pickleball
+      
+      # Build Taut
+      - name: Build Taut
+        run: bun install && bun run build
+        working-directory: ./taut
 
       # Deploy All Apps to Firebase Hosting
       - name: Deploy to Firebase Hosting

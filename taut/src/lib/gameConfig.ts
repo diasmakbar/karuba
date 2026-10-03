@@ -1,0 +1,46 @@
+import type { Difficulty } from "../types/db-schema";
+
+export interface DifficultyConfig {
+  label: string;
+  blurb: string;
+  /** How many levels of "one module per player" to run (1 for the easiest). */
+  levels: number;
+  /** Countdown length per level; stored as `globalEndTime` so no client writes timers. */
+  timePerLevelSeconds: number;
+  maxStrikes: number;
+}
+
+export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
+  BEGINNER: {
+    label: "Beginner",
+    blurb: "1 module each, 1 level, 8 minutes, 6 strikes",
+    levels: 1,
+    timePerLevelSeconds: 8 * 60,
+    maxStrikes: 6,
+  },
+  STANDARD: {
+    label: "Standard",
+    blurb: "1 module each, 2 levels, 5 minutes each, 4 strikes",
+    levels: 2,
+    timePerLevelSeconds: 5 * 60,
+    maxStrikes: 4,
+  },
+  EXTREME: {
+    label: "Extreme",
+    blurb: "1 module each, 2 levels, 4 minutes each, 2 strikes",
+    levels: 2,
+    timePerLevelSeconds: 4 * 60,
+    maxStrikes: 2,
+  },
+};
+
+export const DIFFICULTY_IDS: Difficulty[] = ["BEGINNER", "STANDARD", "EXTREME"];
+
+/** Each player needs two *different* other players as informants, so 3 is the hard minimum. */
+export const MIN_PLAYERS_TO_START = 3;
+export const MAX_ROOM_NAME_LENGTH = 18;
+
+/** Room keys are 6 digits so they can be read out loud over the table. */
+export function randomRoomCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
