@@ -106,11 +106,13 @@ export function levelWrites(
     updates[`players/${player.id}/informant1Id`] = informant1Id;
     updates[`players/${player.id}/informant2Id`] = informant2Id;
     updates[`players/${player.id}/isReady`] = false;
-    updates[`players/${player.id}/activeModules`] = null;
+    // Write activeModules as ONE whole-object value. Replacing it wholesale clears any stale
+    // module from a previous level; you must not combine `activeModules = null` with
+    // `activeModules/<id>` in the same update() (ancestor + child paths are forbidden).
     const moduleState = plan.get(player.id);
-    if (moduleState) {
-      updates[`players/${player.id}/activeModules/${moduleState.moduleId}`] = moduleState;
-    }
+    updates[`players/${player.id}/activeModules`] = moduleState
+      ? { [moduleState.moduleId]: moduleState }
+      : null;
   }
   return updates;
 }
