@@ -5,15 +5,16 @@ import { GRID_COLUMNS } from "../../lib/rng";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
-const SAFE_COLUMNS = GRID_COLUMNS.slice(0, 3);
-const SAFE_ROWS = [1, 2, 3];
-
 /**
- * MOD_12_SAFE_ZONE — a threat and a room hazard over a 3x3 grid. Info 1 marks cells the threat
- * covers; Info 2 marks cells the room covers. Answer: the single uncovered cell — `{ coord }`.
+ * MOD_12_SAFE_ZONE — a threat and a room hazard over an NxN grid (N scales with difficulty).
+ * Info 1 lists the cells each threat covers; Info 2 lists the cells each room covers. Answer: the
+ * single cell in BOTH the owner's threat set and the owner's room set (their intersection) — `{ coord }`.
  */
 export function SafeZoneConsole({ state, disabled, submit }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_12_SAFE_ZONE");
+  const gridSize = localVars.gridSize;
+  const columns = GRID_COLUMNS.slice(0, gridSize);
+  const rows = columns.map((_, index) => index + 1);
   const [selected, setSelected] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -43,9 +44,9 @@ export function SafeZoneConsole({ state, disabled, submit }: ModuleConsoleProps)
         <span className="tag">Room</span>
         <div className="font-display">{localVars.room}</div>
       </div>
-      <div className="cell-grid" style={{ gridTemplateColumns: `repeat(${SAFE_COLUMNS.length}, 1fr)` }}>
-        {SAFE_ROWS.map((row) =>
-          SAFE_COLUMNS.map((column) => {
+      <div className="cell-grid" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
+        {rows.map((row) =>
+          columns.map((column) => {
             const coord = `${column}${row}`;
             return (
               <button

@@ -40,9 +40,9 @@ export function endsWithEven(serialNumber: string): boolean {
   return Number.isFinite(last) && last % 2 === 0;
 }
 
-/** Grid coordinate helpers: columns A-E, rows 1-5. */
-export const GRID_COLUMNS = ["A", "B", "C", "D", "E"] as const;
-export const GRID_ROWS = [1, 2, 3, 4, 5] as const;
+/** Grid coordinate helpers: columns A-F, rows 1-6. */
+export const GRID_COLUMNS = ["A", "B", "C", "D", "E", "F"] as const;
+export const GRID_ROWS = [1, 2, 3, 4, 5, 6] as const;
 
 export function coordFrom(columnIndex: number, rowIndex: number): string {
   return `${GRID_COLUMNS[columnIndex]}${GRID_ROWS[rowIndex]}`;

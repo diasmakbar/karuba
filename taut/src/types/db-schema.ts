@@ -98,8 +98,8 @@ export type IntercomResponse =
   | "CONFIRM"
   | "PROCEED"
   | "ABORT";
-export type Threat = "Laser" | "Plasma" | "Kinetic";
-export type RoomHazard = "Kitchen" | "Armory" | "Server";
+export type Threat = "Laser" | "Plasma" | "Kinetic" | "Sonic" | "EMP" | "Acid" | "Railgun";
+export type RoomHazard = "Kitchen" | "Armory" | "Server" | "Laboratory" | "Reactor" | "Hangar" | "Vault";
 export type FilterState = "Active" | "Standby";
 export type SorterColor = "Red" | "Green" | "Blue" | "Yellow";
 export type SorterShape = "Triangle" | "Square" | "Circle";
@@ -236,6 +236,12 @@ export interface LocalVarsMap {
   MOD_12_SAFE_ZONE: {
     threat: Threat;
     room: RoomHazard;
+    /** Grid is gridSize x gridSize (columns A.., rows 1..gridSize). */
+    gridSize: number;
+    /** Per-instance cells each listed threat covers. */
+    threatCells: Record<string, string[]>;
+    /** Per-instance cells each listed room covers. */
+    roomCells: Record<string, string[]>;
   };
   MOD_13_SHAPE_SORTER: {
     filterAlpha: FilterState;
