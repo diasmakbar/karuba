@@ -42,16 +42,16 @@ export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleP
         {ROWS.map((row) =>
           COLUMNS.map((column) => {
             const coord = `${column}${row}`;
-            const here = localVars.currentCoord === coord;
-            const finish = localVars.finishCoord === coord;
-            const start = localVars.startCoord === coord;
+            // On solve the token snaps into the exit so the winning press visibly lands there.
+            const token = (state.isSolved ? localVars.finishCoord : localVars.currentCoord) === coord;
+            const isFinish = localVars.finishCoord === coord;
+            const isStart = localVars.startCoord === coord;
+            const classes = ["cell", isStart ? "is-start" : "", isFinish ? "is-finish" : "", token ? "is-token" : ""];
+            // Token glyph wins on overlap; S/F only show when the token is not on that cell.
+            const glyph = token ? "◉" : isFinish ? "F" : isStart ? "S" : "";
             return (
-              <div
-                key={coord}
-                className={`cell ${here ? "is-active" : ""} ${finish ? "is-target" : ""}`}
-                title={coord}
-              >
-                {here ? "◉" : finish ? "◎" : start ? "○" : ""}
+              <div key={coord} className={classes.join(" ")} title={coord}>
+                {glyph}
               </div>
             );
           }),

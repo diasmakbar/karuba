@@ -745,9 +745,33 @@ body {
   animation: blink 0.8s steps(1, end) infinite;
 }
 
-.cell.is-target {
+/* Start: muted hollow ring. */
+.cell.is-start {
+  border-color: var(--text-secondary);
+  color: var(--text-secondary);
+  box-shadow: inset 0 0 0 2px var(--bg-inset), inset 0 0 0 3px var(--text-secondary);
+}
+
+/* Finish: green target ring. */
+.cell.is-finish {
   border-color: var(--success);
   color: var(--success);
+  box-shadow: inset 0 0 0 2px var(--bg-inset), inset 0 0 0 3px var(--success);
+  animation: target-pulse 1.6s ease-in-out infinite;
+}
+
+/* Token: filled accent disc; declared last so it wins over start/finish on overlap. */
+.cell.is-token {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-inset);
+  font-weight: 800;
+  box-shadow: none;
+  animation: none;
+}
+
+.cell.is-token.is-finish {
+  box-shadow: 0 0 0 3px var(--success);
 }
 
 .cell.is-active {
@@ -755,6 +779,16 @@ body {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 800;
+}
+
+@keyframes target-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 /* ---------- Animations ---------- */
