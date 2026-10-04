@@ -28,23 +28,113 @@ export type HazardSymbol = "Biohazard" | "Radiation" | "Corrosive";
 export type ShapeId = "Triangle" | "Square" | "Hexagon" | "Circle";
 export type WarningLight = "FLASHING" | "SOLID";
 export type HardwareRevision = "Rev 1.0" | "Rev 1.2" | "Rev 1.4";
-export type Constellation = "Ursa" | "Orion" | "Draco";
-export type WindDirection = "North" | "East" | "South";
-export type SynthTarget = "Type A" | "Type B" | "Type C";
-export type VialId = "Alpha" | "Beta" | "Gamma" | "Delta";
+export type Constellation =
+  | "Ursa"
+  | "Orion"
+  | "Draco"
+  | "Lyra"
+  | "Cassiopeia"
+  | "Cygnus"
+  | "Aquila"
+  | "Pegasus"
+  | "Corvus"
+  | "Vela";
+export type WindDirection =
+  | "North"
+  | "East"
+  | "South"
+  | "West"
+  | "NorthEast"
+  | "SouthEast"
+  | "SouthWest"
+  | "NorthWest"
+  | "NorthNorthWest"
+  | "SouthSouthEast";
+export type SynthTarget =
+  | "Type A"
+  | "Type B"
+  | "Type C"
+  | "Type D"
+  | "Type E"
+  | "Type F"
+  | "Type G"
+  | "Type H"
+  | "Type I"
+  | "Type J";
+export type VialId =
+  | "Alpha"
+  | "Beta"
+  | "Gamma"
+  | "Delta"
+  | "Epsilon"
+  | "Zeta"
+  | "Eta"
+  | "Theta"
+  | "Iota"
+  | "Kappa";
 export type ValveId = "A" | "B" | "C" | "D";
-export type IntercomMessage = "KLAATU" | "GORT" | "VERATA";
-export type IntercomResponse = "BARADA" | "NIKTO" | "SHREK" | "FIONA";
+export type IntercomMessage =
+  | "KLAATU"
+  | "GORT"
+  | "VERATA"
+  | "SLEESTAK"
+  | "MOGAR"
+  | "ZOLTAN"
+  | "TRON"
+  | "VINZCLAV"
+  | "GOZER"
+  | "KEYMASTER";
+export type IntercomResponse =
+  | "BARADA"
+  | "NIKTO"
+  | "SHREK"
+  | "FIONA"
+  | "DAGOTH"
+  | "ANNIHILATE"
+  | "SURRENDER"
+  | "CONFIRM"
+  | "PROCEED"
+  | "ABORT";
 export type Threat = "Laser" | "Plasma" | "Kinetic";
 export type RoomHazard = "Kitchen" | "Armory" | "Server";
 export type FilterState = "Active" | "Standby";
 export type SorterColor = "Red" | "Green" | "Blue" | "Yellow";
 export type SorterShape = "Triangle" | "Square" | "Circle";
 export type SorterObject = { readonly color: SorterColor; readonly shape: SorterShape };
-export type DocumentCode = "Doc-12" | "Doc-45" | "Doc-77";
+export type DocumentCode =
+  | "Doc-12"
+  | "Doc-45"
+  | "Doc-77"
+  | "Doc-03"
+  | "Doc-28"
+  | "Doc-51"
+  | "Doc-64"
+  | "Doc-89"
+  | "Doc-90"
+  | "Doc-33";
 export type TubeColor = "Red" | "Blue" | "Green" | "Yellow";
-export type PersonName = "Jane Smith" | "John Doe" | "Alan Turing";
-export type Destination = "Maintenance" | "Engineering" | "Server Room";
+export type PersonName =
+  | "Jane Smith"
+  | "John Doe"
+  | "Alan Turing"
+  | "Grace Hopper"
+  | "Ada Lovelace"
+  | "Katherine J."
+  | "Linus T."
+  | "Margaret H."
+  | "Dennis R."
+  | "Barbara L.";
+export type Destination =
+  | "Maintenance"
+  | "Engineering"
+  | "Server Room"
+  | "Archives"
+  | "Observatory"
+  | "Lab"
+  | "Reactor"
+  | "Hangar"
+  | "Vault"
+  | "Bridge";
 
 /** Five unlabeled power switches. */
 export type Switches = readonly [boolean, boolean, boolean, boolean, boolean];
@@ -106,9 +196,17 @@ export interface LocalVarsMap {
   MOD_08_RADAR: {
     constellation: Constellation;
     windDirection: WindDirection;
+    /** Per-instance constellations to show in Info 1 (correct answer among them). */
+    constellations: Constellation[];
+    /** Per-instance wind directions to show in Info 2 (correct answer among them). */
+    windDirections: WindDirection[];
   };
   MOD_09_SYNTHESIZER: {
     targetType: SynthTarget;
+    /** Per-instance target types to show in Info 1. */
+    targetTypes: SynthTarget[];
+    /** Per-instance vials to show in Info 2 (the matching one is among them). */
+    vialIds: VialId[];
   };
   MOD_10_PRESSURE_VALVES: {
     serialNumber: string;
@@ -117,6 +215,10 @@ export interface LocalVarsMap {
   };
   MOD_11_INTERCOM: {
     incomingMessage: IntercomMessage;
+    /** Per-instance incoming words to show in Info 1 (the owner's word is among them). */
+    messages: IntercomMessage[];
+    /** Per-instance reply options to show in Info 2. */
+    responses: IntercomResponse[];
   };
   MOD_12_SAFE_ZONE: {
     threat: Threat;
@@ -129,10 +231,16 @@ export interface LocalVarsMap {
   };
   MOD_14_PNEUMATIC_TUBE: {
     documentCode: DocumentCode;
+    /** Per-instance documents to show in Info 1 (the owner's document is among them). */
+    documents: DocumentCode[];
   };
   MOD_15_BIOMETRIC_SCANNER: {
     personName: PersonName;
     destination: Destination;
+    /** Per-instance people to show in Info 2 (the scanned person is among them). */
+    people: PersonName[];
+    /** Per-instance destinations to show in Info 1 (the target is among them). */
+    destinations: Destination[];
   };
 }
 

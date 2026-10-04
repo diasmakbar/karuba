@@ -1,5 +1,6 @@
 import type { Destination, PersonName } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import { vocabSize } from "../gameConfig";
 import {
   CLEARANCE_REQUIRED,
   DESTINATIONS,
@@ -27,19 +28,27 @@ export const mod15BiometricScanner: ModuleDefinition<"MOD_15_BIOMETRIC_SCANNER">
   id: mod15BiometricScannerConfig.id,
   name: mod15BiometricScannerConfig.name,
   kind: mod15BiometricScannerConfig.kind,
-  generate: (rng) => {
+  generate: (rng, difficulty) => {
+    const n = vocabSize(difficulty);
     const personName = rng.pick(PEOPLE);
     const destination = rng.bool() && REACHABLE[personName].length > 0
       ? rng.pick(REACHABLE[personName])
       : rng.pick(DESTINATIONS);
     void REACHABLE_CHANCE;
-    return { personName, destination };
+    // Deal `n` destinations (the target among them) and `n` people (the scanned one among them).
+    const otherDestinations = rng.shuffle(
+      DESTINATIONS.filter((item) => item !== destination) as Destination[],
+    );
+    const destinations = rng.shuffle<Destination>([destination, ...otherDestinations.slice(0, n - 1)]);
+    const otherPeople = rng.shuffle(PEOPLE.filter((item) => item !== personName) as PersonName[]);
+    const people = rng.shuffle<PersonName>([personName, ...otherPeople.slice(0, n - 1)]);
+    return { personName, destination, people, destinations };
   },
   info1: (vars) => [
     {
       title: "Clearance required (Info 1)",
       columns: ["Destination", "Clearance level"],
-      rows: DESTINATIONS.map((destination) => ({
+      rows: (Array.isArray(vars.destinations) ? vars.destinations : DESTINATIONS).map((destination) => ({
         cells: [destination, `Level ${CLEARANCE_REQUIRED[destination]}`],
         highlight: destination === vars.destination,
       })),
@@ -49,7 +58,7 @@ export const mod15BiometricScanner: ModuleDefinition<"MOD_15_BIOMETRIC_SCANNER">
     {
       title: "Security log — badge levels (Info 2)",
       columns: ["Person", "Badge level"],
-      rows: PEOPLE.map((person) => ({
+      rows: (Array.isArray(vars.people) ? vars.people : PEOPLE).map((person) => ({
         cells: [person, `Level ${SECURITY_LOG[person]}`],
         highlight: person === vars.personName,
       })),

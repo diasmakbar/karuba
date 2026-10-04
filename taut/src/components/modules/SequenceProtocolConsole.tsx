@@ -42,7 +42,7 @@ export function SequenceProtocolConsole({ state, disabled, submit }: ModuleConso
           {display}
         </div>
       </div>
-      <div className="row" aria-label={`Stage ${stage} of 4`} style={{ gap: 6 }}>
+      <div className="row" aria-label={`Stage ${stage} of 4`} style={{ gap: 6, justifyContent: "center" }}>
         {[1, 2, 3, 4].map((step) => (
           <span key={step} className={`led ${step <= stage ? "is-on" : ""}`} />
         ))}

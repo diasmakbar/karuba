@@ -184,6 +184,12 @@ body {
   font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
   letter-spacing: 0.12em;
   border: 1px solid #00000040;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
 }
 
 .screen.is-warn {
@@ -209,6 +215,13 @@ body {
   border-radius: 50%;
   background: var(--bg-inset);
   border: 1px solid var(--border-color);
+  flex: none;
+}
+
+/* A noticeably larger indicator LED for the button module, shown beside the button. */
+.led-lg {
+  width: 56px;
+  height: 56px;
 }
 
 .led.is-on {
@@ -550,6 +563,11 @@ body {
   grid-template-rows: repeat(3, 52px);
   gap: 6px;
   justify-content: center;
+  align-content: center;
+  place-items: center;
+  margin: 0 auto;
+  padding: 0;
+  width: max-content;
 }
 
 .wire-board {
@@ -598,6 +616,28 @@ body {
   stroke: #6f7887;
   stroke-dasharray: 10 8;
   opacity: 0.5;
+  /* Quick "snip": the wire snaps taut, greys out and fades to half opacity. */
+  transform-origin: center;
+  animation: wire-snip 360ms ease-out forwards;
+}
+
+@keyframes wire-snip {
+  0% {
+    stroke: var(--accent);
+    stroke-dasharray: 0 0;
+    opacity: 1;
+    transform: scale(1);
+  }
+  35% {
+    stroke: #9aa3b2;
+    transform: scale(1.06);
+  }
+  100% {
+    stroke: #6f7887;
+    stroke-dasharray: 10 8;
+    opacity: 0.5;
+    transform: scale(1);
+  }
 }
 
 .wire-board.is-locked .wire {

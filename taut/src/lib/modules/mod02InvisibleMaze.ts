@@ -78,7 +78,7 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
   id: mod02InvisibleMazeConfig.id,
   name: mod02InvisibleMazeConfig.name,
   kind: mod02InvisibleMazeConfig.kind,
-  generate: (rng) => {
+  generate: (rng, _difficulty) => {
     const mazeId = rng.pick(["Alpha", "Beta", "Gamma"] as const);
     const serialNumber = randomSerialNumber(rng);
 

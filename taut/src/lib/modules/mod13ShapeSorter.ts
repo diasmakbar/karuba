@@ -1,5 +1,6 @@
 import type { FilterState, SorterColor, SorterObject, SorterShape } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import { shapeSorterObjectCount } from "../gameConfig";
 import {
   ALPHA_REJECTS,
   ALPHA_RULE,
@@ -43,7 +44,8 @@ export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
   id: mod13ShapeSorterConfig.id,
   name: mod13ShapeSorterConfig.name,
   kind: mod13ShapeSorterConfig.kind,
-  generate: (rng) => {
+  generate: (rng, difficulty) => {
+    const count = shapeSorterObjectCount(difficulty);
     const filterAlpha = rng.pick(FILTER_STATES);
     const filterBeta = rng.pick(FILTER_STATES);
     // Candidate colours/shapes for the surviving and rejected objects come from config sets.
@@ -51,16 +53,15 @@ export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
     const survivorShape: SorterShape = BETA_KEEPS[filterBeta];
     const rejectedColor: SorterColor = rng.pick(ALPHA_REJECTS[filterAlpha]);
     const rejectedShapes: readonly SorterShape[] = BETA_REJECTS[filterBeta];
-    return {
-      filterAlpha,
-      filterBeta,
-      objects: rng.shuffle<SorterObject>([
-        { color: survivorColor, shape: survivorShape },
-        { color: rejectedColor, shape: survivorShape },
-        { color: survivorColor, shape: rng.pick(rejectedShapes) },
-        { color: rejectedColor, shape: rng.pick(rejectedShapes) },
-      ]),
-    };
+    // Exactly one object passes BOTH filters; every other object fails at least one.
+    const survivor: SorterObject = { color: survivorColor, shape: survivorShape };
+    const decoys: SorterObject[] = rng.shuffle<SorterObject>([
+      { color: rejectedColor, shape: survivorShape },
+      { color: survivorColor, shape: rng.pick(rejectedShapes) },
+      { color: rejectedColor, shape: rng.pick(rejectedShapes) },
+    ]);
+    const objects = rng.shuffle<SorterObject>([survivor, ...decoys.slice(0, Math.max(1, count - 1))]);
+    return { filterAlpha, filterBeta, objects };
   },
   info1: (vars) => [
     {
@@ -80,7 +81,7 @@ export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
         cells: [state, BETA_RULE[state]],
         highlight: state === vars.filterBeta,
       })),
-      note: "Exactly one of the four objects survives both filters — read out each object's color and shape and eliminate.",
+      note: `Exactly one of the ${Array.isArray(vars.objects) ? vars.objects.length : 4} objects survives both filters — read out each object's color and shape and eliminate.`,
     },
   ],
   verify: (vars, answer) => answer.objectIndex === correctObjectIndex(vars),

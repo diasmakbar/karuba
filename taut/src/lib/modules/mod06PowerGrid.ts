@@ -39,7 +39,7 @@ export const mod06PowerGrid: ModuleDefinition<"MOD_06_POWER_GRID"> = {
   id: mod06PowerGridConfig.id,
   name: mod06PowerGridConfig.name,
   kind: mod06PowerGridConfig.kind,
-  generate: (rng) => ({
+  generate: (rng, _difficulty) => ({
     serialNumber: randomSerialNumber(rng),
     warningLight: rng.pick(WARNING_LIGHTS),
     switches: ALL_OFF,

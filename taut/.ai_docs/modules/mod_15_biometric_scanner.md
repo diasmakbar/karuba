@@ -2,10 +2,18 @@
 Type: Logic Component
 Dependencies: BaseModuleWrapper
 
+[Difficulty-scaled vocabulary]
+  Pools (>= 10): PersonName (Jane Smith..Barbara L.) and Destination (Maintenance..Bridge).
+  `generate(rng, difficulty)` deals `n` people and `n` destinations (the scanned person and the
+  target destination are among them); vocabSize(): 5 for Beginner, 10 otherwise.
+  Info 1 iterates the stored `destinations`; Info 2 iterates the stored `people`.
+
 [STATE_DEFINITION]
 LocalVars:
-  personName: "Jane Smith" | "John Doe" | "Alan Turing"
-  destination: "Maintenance" | "Engineering" | "Server Room"
+  personName: PersonName                (the scanned person)
+  destination: Destination              (the target destination)
+  people: PersonName[]                  (per-instance list shown in Info 2; contains personName)
+  destinations: Destination[]           (per-instance list shown in Info 1; contains destination)
 
 [EXTERNAL_INFO_MAPPING]
 Info1_Baseline (Clearance Required):

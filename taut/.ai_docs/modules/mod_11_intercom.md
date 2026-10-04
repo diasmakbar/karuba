@@ -2,10 +2,17 @@
 Type: Translation Component
 Dependencies: BaseModuleWrapper
 
+[Difficulty-scaled vocabulary]
+  Pools (>= 10): IntercomMessage KLAATU..KEYMASTER and IntercomResponse BARADA..ABORT.
+  `generate(rng, difficulty)` deals `n` incoming words (the owner's among them) and `n` reply
+  options (the correct reply among them); vocabSize(): 5 for Beginner, 10 otherwise.
+  Info 1 iterates the stored `messages`; the Info 2 protocol iterates the same stored meanings.
+
 [STATE_DEFINITION]
 LocalVars:
-  incomingMessage: "KLAATU" | "GORT" | "VERATA"
-  responseButtons: ["BARADA", "NIKTO", "SHREK", "FIONA"]
+  incomingMessage: IntercomMessage      (the owner's word)
+  messages: IntercomMessage[]           (per-instance list of incoming words; contains the owner's)
+  responses: IntercomResponse[]         (per-instance reply options; contains the correct reply)
 
 [EXTERNAL_INFO_MAPPING]
 Info1_Baseline (Dictionary):

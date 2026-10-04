@@ -124,7 +124,7 @@ export const mod04SequenceProtocol: ModuleDefinition<"MOD_04_SEQUENCE_PROTOCOL">
   id: mod04SequenceProtocolConfig.id,
   name: mod04SequenceProtocolConfig.name,
   kind: mod04SequenceProtocolConfig.kind,
-  generate: (rng) => ({
+  generate: (rng, _difficulty) => ({
     physicalLabels: pickDistinct(rng, LABELS, LABELS.length),
     stageDisplays: Array.from({ length: STAGE_COUNT }, () => rng.int(4) + 1),
     currentStage: 1,

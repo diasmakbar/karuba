@@ -1,5 +1,6 @@
 import type { IntercomMessage, IntercomResponse } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import { vocabSize } from "../gameConfig";
 import {
   DICTIONARY,
   FALLBACK_RESPONSE,
@@ -24,12 +25,24 @@ export const mod11Intercom: ModuleDefinition<"MOD_11_INTERCOM"> = {
   id: mod11IntercomConfig.id,
   name: mod11IntercomConfig.name,
   kind: mod11IntercomConfig.kind,
-  generate: (rng) => ({ incomingMessage: rng.pick(MESSAGES) }),
+  generate: (rng, difficulty) => {
+    const n = vocabSize(difficulty);
+    const incomingMessage = rng.pick(MESSAGES);
+    const correct = requiredResponse(incomingMessage);
+    // Deal `n` incoming words (the owner's among them) and `n` reply options (the correct one among them).
+    const otherMessages = rng.shuffle(
+      MESSAGES.filter((word) => word !== incomingMessage) as IntercomMessage[],
+    );
+    const messages = rng.shuffle<IntercomMessage>([incomingMessage, ...otherMessages.slice(0, n - 1)]);
+    const otherResponses = rng.shuffle(RESPONSES.filter((reply) => reply !== correct) as IntercomResponse[]);
+    const responses = rng.shuffle<IntercomResponse>([correct, ...otherResponses.slice(0, n - 1)]);
+    return { incomingMessage, messages, responses };
+  },
   info1: (vars) => [
     {
       title: "Transmission dictionary (Info 1)",
       columns: ["Incoming word", "Meaning"],
-      rows: MESSAGES.map((word) => ({
+      rows: (Array.isArray(vars.messages) ? vars.messages : MESSAGES).map((word) => ({
         cells: [word, DICTIONARY[word]],
         highlight: word === vars.incomingMessage,
       })),
@@ -39,10 +52,13 @@ export const mod11Intercom: ModuleDefinition<"MOD_11_INTERCOM"> = {
     {
       title: "Reply protocol (Info 2)",
       columns: ["Meaning", "Correct reply"],
-      rows: Object.entries(PROTOCOL).map(([meaning, reply]) => ({
-        cells: [meaning, reply],
-        highlight: meaning === DICTIONARY[vars.incomingMessage],
-      })),
+      rows: (Array.isArray(vars.messages) ? vars.messages : MESSAGES).map((word) => {
+        const meaning = DICTIONARY[word];
+        return {
+          cells: [meaning, PROTOCOL[meaning] ?? FALLBACK_RESPONSE],
+          highlight: word === vars.incomingMessage,
+        };
+      }),
       note: "FIONA is not in the protocol — never press it.",
     },
   ],

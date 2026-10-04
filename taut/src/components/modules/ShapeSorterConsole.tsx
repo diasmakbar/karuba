@@ -5,8 +5,9 @@ import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
 /**
- * MOD_13_SHAPE_SORTER — two filter states plus four objects (colour + shape). Info 1 says what
- * Filter Alpha rejects; Info 2 says what Filter Beta requires. Answer: the one object that passes
+ * MOD_13_SHAPE_SORTER — two filter states plus a dealt set of objects (colour + shape; 2 for
+ * Beginner, else 5). Info 1 says what Filter Alpha rejects; Info 2 says what Filter Beta
+ * requires. Answer: the one object that passes
  * both — `{ objectIndex }`.
  */
 export function ShapeSorterConsole({ state, disabled, submit }: ModuleConsoleProps) {

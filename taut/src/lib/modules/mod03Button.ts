@@ -117,7 +117,7 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
   id: mod03ButtonConfig.id,
   name: mod03ButtonConfig.name,
   kind: mod03ButtonConfig.kind,
-  generate: (rng) => {
+  generate: (rng, _difficulty) => {
     const lightState = rng.pick(LIGHT_STATES);
     return {
       buttonColor: rng.pick(BUTTON_COLORS),

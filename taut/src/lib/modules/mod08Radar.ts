@@ -1,6 +1,7 @@
 import type { Constellation, WindDirection } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
 import { clampIndex, coordFrom, parseCoord } from "../rng";
+import { vocabSize } from "../gameConfig";
 import {
   CONSTELLATIONS,
   DRIFT_DELTA,
@@ -30,15 +31,24 @@ export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
   id: mod08RadarConfig.id,
   name: mod08RadarConfig.name,
   kind: mod08RadarConfig.kind,
-  generate: (rng) => ({
-    constellation: rng.pick(CONSTELLATIONS),
-    windDirection: rng.pick(WIND_DIRECTIONS),
-  }),
+  generate: (rng, difficulty) => {
+    const n = vocabSize(difficulty);
+    // Pick a per-instance shortlist that always contains the correct item plus decoys.
+    const constellation = rng.pick(CONSTELLATIONS);
+    const windDirection = rng.pick(WIND_DIRECTIONS);
+    const constellationPool = rng.shuffle(
+      CONSTELLATIONS.filter((item) => item !== constellation) as Constellation[],
+    );
+    const windPool = rng.shuffle(WIND_DIRECTIONS.filter((wind) => wind !== windDirection) as WindDirection[]);
+    const constellations = rng.shuffle<Constellation>([constellation, ...constellationPool.slice(0, n - 1)]);
+    const windDirections = rng.shuffle<WindDirection>([windDirection, ...windPool.slice(0, n - 1)]);
+    return { constellation, windDirection, constellations, windDirections };
+  },
   info1: (vars) => [
     {
       title: "Epicenter chart (Info 1)",
       columns: ["Constellation on screen", "Epicenter"],
-      rows: CONSTELLATIONS.map((item) => ({
+      rows: (Array.isArray(vars.constellations) ? vars.constellations : CONSTELLATIONS).map((item) => ({
         cells: [item, EPICENTER[item]],
         highlight: item === vars.constellation,
       })),
@@ -49,7 +59,7 @@ export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
     {
       title: "Drift pattern (Info 2)",
       columns: ["Wind arrow", "Drift from the epicenter"],
-      rows: WIND_DIRECTIONS.map((wind) => ({
+      rows: (Array.isArray(vars.windDirections) ? vars.windDirections : WIND_DIRECTIONS).map((wind) => ({
         cells: [wind, DRIFT_RULE[wind]],
         highlight: wind === vars.windDirection,
       })),

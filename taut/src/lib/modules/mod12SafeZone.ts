@@ -35,7 +35,7 @@ export const mod12SafeZone: ModuleDefinition<"MOD_12_SAFE_ZONE"> = {
   id: mod12SafeZoneConfig.id,
   name: mod12SafeZoneConfig.name,
   kind: mod12SafeZoneConfig.kind,
-  generate: (rng) => ({
+  generate: (rng, _difficulty) => ({
     threat: rng.pick(THREATS),
     room: rng.pick(ROOMS),
   }),

@@ -85,7 +85,7 @@ export const mod01Wire: ModuleDefinition<"MOD_01_WIRE"> = {
   id: mod01WireConfig.id,
   name: mod01WireConfig.name,
   kind: mod01WireConfig.kind,
-  generate: (rng) => {
+  generate: (rng, _difficulty) => {
     const wireCount = rng.pick(WIRE_COUNT_OPTIONS);
     const wireColors = Array.from({ length: wireCount }, () => rng.pick<WireColor>(WIRE_COLORS));
     // Strictly increasing pins on both sides => no wire crossing.

@@ -28,7 +28,7 @@ export const mod05Chemistry: ModuleDefinition<"MOD_05_CHEMISTRY"> = {
   id: mod05ChemistryConfig.id,
   name: mod05ChemistryConfig.name,
   kind: mod05ChemistryConfig.kind,
-  generate: (rng) => ({ hazardSymbol: rng.pick(HAZARD_SYMBOLS) }),
+  generate: (rng, _difficulty) => ({ hazardSymbol: rng.pick(HAZARD_SYMBOLS) }),
   info1: (vars) => [
     {
       title: "Antidote chart (Info 1)",

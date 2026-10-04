@@ -2,11 +2,15 @@
 Type: Filtering Component
 Dependencies: BaseModuleWrapper
 
+[Difficulty-scaled vocabulary]
+  `generate(rng, difficulty)` builds `count` objects (shapeSorterObjectCount(): 2 for Beginner,
+  5 otherwise). Exactly ONE object passes both filters; every other object fails at least one.
+
 [STATE_DEFINITION]
 LocalVars:
   filterAlpha: "Active" | "Standby"
   filterBeta: "Active" | "Standby"
-  objects: { color: string, shape: string }[] (length 4)
+  objects: { color: string, shape: string }[] (length 2 for Beginner, else 5)
 
 [EXTERNAL_INFO_MAPPING]
 Info1_Baseline (Filter Alpha):

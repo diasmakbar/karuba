@@ -36,6 +36,19 @@ export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
 
 export const DIFFICULTY_IDS: Difficulty[] = ["BEGINNER", "STANDARD", "EXTREME"];
 
+/**
+ * How many vocabulary items a module's manual lists for a given difficulty. Beginner rooms show a
+ * short 5-item manual; Standard and Extreme show the full 10-item manual.
+ */
+export function vocabSize(difficulty: Difficulty): number {
+  return difficulty === "BEGINNER" ? 5 : 10;
+}
+
+/** MOD_13 shape sorter: how many candidate objects to deal (Beginner stays short). */
+export function shapeSorterObjectCount(difficulty: Difficulty): number {
+  return difficulty === "BEGINNER" ? 2 : 5;
+}
+
 /** Each player needs two *different* other players as informants, so 3 is the hard minimum. */
 export const MIN_PLAYERS_TO_START = 3;
 export const MAX_ROOM_NAME_LENGTH = 18;

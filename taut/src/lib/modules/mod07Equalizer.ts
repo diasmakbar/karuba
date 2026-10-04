@@ -74,7 +74,7 @@ export const mod07Equalizer: ModuleDefinition<"MOD_07_EQUALIZER"> = {
   id: mod07EqualizerConfig.id,
   name: mod07EqualizerConfig.name,
   kind: mod07EqualizerConfig.kind,
-  generate: (rng) => ({
+  generate: (rng, _difficulty) => ({
     serialNumber: randomSerialNumber(rng),
     hardwareRevision: rng.pick(REVISIONS),
   }),

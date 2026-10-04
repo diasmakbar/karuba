@@ -34,20 +34,28 @@ export function playerList(room: RoomState | null): PlayerState[] {
   return Object.values(asRecord<PlayerState>(room?.players)).sort((a, b) => a.joinedAt - b.joinedAt);
 }
 
-export function generateModuleState<K extends ModuleId>(rng: Rng, id: K): ModuleState<K> {
-  return { moduleId: id, isSolved: false, localVars: MODULE_REGISTRY[id].generate(rng) };
+export function generateModuleState<K extends ModuleId>(
+  rng: Rng,
+  id: K,
+  difficulty: Difficulty,
+): ModuleState<K> {
+  return { moduleId: id, isSolved: false, localVars: MODULE_REGISTRY[id].generate(rng, difficulty) };
 }
 
 /**
  * Deal **one distinct module per player** for the current level. The 15-module pool is large
  * enough that each player's module stays unique in the normal 3-6 player case.
  */
-export function buildModulePlan(rng: Rng, playerIds: readonly string[]): Map<string, AnyModuleState> {
+export function buildModulePlan(
+  rng: Rng,
+  playerIds: readonly string[],
+  difficulty: Difficulty,
+): Map<string, AnyModuleState> {
   const pool = rng.shuffle(ALL_MODULE_IDS);
   const plan = new Map<string, AnyModuleState>();
   playerIds.forEach((playerId, index) => {
     const id = pool[index % pool.length];
-    plan.set(playerId, generateModuleState(rng, id) as unknown as AnyModuleState);
+    plan.set(playerId, generateModuleState(rng, id, difficulty) as unknown as AnyModuleState);
   });
   return plan;
 }
@@ -91,9 +99,10 @@ export function levelWrites(
   rng: Rng,
   players: readonly PlayerState[],
   timePerLevelSeconds: number,
+  difficulty: Difficulty,
 ): Record<string, unknown> {
   const ids = players.map((player) => player.id);
-  const plan = buildModulePlan(rng, ids);
+  const plan = buildModulePlan(rng, ids, difficulty);
   const informants = assignInformants(rng, ids);
 
   const updates: Record<string, unknown> = {
@@ -212,7 +221,7 @@ export async function startGame(code: string): Promise<void> {
 
   const rng = createRng();
   const config = DIFFICULTIES[room.difficulty];
-  const updates = levelWrites(rng, players, config.timePerLevelSeconds);
+  const updates = levelWrites(rng, players, config.timePerLevelSeconds, room.difficulty);
   updates.level = 1;
   updates.totalLevels = config.levels;
   updates.strikeCount = 0;
@@ -235,7 +244,7 @@ export async function advanceLevel(code: string): Promise<void> {
   const players = playerList(room);
   const config = DIFFICULTIES[room.difficulty];
   const rng = createRng();
-  const updates = levelWrites(rng, players, config.timePerLevelSeconds);
+  const updates = levelWrites(rng, players, config.timePerLevelSeconds, room.difficulty);
   updates.level = room.level + 1;
 
   await update(ref(db, roomPath(code)), updates);

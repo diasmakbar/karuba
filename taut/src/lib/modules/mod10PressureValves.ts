@@ -33,7 +33,7 @@ export const mod10PressureValves: ModuleDefinition<"MOD_10_PRESSURE_VALVES"> = {
   id: mod10PressureValvesConfig.id,
   name: mod10PressureValvesConfig.name,
   kind: mod10PressureValvesConfig.kind,
-  generate: (rng) => ({
+  generate: (rng, _difficulty) => ({
     serialNumber: randomSerialNumber(rng),
     currentPressure: rng.pick(START_PRESSURE_POOL),
     valves: [],

@@ -2,9 +2,17 @@
 Type: Mapping Component
 Dependencies: BaseModuleWrapper
 
+[Difficulty-scaled vocabulary]
+  Pools (>= 10): SynthTarget Type A..J and Vial Alpha..Kappa. `generate(rng, difficulty)` deals
+  `n` target types and `n` vials (vocabSize(): 5 for Beginner, 10 otherwise), where exactly one
+  vial matches the dealt target. Info 1 iterates the stored `targetTypes`; Info 2 iterates the
+  stored `vialIds` (never the full static lists).
+
 [STATE_DEFINITION]
 LocalVars:
-  targetType: "Type A" | "Type B" | "Type C"
+  targetType: SynthTarget               (the correct one)
+  targetTypes: SynthTarget[]            (per-instance list shown in Info 1; contains targetType)
+  vialIds: VialId[]                     (per-instance list shown in Info 2; contains the match)
 
 [EXTERNAL_INFO_MAPPING]
 Info1_Baseline (Requirements):

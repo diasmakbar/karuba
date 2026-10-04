@@ -1,5 +1,6 @@
 # [MODULE SPEC: MOD_03_BUTTON]
 Type: Timing Component
+Name: Confusing Button
 Dependencies: BaseModuleWrapper
 
 [STATE_DEFINITION]
@@ -33,8 +34,17 @@ OnSubmit(action, secondsLeft):
   if directive == DROP -> SUCCESS iff action == RELEASE_NOW
   if directive == HOLD  -> SUCCESS iff releaseSatisfied(timingRuleFor(lightState, lightColor).release, action, secondsLeft)
 
+Press semantics (owner console):
+  The console measures press duration locally (threshold 1000ms).
+    - held < 1s then released -> action = "RELEASE_NOW"
+    - held >= 1s then released -> action = "HOLD_TO_TARGET"
+  pointerLeave while still pressed is resolved with the same duration rule. A guard prevents
+  pointerUp + pointerLeave from double-firing a release.
+
 [UI_REQUIREMENTS]
-- Render a large interactable button colored by buttonColor, labelled by buttonLabel.
-- Render a colored indicator LED: dark (OFF), steady (SOLID, `is-lit`), or blinking (FLASHING).
-- Render the serial number and the shared room clock.
+- Render a single large interactable button colored by buttonColor, labelled by buttonLabel.
+- Render a noticeably larger colored indicator LED beside the button: dark (OFF), steady
+  (SOLID, `is-lit`, `.led-lg`), or blinking (FLASHING). No text label on the LED.
+- Render the serial number. The global countdown lives in the HUD — the console does NOT show
+  a shared clock and offers no separate "release now" button.
 - The owner sees all of the above; the two Informant manuals never expose these variables.

@@ -35,7 +35,7 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
   const initial: AnyModuleState = useMemo(() => {
     void seed;
     const rng = createRng();
-    return { moduleId, isSolved: false, localVars: definition.generate(rng) } as unknown as AnyModuleState;
+    return { moduleId, isSolved: false, localVars: definition.generate(rng, "STANDARD") } as unknown as AnyModuleState;
   }, [moduleId, seed, definition]);
 
   const [state, setState] = useState<AnyModuleState>(initial);

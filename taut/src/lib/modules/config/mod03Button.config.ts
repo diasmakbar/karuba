@@ -163,7 +163,7 @@ export const LIGHT_STATES: readonly LightState[] = ["OFF", "SOLID", "SOLID", "FL
 
 export const mod03ButtonConfig: ModuleConfig<"MOD_03_BUTTON"> = {
   id: "MOD_03_BUTTON",
-  name: "Big Red Button",
+  name: "Confusing Button",
   kind: "Timing Component",
   rules: {
     actionRules: ACTION_RULES,

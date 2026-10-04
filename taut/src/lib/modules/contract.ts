@@ -1,4 +1,4 @@
-import type { LocalVarsMap, ModuleAnswerMap, ModuleId } from "../../types/db-schema";
+import type { Difficulty, LocalVarsMap, ModuleAnswerMap, ModuleId } from "../../types/db-schema";
 import type { Rng } from "../rng";
 
 /**
@@ -68,8 +68,8 @@ export interface ModuleDefinition<K extends ModuleId> {
   id: K;
   name: string;
   kind: string;
-  /** Host-only: roll the hardware state for one instance. */
-  generate: (rng: Rng) => LocalVarsMap[K];
+  /** Host-only: roll the hardware state for one instance, scaled by the room difficulty. */
+  generate: (rng: Rng, difficulty: Difficulty) => LocalVarsMap[K];
   /** Page held by `informant1Id`. */
   info1: (vars: LocalVarsMap[K]) => InfoPayload;
   /** Page held by `informant2Id`. */

@@ -61,7 +61,7 @@ export const mod13ShapeSorterConfig: ModuleConfig<"MOD_13_SHAPE_SORTER"> = {
     alphaRule: ALPHA_RULE,
     betaRule: BETA_RULE,
     infoNotes: {
-      info2: "Exactly one of the four objects survives both filters — read out each object's color and shape and eliminate.",
+      info2: "Exactly one of the dealt objects survives both filters — read out each object's color and shape and eliminate.",
     },
   },
 };
