@@ -615,52 +615,38 @@ body {
 }
 
 /**
- * How far each wire half recoils from the break when cut, as a PERCENTAGE of the half's own
- * width. Tweak this single variable to make the gap larger or smaller.
+ * How much of each half retracts from the break when cut, as a FRACTION of the half's length
+ * (0–0.5). The pin end stays fixed; the inner tip shortens toward the pin, so the gap opens at
+ * the middle without moving the wire outward past the pins. Tweak to change the gap size.
  */
 :root {
-  --wire-split: 18%;
+  --wire-split: 0.35;
 }
 
-/* A cut wire is drawn as two halves that recoil apart, leaving a visible gap mid-wire. */
+/*
+ * A cut wire is two halves, each drawn FROM ITS PIN toward the centre. Trimming via
+ * stroke-dasharray (+ pathLength=1 in the JSX) hides the inner tail, so the half visibly
+ * shortens while its pin endpoint stays put.
+ */
 .wire-board .wire-path.is-cut-left,
 .wire-board .wire-path.is-cut-right {
-  stroke: #6f7887;
+  stroke: #8a93a3;
   stroke-linecap: round;
-  /* Percentages resolve against each half's own bounding box. */
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: wire-snip 420ms cubic-bezier(0.2, 0.9, 0.3, 1.4) forwards;
+  animation: wire-snip 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
 }
 
-.wire-board .wire-path.is-cut-left {
-  animation-name: wire-snip-left;
-}
-
-.wire-board .wire-path.is-cut-right {
-  animation-name: wire-snip-right;
-}
-
-@keyframes wire-snip-left {
+@keyframes wire-snip {
   0% {
     stroke: var(--accent);
-    transform: translateX(0);
+    /* Full length: draw the whole half (dash covers 0..1). */
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
   }
   100% {
     stroke: #8a93a3;
-    /* Pull the dangling left half toward its pin by --wire-split of its own width. */
-    transform: translateX(calc(-1 * var(--wire-split)));
-  }
-}
-
-@keyframes wire-snip-right {
-  0% {
-    stroke: var(--accent);
-    transform: translateX(0);
-  }
-  100% {
-    stroke: #8a93a3;
-    transform: translateX(var(--wire-split));
+    /* Shorten: keep the pin-side portion, shove the tail past the visible range. */
+    stroke-dasharray: calc(1 - var(--wire-split)) 1;
+    stroke-dashoffset: 0;
   }
 }
 

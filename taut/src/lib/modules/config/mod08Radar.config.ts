@@ -54,11 +54,11 @@ export const EPICENTER: Record<Constellation, string> = {
 };
 
 /**
- * Info2_Modifier: the drift DIRECTION per wind, as a UNIT vector (dx columns, dy rows). The
- * distance is rolled per instance between `DRIFT_MIN` and `DRIFT_MAX`, so the informant must ask
- * the owner how far the reading drifted; only the direction is fixed by the wind arrow.
+ * Info2_Modifier: the drift DIRECTION per wind as a UNIT vector (dx columns, dy rows). The actual
+ * magnitude `x` is rolled independently PER DIRECTION (between DRIFT_MIN and DRIFT_MAX), so the
+ * delta is `unit × x`. Meaning = "2 steps in the unit direction, or 1 step if x rolled 1".
  */
-export const DRIFT_VECTOR: Record<WindDirection, readonly [number, number]> = {
+export const DRIFT_UNIT: Record<WindDirection, readonly [number, number]> = {
   North: [0, -1],
   NorthEast: [1, -1],
   East: [1, 0],
@@ -69,21 +69,30 @@ export const DRIFT_VECTOR: Record<WindDirection, readonly [number, number]> = {
   NorthWest: [-1, -1],
 };
 
-/** Inclusive range for the randomized drift distance (in cells). */
+/** Inclusive range for each direction's independent magnitude. */
 export const DRIFT_MIN = 1;
 export const DRIFT_MAX = 2;
 
-/** Human-readable drift direction (Info 2); the exact distance is read from the owner. */
-export const DRIFT_RULE: Record<WindDirection, string> = {
-  North: "Drift UP (toward row 1).",
-  NorthEast: "Drift toward the top-right corner.",
-  East: "Drift RIGHT (toward column E).",
-  SouthEast: "Drift toward the bottom-right corner.",
-  South: "Drift DOWN (toward row 5).",
-  SouthWest: "Drift toward the bottom-left corner.",
-  West: "Drift LEFT (toward column A).",
-  NorthWest: "Drift toward the top-left corner.",
-};
+/**
+ * Build the delta for a direction at a given magnitude: `unit × x`.
+ * North x=1 -> [0,-1]; SouthEast x=2 -> [2,2].
+ */
+export function driftDelta(wind: WindDirection, x: number): readonly [number, number] {
+  const [ux, uy] = DRIFT_UNIT[wind];
+  return [ux * x, uy * x];
+}
+
+/**
+ * Build the human-readable drift rule for a direction at a given magnitude, matching `driftDelta`
+ * exactly. North x=1 -> "Drift 1 row up."; SouthEast x=2 -> "Drift 2 columns right and 2 rows down."
+ */
+export function driftRule(wind: WindDirection, x: number): string {
+  const [dx, dy] = driftDelta(wind, x);
+  const parts: string[] = [];
+  if (dx !== 0) parts.push(`Drift ${Math.abs(dx)} column${Math.abs(dx) === 1 ? "" : "s"} ${dx > 0 ? "right" : "left"}`);
+  if (dy !== 0) parts.push(`${parts.length > 0 ? "and " : "Drift "}${Math.abs(dy)} row${Math.abs(dy) === 1 ? "" : "s"} ${dy > 0 ? "down" : "up"}`);
+  return `${parts.join(" ")}.`;
+}
 
 export const mod08RadarConfig: ModuleConfig<"MOD_08_RADAR"> = {
   id: "MOD_08_RADAR",
@@ -94,14 +103,12 @@ export const mod08RadarConfig: ModuleConfig<"MOD_08_RADAR"> = {
     constellations: CONSTELLATIONS,
     windDirections: WIND_DIRECTIONS,
     epicenter: EPICENTER,
-    driftVector: DRIFT_VECTOR,
+    driftUnit: DRIFT_UNIT,
     driftMin: DRIFT_MIN,
     driftMax: DRIFT_MAX,
-    driftRule: DRIFT_RULE,
     infoNotes: {
       info1: "Columns are A-E left to right, rows are 1-5 top to bottom.",
-      info2:
-        "The wind arrow sets the DIRECTION only; ask the owner how many cells it drifted (1 or 2). If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
+      info2: "If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
     },
   },
 };

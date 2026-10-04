@@ -92,11 +92,24 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
           const y1 = yFor(left);
           const y2 = yFor(right);
           const d = `M ${LEFT_X} ${y1} C ${MID_X} ${y1}, ${MID_X} ${y2}, ${RIGHT_X} ${y2}`;
-          // The two halves that spring apart once the wire is cut. Each is a cubic from a side
-          // pin to the centre; a gap opens between them so the break is visible mid-wire.
-          const midY = (y1 + y2) / 2;
-          const leftD = `M ${LEFT_X} ${y1} C ${MID_X} ${y1}, ${MID_X} ${y1}, ${MID_X} ${midY}`;
-          const rightD = `M ${MID_X} ${midY} C ${MID_X} ${y2}, ${MID_X} ${y2}, ${RIGHT_X} ${y2}`;
+          // Split the ORIGINAL cubic at t=0.5 with de Casteljau so each half lies exactly on the
+          // wire's own curve. BOTH halves are then drawn FROM THEIR PIN toward the centre, so the
+          // cut can retract the inner tip (anchored at the pin) instead of moving the whole wire.
+          const p0 = [LEFT_X, y1];
+          const p1 = [MID_X, y1];
+          const p2 = [MID_X, y2];
+          const p3 = [RIGHT_X, y2];
+          const mid = (a: number[], b: number[]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+          const m01 = mid(p0, p1);
+          const m12 = mid(p1, p2);
+          const m23 = mid(p2, p3);
+          const m012 = mid(m01, m12);
+          const m123 = mid(m12, m23);
+          const centre = mid(m012, m123); // exact point at t=0.5 on the original curve
+          const pt = (p: number[]) => `${p[0]} ${p[1]}`;
+          // Left half: pin -> centre. Right half: pin (p3) -> centre, i.e. the reversed right segment.
+          const leftD = `M ${pt(p0)} C ${pt(m01)}, ${pt(m012)}, ${pt(centre)}`;
+          const rightD = `M ${pt(p3)} C ${pt(m23)}, ${pt(m123)}, ${pt(centre)}`;
           const isCut = cutIndex === i;
           return (
             <g
@@ -116,8 +129,9 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
               <path d={d} className="wire-hit" />
               {isCut ? (
                 <>
-                  <path d={leftD} className="wire-path is-cut-left" />
-                  <path d={rightD} className="wire-path is-cut-right" />
+                  {/* pathLength=1 normalizes each half so the CSS trim can use fractions. */}
+                  <path d={leftD} pathLength={1} className="wire-path is-cut-left" />
+                  <path d={rightD} pathLength={1} className="wire-path is-cut-right" />
                 </>
               ) : (
                 <path d={d} className="wire-path" />

@@ -204,8 +204,8 @@ export interface LocalVarsMap {
   MOD_08_RADAR: {
     constellation: Constellation;
     windDirection: WindDirection;
-    /** How far the reading drifted this instance (randomized 1–2); read from the owner. */
-    driftSteps: number;
+    /** Independently rolled drift magnitude (1–2) for each wind direction this instance. */
+    driftMagnitudes: Record<WindDirection, number>;
     /** Per-instance constellations to show in Info 1 (correct answer among them). */
     constellations: Constellation[];
     /** Per-instance wind directions to show in Info 2 (correct answer among them). */

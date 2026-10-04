@@ -6,17 +6,16 @@ import {
   CONSTELLATIONS,
   DRIFT_MAX,
   DRIFT_MIN,
-  DRIFT_RULE,
-  DRIFT_VECTOR,
   EPICENTER,
   GRID_SIZE,
   WIND_DIRECTIONS,
+  driftDelta,
+  driftRule,
   mod08RadarConfig,
 } from "./config/mod08Radar.config";
 
 /** Info1_Baseline: the storm epicenter for each constellation. */
 export { EPICENTER };
-export { DRIFT_RULE };
 
 /** Wrap an index around the grid edges (the radar "continues" past the edge to the other side). */
 function wrapIndex(value: number, size: number): number {
@@ -25,25 +24,17 @@ function wrapIndex(value: number, size: number): number {
 
 /**
  * The radar WRAPS at the edges: a drift that would leave the grid continues onto the opposite
- * side, so the target is always on screen and fully determined by epicenter + drift vector × steps.
+ * side. The delta is `unit direction × that direction's rolled magnitude`.
  */
 export function radarTarget(vars: {
   constellation: Constellation;
   windDirection: WindDirection;
-  driftSteps: number;
+  driftMagnitudes: Record<WindDirection, number>;
 }): string {
   const start = parseCoord(EPICENTER[vars.constellation]);
-  const [ux, uy] = DRIFT_VECTOR[vars.windDirection];
-  const steps = vars.driftSteps;
-  return coordFrom(wrapIndex(start.col + ux * steps, GRID_SIZE), wrapIndex(start.row + uy * steps, GRID_SIZE));
-}
-
-/**
- * The drift description shown in Info 2. When `steps` is provided (the owner's own wind row),
- * the exact distance is appended; other rows show the direction only.
- */
-export function driftRule(wind: WindDirection, steps?: number): string {
-  return steps === undefined ? DRIFT_RULE[wind] : `${DRIFT_RULE[wind]} Distance: ${steps} cell${steps === 1 ? "" : "s"}.`;
+  const magnitude = vars.driftMagnitudes[vars.windDirection];
+  const [dx, dy] = driftDelta(vars.windDirection, magnitude);
+  return coordFrom(wrapIndex(start.col + dx, GRID_SIZE), wrapIndex(start.row + dy, GRID_SIZE));
 }
 
 export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
@@ -62,9 +53,11 @@ export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
     const windPool = rng.shuffle(WIND_DIRECTIONS.filter((wind) => wind !== windDirection) as WindDirection[]);
     const constellations = rng.shuffle<Constellation>([constellation, ...constellationPool.slice(0, n - 1)]);
     const windDirections = rng.shuffle<WindDirection>([windDirection, ...windPool.slice(0, n - 1)]);
-    // Randomize the drift distance between DRIFT_MIN and DRIFT_MAX (inclusive).
-    const driftSteps = DRIFT_MIN + rng.int(DRIFT_MAX - DRIFT_MIN + 1);
-    return { constellation, windDirection, driftSteps, constellations, windDirections };
+    // Roll an INDEPENDENT magnitude (1–2) for every wind direction.
+    const driftMagnitudes = Object.fromEntries(
+      WIND_DIRECTIONS.map((wind) => [wind, DRIFT_MIN + rng.int(DRIFT_MAX - DRIFT_MIN + 1)]),
+    ) as Record<WindDirection, number>;
+    return { constellation, windDirection, driftMagnitudes, constellations, windDirections };
   },
   info1: (vars) => [
     {
@@ -77,20 +70,20 @@ export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
       note: "Columns are A-E left to right, rows are 1-5 top to bottom.",
     },
   ],
-  info2: (vars) => {
-    const activeWind = vars.windDirection;
-    return [
-      {
-        title: "Drift pattern (Info 2)",
-        columns: ["Wind arrow", "Drift from the epicenter"],
-        rows: (Array.isArray(vars.windDirections) ? vars.windDirections : WIND_DIRECTIONS).map((wind) => ({
-          cells: [wind, driftRule(wind, wind === activeWind ? vars.driftSteps : undefined)],
-          highlight: wind === activeWind,
-        })),
-        note: "Only the owner's wind row gives the exact distance. If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge.",
-      },
-    ];
-  },
+  info2: (vars) => [
+    {
+      title: "Drift pattern (Info 2)",
+      columns: ["Wind arrow", "Drift from the epicenter"],
+      rows: (Array.isArray(vars.windDirections) ? vars.windDirections : WIND_DIRECTIONS).map((wind) => {
+        const magnitude = vars.driftMagnitudes?.[wind] ?? DRIFT_MIN;
+        return {
+          cells: [wind, driftRule(wind, magnitude)],
+          highlight: wind === vars.windDirection,
+        };
+      }),
+      note: "If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
+    },
+  ],
   verify: (vars, answer) => answer.coord === radarTarget(vars),
   status: () => "Tap the grid cell you were told, then confirm",
 };
