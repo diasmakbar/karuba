@@ -11,11 +11,23 @@ export interface InfoRow {
   highlight: boolean;
 }
 
+/** A rendered barrier map: a grid whose cells show walls as thick borders on shared edges. */
+export interface MazeGrid {
+  /** Column labels, left to right. */
+  columns: readonly string[];
+  /** Row labels, top to bottom. */
+  rows: readonly number[];
+  /** Walled edges as `"<from>|<to>"` between orthogonally adjacent cells. */
+  walls: readonly string[];
+}
+
 export interface InfoTable {
   title: string;
   columns: readonly string[];
   rows: readonly InfoRow[];
   note?: string;
+  /** Optional: when present, the panel renders a wall grid instead of the `rows` list. */
+  grid?: MazeGrid;
 }
 
 export type InfoPayload = readonly InfoTable[];

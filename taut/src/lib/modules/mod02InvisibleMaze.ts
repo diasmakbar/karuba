@@ -1,5 +1,5 @@
 import type { Direction, MazeId } from "../../types/db-schema";
-import type { ModuleDefinition } from "./contract";
+import type { MazeGrid, ModuleDefinition } from "./contract";
 import { randomSerialNumber } from "../rng";
 
 const COLUMNS = ["A", "B", "C", "D", "E", "F"] as const;
@@ -27,45 +27,15 @@ const WALLED_EDGES: Record<MazeId, string[]> = {
   ],
 };
 
-/** True when `a` and `b` share a walled edge (order-independent). */
-function hasWall(edges: Set<string>, a: string, b: string): boolean {
-  return edges.has(`${a}|${b}`) || edges.has(`${b}|${a}`);
-}
-
 /**
- * Render a 6x6 map straight from `WALLED_EDGES` so the manual shown in Info 1 can never drift
- * from the walls used by [`nextCoord()`]. Verticals live between columns, horizontals between rows.
+ * A wall-barrier map for the manual, derived straight from `WALLED_EDGES` so the grid shown in
+ * Info 1 can never drift from the walls used by [`nextCoord()`]. The panel renders each cell with
+ * a thick border on any shared edge that is walled.
  */
-export function renderMaze(mazeId: MazeId): string[] {
-  const edges = new Set(WALLED_EDGES[mazeId]);
-  const lines: string[] = ["  A   B   C   D   E   F", "+---+---+---+---+---+---+"];
-  for (let r = 0; r < ROWS.length; r += 1) {
-    let cells = "|";
-    for (let c = 0; c < COLUMNS.length; c += 1) {
-      const here = `${COLUMNS[c]}${ROWS[r]}`;
-      const right = COLUMNS[c + 1] ? `${COLUMNS[c + 1]}${ROWS[r]}` : null;
-      cells += "   "; // 3-wide cell interior
-      cells += right && hasWall(edges, here, right) ? "|" : " ";
-    }
-    lines.push(`${cells} ${ROWS[r]}`); // trailing row label so players can name cells
-    if (r < ROWS.length - 1) {
-      let sep = "+";
-      for (let c = 0; c < COLUMNS.length; c += 1) {
-        const here = `${COLUMNS[c]}${ROWS[r]}`;
-        const below = `${COLUMNS[c]}${ROWS[r + 1]}`;
-        sep += (hasWall(edges, here, below) ? "---" : "   ") + "+";
-      }
-      lines.push(sep);
-    }
-  }
-  lines.push("+---+---+---+---+---+---+");
-  return lines;
-}
-
-export const MAZE_ARCHITECTURE: Record<MazeId, string[]> = {
-  Alpha: renderMaze("Alpha"),
-  Beta: renderMaze("Beta"),
-  Gamma: renderMaze("Gamma"),
+export const MAZE_ARCHITECTURE: Record<MazeId, MazeGrid> = {
+  Alpha: { columns: COLUMNS, rows: ROWS, walls: WALLED_EDGES.Alpha },
+  Beta: { columns: COLUMNS, rows: ROWS, walls: WALLED_EDGES.Beta },
+  Gamma: { columns: COLUMNS, rows: ROWS, walls: WALLED_EDGES.Gamma },
 };
 
 /** Info2_Modifier: serialNumber-based control rotation */
@@ -156,8 +126,9 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
     {
       title: `Architecture map: ${vars.mazeId} (Info 1)`,
       columns: ["Hidden walls"],
-      rows: MAZE_ARCHITECTURE[vars.mazeId].map((line) => ({ cells: [line], highlight: false })),
-      note: `Token starts at ${vars.startCoord}, exit at ${vars.finishCoord}. All walls are BETWEEN cells. Read every line — the owner cannot see the walls.`,
+      rows: [],
+      grid: MAZE_ARCHITECTURE[vars.mazeId],
+      note: `Thick lines are walls between cells. Token starts at ${vars.startCoord}, exit at ${vars.finishCoord} — guide the owner step by step.`,
     },
   ],
   info2: () => [
