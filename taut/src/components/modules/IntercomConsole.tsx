@@ -1,33 +1,25 @@
 import { useState } from "react";
-import type { IntercomResponse } from "../../types/db-schema";
+import type { IntercomMessage } from "../../types/db-schema";
 import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
-/**
- * MOD_11_INTERCOM — an incoming alien message plus the dealt reply options. Info 1 translates the
- * message; Info 2 gives the reply protocol. Answer: `{ response }`.
- *
- * The reply buttons come from the per-instance `responses` dealt at generate time (5/10 by
- * difficulty); the correct reply is always among them.
- */
+/** MOD_11 owner console: choose the final message after the Info 1 → Info 2 → Info 1 chain. */
 export function IntercomConsole({ state, disabled, submit }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_11_INTERCOM");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  // RTDB drops empty arrays; fall back to a small default if the dealt list ever goes missing.
-  const responses: IntercomResponse[] = Array.isArray(localVars.responses) && localVars.responses.length > 0
-    ? (localVars.responses as IntercomResponse[])
-    : ["ISI", "ULANG", "LANJUT", "TEKAN"];
+  const choices: IntercomMessage[] = Array.isArray(localVars.messages) && localVars.messages.length > 0
+    ? localVars.messages
+    : ["KOSONG", "APA", "TUNGGU", "BENTAR"];
 
-  const reply = async (response: IntercomResponse) => {
+  const choose = async (message: IntercomMessage) => {
     if (disabled || pending || state.isSolved) return;
     setPending(true);
     setFeedback(null);
     try {
-      const outcome = await submit({ response });
-      setFeedback(outcomeMessage(outcome));
+      setFeedback(outcomeMessage(await submit({ message })));
     } finally {
       setPending(false);
     }
@@ -45,15 +37,15 @@ export function IntercomConsole({ state, disabled, submit }: ModuleConsoleProps)
         <div className="font-display">{localVars.incomingMessage}</div>
       </div>
       <div className="pad-grid">
-        {responses.map((response) => (
+        {choices.map((message) => (
           <button
-            key={response}
+            key={message}
             type="button"
             className="pad-btn"
             disabled={disabled || pending || state.isSolved}
-            onClick={() => reply(response)}
+            onClick={() => choose(message)}
           >
-            {response}
+            {message}
           </button>
         ))}
       </div>

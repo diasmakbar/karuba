@@ -1,36 +1,36 @@
 # [MODULE SPEC: MOD_11_INTERCOM]
-Type: Translation Component
+Type: Two-Stage Translation Component
 Dependencies: BaseModuleWrapper
-
-[Difficulty-scaled vocabulary]
-  Pools (>= 10): IntercomMessage KLAATU..KEYMASTER and IntercomResponse BARADA..ABORT.
-  `generate(rng, difficulty)` deals `n` incoming words (the owner's among them) and `n` reply
-  options (the correct reply among them); vocabSize(): 5 for Beginner, 10 otherwise.
-  Info 1 iterates the stored `messages`; the Info 2 protocol iterates the same stored meanings.
 
 [STATE_DEFINITION]
 LocalVars:
-  incomingMessage: IntercomMessage      (the owner's word)
-  messages: IntercomMessage[]           (per-instance list of incoming words; contains the owner's)
-  responses: IntercomResponse[]         (per-instance reply options; contains the correct reply)
+  incomingMessage: IntercomMessage    // displayed to owner
+  messages: IntercomMessage[]         // owner choices; includes computed final message
+  meaningMap: Record<string, string>  // Info 2 derangement over all English meanings
 
-[EXTERNAL_INFO_MAPPING]
-Info1_Baseline (Dictionary):
-  KLAATU -> Requesting Status
-  GORT -> Hostile Presence
-  VERATA -> Requesting Supply Drop
-
-Info2_Modifier (Protocol):
-  Requesting Status -> "NIKTO"
-  Hostile Presence -> "BARADA"
-  Requesting Supply Drop -> "SHREK"
+[MANUALS]
+Info 1 (Informant 1): complete message → meaning dictionary. Do not highlight the owner's row.
+Info 2 (Informant 2): meaning → randomized different meaning table. No meaning maps to itself.
+Do not highlight the owner's row. Owner identifies incomingMessage to Informant 1, gets its meaning,
+asks Informant 2 for the relayed meaning, then returns to Informant 1 and looks up the final message.
 
 [VALIDATION_LOGIC]
-TargetState: Apply(Info2_Modifier, Info1_Baseline)
-OnSubmit(buttonPressed):
-  if buttonPressed == TargetState -> return SUCCESS
-  else -> return STRIKE
+meaning1 = DICTIONARY[incomingMessage]
+meaning2 = meaningMap[meaning1]
+finalMessage = inverse(DICTIONARY)[meaning2]
+OnSubmit(message):
+  if message == finalMessage -> SUCCESS
+  else -> STRIKE
+
+[GENERATION]
+Generate a randomized derangement of all meanings (no fixed points), select incomingMessage, compute
+the final message through the full chain, and deal the owner choices with finalMessage included.
+
+[DIFFICULTY]
+  Beginner: 5 message choices.
+  Standard / Extreme: 10 message choices.
 
 [UI_REQUIREMENTS]
-- Render incoming message screen.
-- Render 4 response buttons with alien text.
+- Display incomingMessage and message buttons (not the old Indonesian response buttons).
+- Info 1 and Info 2 remain separate, with the owner relaying the returned meaning between informants.
+- The selected final message must be present among the buttons.

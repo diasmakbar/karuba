@@ -1,11 +1,7 @@
-import type { IntercomMessage, IntercomResponse } from "../../../types/db-schema";
+import type { IntercomMessage } from "../../../types/db-schema";
 import type { ModuleConfig } from "../contract";
 
-/**
- * Configuration for the Intercom module (MOD_11).
- */
-
-/** Incoming transmissions the module can deal (>= 10). */
+/** Incoming transmissions; each has a unique meaning in Info 1. */
 export const MESSAGES: readonly IntercomMessage[] = [
   "KOSONG",
   "APA",
@@ -19,64 +15,33 @@ export const MESSAGES: readonly IntercomMessage[] = [
   "BELUM",
 ];
 
-/** Info1_Baseline: dictionary of the incoming transmissions (one distinct meaning each). */
+/** Info 1 dictionary: transmission → English meaning. */
 export const DICTIONARY: Record<IntercomMessage, string> = {
-  "KOSONG": "Zero Data",
-  "APA": "Query Unknown",
-  "TUNGGU": "Standby Mode",
-  "BENTAR": "Awaiting Input",
-  "HAH": "Signal Lost",
-  "SPASI": "Space Detected",
-  "TITIK": "End of Line",
+  KOSONG: "Zero Data",
+  APA: "Query Unknown",
+  TUNGGU: "Standby Mode",
+  BENTAR: "Awaiting Input",
+  HAH: "Signal Lost",
+  SPASI: "Space Detected",
+  TITIK: "End of Line",
   "GAK ADA": "Target Unclear",
-  "UDAH": "Process Complete",
-  "BELUM": "Process Pending",
+  UDAH: "Process Complete",
+  BELUM: "Process Pending",
 };
 
-/** Info2_Modifier: the required reply for each meaning. */
-export const PROTOCOL: Record<string, IntercomResponse> = {
-  "Zero Data": "ISI",
-  "Query Unknown": "ULANG",
-  "Standby Mode": "LANJUT",
-  "Awaiting Input": "TEKAN",
-  "Signal Lost": "BIARIN",
-  "Space Detected": "HAPUS",
-  "End of Line": "KOMA",
-  "Target Unclear": "ITU",
-  "Process Complete": "TIDAK",
-  "Process Pending": "IYA",
-};
-
-/** Candidate replies on the console (>= 10); the ones not in the protocol are decoys. */
-export const RESPONSES: readonly IntercomResponse[] = [
-  "ISI",
-  "ULANG",
-  "LANJUT",
-  "TEKAN",
-  "BIARIN",
-  "HAPUS",
-  "KOMA",
-  "TITIK",
-  "TIDAK",
-  "IYA",
-  "ITU",
-];
-
-/** Reply used when nothing in the protocol matches. */
-export const FALLBACK_RESPONSE: IntercomResponse = "BIARIN";
+/** Stable meaning vocabulary; Info 2 maps these meanings back through Info 1. */
+export const MEANINGS: readonly string[] = Object.values(DICTIONARY);
 
 export const mod11IntercomConfig: ModuleConfig<"MOD_11_INTERCOM"> = {
   id: "MOD_11_INTERCOM",
   name: "Intercom",
-  kind: "Translation Component",
+  kind: "Two-Stage Translation Component",
   rules: {
     messages: MESSAGES,
     dictionary: DICTIONARY,
-    protocol: PROTOCOL,
-    responses: RESPONSES,
-    fallbackResponse: FALLBACK_RESPONSE,
-    infoNotes: {
-      info2: "BIARIN is the default response if communication fully breaks down.",
-    },
+    meanings: MEANINGS,
+    info1: "Translate the incoming message to its meaning. The final answer is found by looking up the returned meaning here.",
+    info2: "Each meaning maps to a randomized DIFFERENT meaning; no meaning maps to itself.",
+    flow: "incoming message → Info 1 meaning → Info 2 mapped meaning → Info 1 message",
   },
 };

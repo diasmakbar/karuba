@@ -87,18 +87,6 @@ export type IntercomMessage =
   | "GAK ADA"
   | "UDAH"
   | "BELUM";
-export type IntercomResponse =
-  | "ISI"
-  | "ULANG"
-  | "LANJUT"
-  | "TEKAN"
-  | "BIARIN"
-  | "HAPUS"
-  | "KOMA"
-  | "TITIK"
-  | "TIDAK"
-  | "IYA"
-  | "ITU";
 export type FilterState = "Active" | "Standby";
 export type SorterColor = "Red" | "Green" | "Blue" | "Yellow";
 export type SorterShape = "Triangle" | "Square" | "Circle";
@@ -227,10 +215,10 @@ export interface LocalVarsMap {
   };
   MOD_11_INTERCOM: {
     incomingMessage: IntercomMessage;
-    /** Per-instance incoming words to show in Info 1 (the owner's word is among them). */
+    /** Dealt message choices, including the final message produced by the translation chain. */
     messages: IntercomMessage[];
-    /** Per-instance reply options to show in Info 2. */
-    responses: IntercomResponse[];
+    /** Per-instance derangement mapping each English meaning to a different English meaning. */
+    meaningMap: Record<string, string>;
   };
   MOD_12_BATTLESHIP: {
     targetShip: string;
@@ -276,7 +264,7 @@ export interface ModuleAnswerMap {
   MOD_08_RADAR: { coord: string };
   MOD_09_SYNTHESIZER: { vial: VialId };
   MOD_10_PRESSURE_VALVES: { valves: ValveId[] };
-  MOD_11_INTERCOM: { response: IntercomResponse };
+  MOD_11_INTERCOM: { message: IntercomMessage };
   MOD_12_BATTLESHIP: { coord: string };
   MOD_13_SHAPE_SORTER: { objectIndex: number };
   MOD_14_PNEUMATIC_TUBE: { tube: TubeColor };
