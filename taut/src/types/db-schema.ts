@@ -62,6 +62,7 @@ export interface LocalVarsMap {
     startCoord: string;
     finishCoord: string;
     currentCoord: string;
+    serialNumber: string;
   };
   MOD_03_BUTTON: {
     cipher: Cipher;

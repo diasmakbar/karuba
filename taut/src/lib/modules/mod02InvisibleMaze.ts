@@ -1,8 +1,9 @@
 import type { Direction, MazeId } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import { randomSerialNumber } from "../rng";
 
-const COLUMNS = ["A", "B", "C", "D"] as const;
-const ROWS = [1, 2, 3, 4] as const;
+const COLUMNS = ["A", "B", "C", "D", "E", "F"] as const;
+const ROWS = [1, 2, 3, 4, 5, 6] as const;
 
 /**
  * Walls are always on the EDGES between two cells — never "solid cells". A cell is only
@@ -46,20 +47,44 @@ export const MAZE_ARCHITECTURE: Record<MazeId, string[]> = {
   ],
 };
 
-/** Info2_Modifier: the fault rotates every command one quarter turn clockwise. */
-const FAULT_ROTATION: Record<Direction, Direction> = {
-  UP: "RIGHT",
-  RIGHT: "DOWN",
-  DOWN: "LEFT",
-  LEFT: "UP",
+/** Info2_Modifier: serialNumber-based control rotation */
+const ROTATION_MAP: Record<Direction, Record<"even" | "odd", Direction>> = {
+  UP: { even: "LEFT", odd: "RIGHT" },
+  RIGHT: { even: "UP", odd: "DOWN" },
+  DOWN: { even: "RIGHT", odd: "LEFT" },
+  LEFT: { even: "DOWN", odd: "UP" },
 };
 
-export function isMazeFaulted(mazeId: MazeId): boolean {
-  return mazeId === "Beta";
+export function commandFor(serialNumber: string, pressed: Direction): Direction {
+  const isEven = Number(serialNumber.slice(-1)) % 2 === 0;
+  return ROTATION_MAP[pressed][isEven ? "even" : "odd"];
 }
 
-export function commandFor(mazeId: MazeId, pressed: Direction): Direction {
-  return isMazeFaulted(mazeId) ? FAULT_ROTATION[pressed] : pressed;
+/** Check if there's a valid path from start to finish using BFS */
+function hasValidPath(mazeId: MazeId, start: string, finish: string): boolean {
+  const visited = new Set<string>();
+  const queue: string[] = [start];
+  visited.add(start);
+  
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (current === finish) return true;
+    
+    const col = COLUMNS.indexOf(current.charAt(0) as (typeof COLUMNS)[number]);
+    const row = Number(current.slice(1));
+    const deltas: Record<Direction, [number, number]> = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] };
+    
+    for (const dir of Object.keys(deltas) as Direction[]) {
+      const nextCol = col + deltas[dir][0];
+      const nextRow = row + deltas[dir][1];
+      if (nextCol < 0 || nextCol >= COLUMNS.length || nextRow < 1 || nextRow > ROWS.length) continue;
+      const target = `${COLUMNS[nextCol]}${nextRow}`;
+      if (visited.has(target) || isEdgeWalled(mazeId, current, target)) continue;
+      visited.add(target);
+      queue.push(target);
+    }
+  }
+  return false;
 }
 
 /** True when an edge between two cells is walled (order-independent). */
@@ -70,12 +95,11 @@ export function isEdgeWalled(mazeId: MazeId, a: string, b: string): boolean {
 
 /** The cell the token lands on, or null when the move hits a wall / the hull. */
 export function nextCoord(mazeId: MazeId, from: string, pressed: Direction): string | null {
-  const command = commandFor(mazeId, pressed);
   const col = COLUMNS.indexOf(from.charAt(0) as (typeof COLUMNS)[number]);
   const row = Number(from.slice(1));
   const delta: Record<Direction, [number, number]> = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] };
-  const nextCol = col + delta[command][0];
-  const nextRow = row + delta[command][1];
+  const nextCol = col + delta[pressed][0];
+  const nextRow = row + delta[pressed][1];
   if (nextCol < 0 || nextCol >= COLUMNS.length || nextRow < 1 || nextRow > ROWS.length) return null;
   const target = `${COLUMNS[nextCol]}${nextRow}`;
   if (isEdgeWalled(mazeId, from, target)) return null;
@@ -88,7 +112,21 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
   kind: "Pathfinding Component",
   generate: (rng) => {
     const mazeId = rng.pick(["Alpha", "Beta", "Gamma"] as const);
-    return { mazeId, startCoord: "A1", finishCoord: "D4", currentCoord: "A1" };
+    const serialNumber = randomSerialNumber(rng);
+    let startCoord, finishCoord;
+    let attempts = 0;
+    do {
+      startCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
+      finishCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
+      attempts++;
+    } while (startCoord === finishCoord && attempts < 100);
+    // Validate solvability
+    while (!hasValidPath(mazeId, startCoord, finishCoord) && attempts < 1000) {
+      startCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
+      finishCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
+      attempts++;
+    }
+    return { mazeId, startCoord, finishCoord, currentCoord: startCoord, serialNumber };
   },
   info1: (vars) => [
     {
@@ -98,23 +136,28 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
       note: `Token starts at ${vars.startCoord}, exit at ${vars.finishCoord}. All walls are BETWEEN cells. Read every line — the owner cannot see the walls.`,
     },
   ],
-  info2: () => [
+  info2: (vars) => [
     {
       title: "Hardware fault status (Info 2)",
       columns: ["Status", "Effect on the D-pad"],
       rows: [
-        { cells: ["FAULT ACTIVE", "UP outputs RIGHT · RIGHT outputs DOWN · DOWN outputs LEFT · LEFT outputs UP"], highlight: false },
+        {
+          cells: ["CONTROL ROTATION", `Serial #${vars.serialNumber}: ${Number(vars.serialNumber.slice(-1)) % 2 === 0 ? "EVEN → CCW 90°" : "ODD → CW 90°"}`],
+          highlight: false
+        },
         { cells: ["NO FAULT", "Each button outputs the direction printed on it"], highlight: false },
       ],
       note: "Announce the mapping before the owner presses anything — they cannot see this panel.",
     },
   ],
   verify: (vars, answer) => {
-    const next = nextCoord(vars.mazeId, vars.currentCoord, answer.direction);
+    const command = commandFor(vars.serialNumber, answer.direction);
+    const next = nextCoord(vars.mazeId, vars.currentCoord, command);
     return next !== null && next === vars.finishCoord;
   },
   advance: (vars, answer) => {
-    const next = nextCoord(vars.mazeId, vars.currentCoord, answer.direction);
+    const command = commandFor(vars.serialNumber, answer.direction);
+    const next = nextCoord(vars.mazeId, vars.currentCoord, command);
     if (next === null || next === vars.finishCoord) return null;
     return { ...vars, currentCoord: next };
   },
