@@ -22,18 +22,11 @@ const LIGHT_FILL: Record<LightColor, string> = {
   Yellow: "#d4a017",
 };
 
-/** LED class name by state: dark, steady, or blinking (lit states set the border via `is-lit`). */
+/** LED class name by state: dark, lit, or blinking (lit states set the border via `is-lit`). */
 const LIGHT_CLASS: Record<LightState, string> = {
   OFF: "",
   SOLID: "is-lit",
   FLASHING: "is-lit is-flashing",
-};
-
-/** Human-readable light label shown under the LED. */
-const LIGHT_LABEL: Record<LightState, string> = {
-  OFF: "LIGHT: OFF",
-  SOLID: "LIGHT: STEADY",
-  FLASHING: "LIGHT: FLASHING",
 };
 
 /**
@@ -92,17 +85,16 @@ export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: M
         <div className="font-display" style={{ fontSize: 40 }}>
           {clock}
         </div>
-        <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "center" }}>
-          <span
+        <div className="row" style={{ justifyContent: "center" }}>
+          <div
             className={`led ${LIGHT_CLASS[localVars.lightState]}`.trim()}
             style={
               localVars.lightState === "OFF"
                 ? undefined
                 : { background: LIGHT_FILL[localVars.lightColor], color: LIGHT_FILL[localVars.lightColor] }
             }
-            aria-label={LIGHT_LABEL[localVars.lightState]}
+            aria-label={`Indicator light ${localVars.lightState.toLowerCase()}`}
           />
-          <span className="tag">{LIGHT_LABEL[localVars.lightState]}</span>
         </div>
       </div>
 
