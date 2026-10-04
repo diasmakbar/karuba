@@ -6,6 +6,7 @@
 // (no `any` anywhere in the app).
 
 export type Difficulty = "BEGINNER" | "STANDARD" | "EXTREME";
+export type ModuleSelectionMode = "RANDOM" | "MANUAL";
 export type RoomStatus = "LOBBY" | "PLAYING" | "LEVEL_CLEARED" | "GAME_OVER" | "VICTORY";
 export type Direction = "UP" | "RIGHT" | "DOWN" | "LEFT";
 
@@ -300,10 +301,15 @@ export interface RoomState {
   hostId: string;
   status: RoomStatus;
   difficulty: Difficulty;
+  /** Host-adjustable countdown duration for each phase. */
+  timePerLevelSeconds: number;
+  /** Total number of phases in this room. */
+  totalLevels: number;
+  moduleSelectionMode: ModuleSelectionMode;
+  /** Eligible module IDs for manual mode; each phase deals distinct modules to players. */
+  selectedModuleIds: ModuleId[];
   /** 1-based current level; difficulty may run several levels of "one module per player". */
   level: number;
-  /** Total levels for this difficulty (1 for Beginner). */
-  totalLevels: number;
   globalEndTime: number; // Unix timestamp for local client countdown calculation
   strikeCount: number;
   maxStrikes: number;

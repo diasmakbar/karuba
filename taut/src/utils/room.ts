@@ -6,6 +6,7 @@ import type {
   AnyModuleState,
   Difficulty,
   ModuleId,
+  ModuleSelectionMode,
   ModuleState,
   PlayerState,
   RoomState,
@@ -43,15 +44,21 @@ export function generateModuleState<K extends ModuleId>(
 }
 
 /**
- * Deal **one distinct module per player** for the current level. The 15-module pool is large
- * enough that each player's module stays unique in the normal 3-6 player case.
+ * Deal one distinct module per player. In manual mode the selected pool is shuffled and the
+ * first player-count entries are used; selection length is validated before any state writes.
  */
 export function buildModulePlan(
   rng: Rng,
   playerIds: readonly string[],
   difficulty: Difficulty,
+  moduleSelectionMode: ModuleSelectionMode = "RANDOM",
+  selectedModuleIds: readonly ModuleId[] = ALL_MODULE_IDS,
 ): Map<string, AnyModuleState> {
-  const pool = rng.shuffle(ALL_MODULE_IDS);
+  const eligibleModules = [...new Set(moduleSelectionMode === "MANUAL" ? selectedModuleIds : ALL_MODULE_IDS)];
+  if (eligibleModules.length < playerIds.length) {
+    throw new Error(`Select at least ${playerIds.length} distinct modules for ${playerIds.length} players.`);
+  }
+  const pool = rng.shuffle(eligibleModules);
   const plan = new Map<string, AnyModuleState>();
   playerIds.forEach((playerId, index) => {
     const id = pool[index % pool.length];
@@ -100,9 +107,11 @@ export function levelWrites(
   players: readonly PlayerState[],
   timePerLevelSeconds: number,
   difficulty: Difficulty,
+  moduleSelectionMode: ModuleSelectionMode = "RANDOM",
+  selectedModuleIds: readonly ModuleId[] = ALL_MODULE_IDS,
 ): Record<string, unknown> {
   const ids = players.map((player) => player.id);
-  const plan = buildModulePlan(rng, ids, difficulty);
+  const plan = buildModulePlan(rng, ids, difficulty, moduleSelectionMode, selectedModuleIds);
   const informants = assignInformants(rng, ids);
 
   const updates: Record<string, unknown> = {
@@ -139,6 +148,7 @@ export async function setDifficulty(code: string, difficulty: Difficulty): Promi
   await update(ref(db, roomPath(code)), {
     difficulty,
     totalLevels: config.levels,
+    timePerLevelSeconds: config.timePerLevelSeconds,
     maxStrikes: config.maxStrikes,
   });
 }
@@ -165,6 +175,9 @@ export async function createRoom(name: string, difficulty: Difficulty = "STANDAR
     difficulty,
     level: 0,
     totalLevels: config.levels,
+    timePerLevelSeconds: config.timePerLevelSeconds,
+    moduleSelectionMode: "RANDOM",
+    selectedModuleIds: [...ALL_MODULE_IDS],
     globalEndTime: 0,
     strikeCount: 0,
     maxStrikes: config.maxStrikes,
@@ -205,6 +218,41 @@ export async function leaveLobby(code: string): Promise<void> {
 }
 
 /** Host-only: deal level 1, assign informants and start the shared countdown. */
+export async function setAdvancedSettings(
+  code: string,
+  settings: { timePerLevelSeconds: number; totalLevels: number; moduleSelectionMode: ModuleSelectionMode; selectedModuleIds: ModuleId[] },
+): Promise<void> {
+  const uid = await requireUid();
+  const snapshot = await get(ref(db, roomPath(code)));
+  if (!snapshot.exists()) throw new Error("Room not found.");
+  const room = snapshot.val() as RoomState;
+  if (room.hostId !== uid) throw new Error("Only the host can change advanced settings.");
+  if (room.status !== "LOBBY") throw new Error("Settings can only be changed in the waiting lobby.");
+  if (!Number.isInteger(settings.timePerLevelSeconds) || settings.timePerLevelSeconds < 60 || settings.timePerLevelSeconds > 3600) {
+    throw new Error("Time must be between 1 and 60 minutes.");
+  }
+  if (!Number.isInteger(settings.totalLevels) || settings.totalLevels < 1 || settings.totalLevels > 10) {
+    throw new Error("Phases must be between 1 and 10.");
+  }
+  if (settings.moduleSelectionMode !== "RANDOM" && settings.moduleSelectionMode !== "MANUAL") {
+    throw new Error("Choose Random or Manual module selection.");
+  }
+  const selected = [...new Set(settings.selectedModuleIds)].filter((id) => ALL_MODULE_IDS.includes(id));
+  if (selected.length !== settings.selectedModuleIds.length) throw new Error("The selected module list contains invalid or duplicate entries.");
+  if (settings.moduleSelectionMode === "MANUAL" && selected.length < playerList(room).length) {
+    throw new Error(`Manual mode needs at least ${playerList(room).length} distinct modules for the current players.`);
+  }
+  await update(ref(db, roomPath(code)), {
+    timePerLevelSeconds: settings.timePerLevelSeconds,
+    totalLevels: settings.totalLevels,
+    moduleSelectionMode: settings.moduleSelectionMode,
+    selectedModuleIds: selected.length ? selected : ALL_MODULE_IDS,
+    // Keep the difficulty card's summary and strikes consistent with the actual settings.
+    maxStrikes: room.maxStrikes ?? DIFFICULTIES[room.difficulty].maxStrikes,
+  });
+}
+
+/** Host-only: start the first phase using room-configured time, phases and module pool. */
 export async function startGame(code: string): Promise<void> {
   const uid = await requireUid();
   const snapshot = await get(ref(db, roomPath(code)));
@@ -221,9 +269,14 @@ export async function startGame(code: string): Promise<void> {
 
   const rng = createRng();
   const config = DIFFICULTIES[room.difficulty];
-  const updates = levelWrites(rng, players, config.timePerLevelSeconds, room.difficulty);
+  const timePerLevelSeconds = room.timePerLevelSeconds ?? config.timePerLevelSeconds;
+  const totalLevels = room.totalLevels ?? config.levels;
+  const mode = room.moduleSelectionMode ?? "RANDOM";
+  const selected = room.selectedModuleIds?.length ? room.selectedModuleIds : ALL_MODULE_IDS;
+  if (mode === "MANUAL" && selected.length < players.length) throw new Error(`Select at least ${players.length} modules before starting.`);
+  const updates = levelWrites(rng, players, timePerLevelSeconds, room.difficulty, mode, selected);
   updates.level = 1;
-  updates.totalLevels = config.levels;
+  updates.totalLevels = totalLevels;
   updates.strikeCount = 0;
   updates.lastStrike = null;
 
@@ -244,7 +297,10 @@ export async function advanceLevel(code: string): Promise<void> {
   const players = playerList(room);
   const config = DIFFICULTIES[room.difficulty];
   const rng = createRng();
-  const updates = levelWrites(rng, players, config.timePerLevelSeconds, room.difficulty);
+  const timePerLevelSeconds = room.timePerLevelSeconds ?? config.timePerLevelSeconds;
+  const mode = room.moduleSelectionMode ?? "RANDOM";
+  const selected = room.selectedModuleIds?.length ? room.selectedModuleIds : ALL_MODULE_IDS;
+  const updates = levelWrites(rng, players, timePerLevelSeconds, room.difficulty, mode, selected);
   updates.level = room.level + 1;
 
   await update(ref(db, roomPath(code)), updates);

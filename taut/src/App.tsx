@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Home } from "./pages/Home";
+import { Home, NameStep } from "./pages/Home";
 import { Lobby } from "./pages/Lobby";
 import { Room } from "./pages/Room";
 import { ModuleSandbox } from "./pages/ModuleSandbox";
 
-type Screen = "HOME" | "LOBBY" | "ROOM";
+type Screen = "HOME" | "NAME" | "LOBBY" | "ROOM";
+type EntryIntent = { kind: "CREATE" } | { kind: "JOIN"; code: string };
 
 const ROOM_KEY = "taut.room";
 
@@ -26,6 +27,7 @@ function isDevTestRoute(): boolean {
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => (readRoom() ? "LOBBY" : "HOME"));
   const [roomCode, setRoomCode] = useState<string | null>(() => readRoom());
+  const [entryIntent, setEntryIntent] = useState<EntryIntent | null>(null);
   const [isDevTest, setIsDevTest] = useState(() => isDevTestRoute());
 
   useEffect(() => {
@@ -33,8 +35,14 @@ export default function App() {
     else window.localStorage.removeItem(ROOM_KEY);
   }, [roomCode]);
 
+  const chooseEntryIntent = useCallback((intent: EntryIntent) => {
+    setEntryIntent(intent);
+    setScreen("NAME");
+  }, []);
+
   const enterRoom = useCallback((code: string) => {
     setRoomCode(code);
+    setEntryIntent(null);
     setScreen("LOBBY");
   }, []);
 
@@ -54,13 +62,16 @@ export default function App() {
   if (isDevTest) {
     return <ModuleSandbox onExit={exitDevTest} />;
   }
-  if (screen === "HOME" || !roomCode) {
-    return <Home onEnterRoom={enterRoom} />;
+  if (screen === "HOME" || !roomCode && screen !== "NAME") {
+    return <Home onChooseIntent={chooseEntryIntent} />;
+  }
+  if (screen === "NAME" && entryIntent) {
+    return <NameStep intent={entryIntent} onBack={() => setScreen("HOME")} onEnterRoom={enterRoom} />;
   }
   if (screen === "ROOM") {
-    return <Room roomCode={roomCode} onLeave={leave} onBackToLobby={backToLobby} />;
+    return <Room roomCode={roomCode!} onLeave={leave} onBackToLobby={backToLobby} />;
   }
-  return <Lobby roomCode={roomCode} onStart={enterGame} onLeave={leave} />;
+  return <Lobby roomCode={roomCode!} onStart={enterGame} onLeave={leave} />;
 }
 
 function readRoom(): string | null {

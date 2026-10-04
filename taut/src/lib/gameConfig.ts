@@ -10,6 +10,9 @@ export interface DifficultyConfig {
   maxStrikes: number;
 }
 
+export const DEFAULT_TIME_PER_LEVEL_SECONDS = 5 * 60;
+export const DEFAULT_TOTAL_LEVELS = 2;
+
 export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
   BEGINNER: {
     label: "Beginner",
