@@ -13,37 +13,68 @@ const ROWS = [1, 2, 3, 4, 5, 6] as const;
  * Each entry `"<from>|<to>"` blocks movement between two orthogonally adjacent cells.
  */
 const WALLED_EDGES: Record<MazeId, string[]> = {
-  // Alpha: a vertical divider between B1/C1 and a horizontal divider between A2/A3.
-  Alpha: ["B1|C1", "A2|A3"],
-  // Beta: the center 2x2 is enclosed by walls on its whole perimeter — go around the block.
-  Beta: [
-    "A2|B2",
-    "B2|C2",
-    "C2|D2",
-    "A3|B3",
-    "B3|C3",
-    "C3|D3",
-    "B1|B2",
-    "B3|B4",
-    "C1|C2",
-    "C3|C4",
+  Alpha: [
+    "A1|A2", "B1|C1", "C1|C2", "D2|E2", "E1|F1", "F2|F3", 
+    "A3|B3", "B3|B4", "C3|D3", "D3|D4", "E4|F4", "A5|A6", "C5|C6", "D5|E5"
   ],
-  // Gamma: row 3 cannot be crossed horizontally (vertical moves through row 3 stay open).
-  Gamma: ["A3|B3", "B3|C3", "C3|D3"],
+  Beta: [
+    "A2|B2", "B2|B3", "C1|D1", "E2|E3", "D3|D4", "E3|F3", 
+    "B4|C4", "A5|B5", "C5|D5", "E4|F4", "E5|E6", "F5|F6"
+  ],
+  Gamma: [
+    "A1|B1", "A2|A3", "C2|D2", "B3|C3", "D3|E3", "E2|E3", 
+    "F1|F2", "A4|B4", "B4|B5", "B5|C5", "D5|D6", "E5|F5"
+  ],
 };
 
 export const MAZE_ARCHITECTURE: Record<MazeId, string[]> = {
   Alpha: [
-    "A vertical wall sits between B1 and C1 — you cannot cross sideways there.",
-    "A horizontal wall sits between A2 and A3 — you cannot cross there either.",
+    "  A   B   C   D   E   F",
+    "+---+---+---+---+---+---+",
+    "|       |           |   | 1",
+    "+---+   +---+   +   +   +",
+    "|               |       | 2",
+    "+   +   +   +   +   +---+",
+    "|   |       |           | 3",
+    "+   +---+   +---+   +   +",
+    "|                   |   | 4",
+    "+   +   +   +   +   +   +",
+    "|               |       | 5",
+    "+---+   +---+   +   +   +",
+    "|                       | 6",
+    "+---+---+---+---+---+---+"
   ],
   Beta: [
-    "The center 2x2 block (B2, B3, C2, C3) is sealed off — you must walk around it.",
-    "HARDWARE FAULT IS ACTIVE on this maze (see Info 2).",
+    "  A   B   C   D   E   F",
+    "+---+---+---+---+---+---+",
+    "|           |           | 1",
+    "+   +   +   +   +   +   +",
+    "|   |                   | 2",
+    "+   +---+   +   +---+   +",
+    "|                   |   | 3",
+    "+   +   +   +---+   +   +",
+    "|       |           |   | 4",
+    "+   +   +   +   +   +   +",
+    "|   |       |           | 5",
+    "+   +   +   +   +---+---+",
+    "|                       | 6",
+    "+---+---+---+---+---+---+"
   ],
   Gamma: [
-    "Row 3 cannot be crossed sideways: A3↔B3, B3↔C3 and C3↔D3 are all walled.",
-    "Moving up/down through row 3 is fine.",
+    "  A   B   C   D   E   F",
+    "+---+---+---+---+---+---+",
+    "|   |                   | 1",
+    "+   +   +   +   +   +---+",
+    "|           |           | 2",
+    "+---+   +   +   +---+   +",
+    "|       |       |       | 3",
+    "+   +   +   +   +   +   +",
+    "|   |                   | 4",
+    "+   +---+   +   +   +   +",
+    "|       |           |   | 5",
+    "+   +   +   +---+   +   +",
+    "|                       | 6",
+    "+---+---+---+---+---+---+"
   ],
 };
 
@@ -113,20 +144,23 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
   generate: (rng) => {
     const mazeId = rng.pick(["Alpha", "Beta", "Gamma"] as const);
     const serialNumber = randomSerialNumber(rng);
+    
     let startCoord, finishCoord;
+    let valid = false;
     let attempts = 0;
-    do {
+
+    while (!valid && attempts < 1000) {
       startCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
       finishCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
-      attempts++;
-    } while (startCoord === finishCoord && attempts < 100);
-    // Validate solvability
-    while (!hasValidPath(mazeId, startCoord, finishCoord) && attempts < 1000) {
-      startCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
-      finishCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
+      
+      // Pastikan titik tidak sama, lalu pastikan jalurnya bisa diselesaikan
+      if (startCoord !== finishCoord && hasValidPath(mazeId, startCoord, finishCoord)) {
+        valid = true;
+      }
       attempts++;
     }
-    return { mazeId, startCoord, finishCoord, currentCoord: startCoord, serialNumber };
+
+    return { mazeId, startCoord: startCoord!, finishCoord: finishCoord!, currentCoord: startCoord!, serialNumber };
   },
   info1: (vars) => [
     {
@@ -136,18 +170,27 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
       note: `Token starts at ${vars.startCoord}, exit at ${vars.finishCoord}. All walls are BETWEEN cells. Read every line — the owner cannot see the walls.`,
     },
   ],
-  info2: (vars) => [
+  info2: () => [
     {
       title: "Hardware fault status (Info 2)",
-      columns: ["Status", "Effect on the D-pad"],
+      columns: ["Serial Number ends in", "Effect on the D-pad"],
       rows: [
         {
-          cells: ["CONTROL ROTATION", `Serial #${vars.serialNumber}: ${Number(vars.serialNumber.slice(-1)) % 2 === 0 ? "EVEN → CCW 90°" : "ODD → CW 90°"}`],
+          cells: [
+            "EVEN digit", 
+            "Rotated CCW 90° (UP=LEFT, RIGHT=UP, DOWN=RIGHT, LEFT=DOWN)"
+          ],
           highlight: false
         },
-        { cells: ["NO FAULT", "Each button outputs the direction printed on it"], highlight: false },
+        {
+          cells: [
+            "ODD digit", 
+            "Rotated CW 90° (UP=RIGHT, RIGHT=DOWN, DOWN=LEFT, LEFT=UP)"
+          ],
+          highlight: false
+        }
       ],
-      note: "Announce the mapping before the owner presses anything — they cannot see this panel.",
+      note: "Ask the owner for the last digit of their serial number to determine the D-pad rotation.",
     },
   ],
   verify: (vars, answer) => {
