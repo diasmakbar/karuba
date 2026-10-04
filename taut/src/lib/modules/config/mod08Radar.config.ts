@@ -53,28 +53,36 @@ export const EPICENTER: Record<Constellation, string> = {
   Vela: "D2",
 };
 
-/** Info2_Modifier: how the reading drifts off the epicenter (dx columns, dy rows). */
-export const DRIFT_DELTA: Record<WindDirection, readonly [number, number]> = {
-  North: [0, -2],
-  NorthEast: [2, -2],
-  East: [2, 0],
-  SouthEast: [2, 2],
-  South: [0, 2],
-  SouthWest: [-2, 2],
-  West: [-2, 0],
-  NorthWest: [-2, -2],
+/**
+ * Info2_Modifier: the drift DIRECTION per wind, as a UNIT vector (dx columns, dy rows). The
+ * distance is rolled per instance between `DRIFT_MIN` and `DRIFT_MAX`, so the informant must ask
+ * the owner how far the reading drifted; only the direction is fixed by the wind arrow.
+ */
+export const DRIFT_VECTOR: Record<WindDirection, readonly [number, number]> = {
+  North: [0, -1],
+  NorthEast: [1, -1],
+  East: [1, 0],
+  SouthEast: [1, 1],
+  South: [0, 1],
+  SouthWest: [-1, 1],
+  West: [-1, 0],
+  NorthWest: [-1, -1],
 };
 
-/** Human-readable drift description (Info 2). */
+/** Inclusive range for the randomized drift distance (in cells). */
+export const DRIFT_MIN = 1;
+export const DRIFT_MAX = 2;
+
+/** Human-readable drift direction (Info 2); the exact distance is read from the owner. */
 export const DRIFT_RULE: Record<WindDirection, string> = {
-  North: "Drift 2 rows up.",
-  NorthEast: "Drift 2 columns right and 2 rows up.",
-  East: "Drift 2 columns right.",
-  SouthEast: "Drift 2 columns right and 2 rows down.",
-  South: "Drift 2 rows down.",
-  SouthWest: "Drift 2 columns left and 2 rows down.",
-  West: "Drift 2 columns left.",
-  NorthWest: "Drift 2 columns left and 2 rows up.",
+  North: "Drift UP (toward row 1).",
+  NorthEast: "Drift toward the top-right corner.",
+  East: "Drift RIGHT (toward column E).",
+  SouthEast: "Drift toward the bottom-right corner.",
+  South: "Drift DOWN (toward row 5).",
+  SouthWest: "Drift toward the bottom-left corner.",
+  West: "Drift LEFT (toward column A).",
+  NorthWest: "Drift toward the top-left corner.",
 };
 
 export const mod08RadarConfig: ModuleConfig<"MOD_08_RADAR"> = {
@@ -86,11 +94,14 @@ export const mod08RadarConfig: ModuleConfig<"MOD_08_RADAR"> = {
     constellations: CONSTELLATIONS,
     windDirections: WIND_DIRECTIONS,
     epicenter: EPICENTER,
-    driftDelta: DRIFT_DELTA,
+    driftVector: DRIFT_VECTOR,
+    driftMin: DRIFT_MIN,
+    driftMax: DRIFT_MAX,
     driftRule: DRIFT_RULE,
     infoNotes: {
       info1: "Columns are A-E left to right, rows are 1-5 top to bottom.",
-      info2: "If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
+      info2:
+        "The wind arrow sets the DIRECTION only; ask the owner how many cells it drifted (1 or 2). If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
     },
   },
 };
