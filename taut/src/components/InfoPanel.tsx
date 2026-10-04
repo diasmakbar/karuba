@@ -11,6 +11,11 @@ interface InfoPanelProps {
  * A manual page. Informants only ever read these tables out loud — the row marked
  * `highlight` is the one that applies to the module the owner is holding.
  */
+/** ASCII maps/borders must keep their internal spacing; render them preformatted. */
+function looksPreformatted(cell: string): boolean {
+  return cell.includes("+---") || cell.trimStart().startsWith("|") || cell.startsWith("  ");
+}
+
 export function InfoPanel({ moduleName, ownerName, page, tables }: InfoPanelProps) {
   return (
     <section className="info-card">
@@ -35,9 +40,11 @@ export function InfoPanel({ moduleName, ownerName, page, tables }: InfoPanelProp
             </thead>
             <tbody>
               {table.rows.map((row, index) => (
-                <tr key={`${table.title}-${index}`}>
+                <tr key={`${table.title}-${index}`} className={row.highlight ? "is-active" : ""}>
                   {row.cells.map((cell, cellIndex) => (
-                    <td key={`${index}-${cellIndex}`}>{cell}</td>
+                    <td key={`${index}-${cellIndex}`} className={looksPreformatted(cell) ? "is-pre" : ""}>
+                      {cell}
+                    </td>
                   ))}
                 </tr>
               ))}

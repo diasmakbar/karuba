@@ -456,6 +456,13 @@ body {
   font-weight: 700;
 }
 
+.info-table td.is-pre {
+  white-space: pre;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .info-note {
   font-size: 12px;
   color: var(--text-secondary);

@@ -5,18 +5,12 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
-const COLUMNS = ["A", "B", "C", "D"];
-const ROWS = [1, 2, 3, 4];
-const DIRECTIONS: { dir: Direction; glyph: string }[] = [
-  { dir: "UP", glyph: "↑" },
-  { dir: "LEFT", glyph: "←" },
-  { dir: "DOWN", glyph: "↓" },
-  { dir: "RIGHT", glyph: "→" },
-];
+const COLUMNS = ["A", "B", "C", "D", "E", "F"];
+const ROWS = [1, 2, 3, 4, 5, 6];
 
 /**
- * MOD_02_INVISIBLE_MAZE — a 4x4 grid and a D-pad. The owner sees only the token; the informants
- * describe the hidden walls (Info 1) and any hardware fault (Info 2). Each step submits
+ * MOD_02_INVISIBLE_MAZE — a 6x6 grid and a D-pad. The owner sees only the token; the informants
+ * describe the hidden walls (Info 1) and the serial-number rotation (Info 2). Each step submits
  * `{ direction }`; the host advances the token, or strikes on a wall.
  */
 export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleProps) {
@@ -43,6 +37,7 @@ export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleP
       disabled={disabled}
       strikeSignal={0}
     >
+      <div className="serial">SN {localVars.serialNumber}</div>
       <div className="cell-grid" style={{ gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)` }}>
         {ROWS.map((row) =>
           COLUMNS.map((column) => {
@@ -54,6 +49,7 @@ export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleP
               <div
                 key={coord}
                 className={`cell ${here ? "is-active" : ""} ${finish ? "is-target" : ""}`}
+                title={coord}
               >
                 {here ? "◉" : finish ? "◎" : start ? "○" : ""}
               </div>
@@ -84,7 +80,6 @@ export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleP
         Token {localVars.currentCoord} · exit {localVars.finishCoord}
       </p>
       <p className="module-feedback">{feedback}</p>
-      <span hidden>{DIRECTIONS.length}</span>
     </BaseModuleWrapper>
   );
 }

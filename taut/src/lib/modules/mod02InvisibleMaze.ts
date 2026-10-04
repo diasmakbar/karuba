@@ -172,25 +172,25 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
   ],
   info2: () => [
     {
-      title: "Hardware fault status (Info 2)",
-      columns: ["Serial Number ends in", "Effect on the D-pad"],
+      title: "D-pad rotation (Info 2)",
+      columns: ["Serial number ends in", "Effect on the D-pad"],
       rows: [
         {
           cells: [
-            "EVEN digit", 
-            "Rotated CCW 90° (UP=LEFT, RIGHT=UP, DOWN=RIGHT, LEFT=DOWN)"
+            "EVEN digit",
+            "Rotated CCW 90° (UP=LEFT, RIGHT=UP, DOWN=RIGHT, LEFT=DOWN)",
           ],
-          highlight: false
+          highlight: false,
         },
         {
           cells: [
-            "ODD digit", 
-            "Rotated CW 90° (UP=RIGHT, RIGHT=DOWN, DOWN=LEFT, LEFT=UP)"
+            "ODD digit",
+            "Rotated CW 90° (UP=RIGHT, RIGHT=DOWN, DOWN=LEFT, LEFT=UP)",
           ],
-          highlight: false
-        }
+          highlight: false,
+        },
       ],
-      note: "Ask the owner for the last digit of their serial number to determine the D-pad rotation.",
+      note: "Ask the owner for the last digit of their serial number, then read them the matching row.",
     },
   ],
   verify: (vars, answer) => {
