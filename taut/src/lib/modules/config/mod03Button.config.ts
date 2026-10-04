@@ -56,8 +56,8 @@ export const ACTION_RULES: readonly ActionRule[] = [
     directive: "HOLD",
   },
   {
-    text: "Otherwise, if the button is WHITE and the indicator light is FLASHING, press and HOLD.",
-    conditions: { buttonColor: "White", lightState: "FLASHING" },
+    text: "Otherwise, if the button is GREEN and the indicator light is FLASHING, press and HOLD.",
+    conditions: { buttonColor: "Green", lightState: "FLASHING" },
     directive: "HOLD",
   },
   {
@@ -117,8 +117,8 @@ export const LIGHT_TIMING_RULES: Record<Exclude<LightState, "OFF">, Record<Light
       text: "Steady BLUE light. Release when the shared clock contains a 4 anywhere in MM:SS.",
       release: { kind: "clockContains", digit: 4 },
     },
-    White: {
-      text: "Steady WHITE light. Release when the shared clock contains a 1 anywhere in MM:SS.",
+    Green: {
+      text: "Steady GREEN light. Release when the shared clock contains a 1 anywhere in MM:SS.",
       release: { kind: "clockContains", digit: 1 },
     },
     Yellow: {
@@ -135,8 +135,8 @@ export const LIGHT_TIMING_RULES: Record<Exclude<LightState, "OFF">, Record<Light
       text: "FLASHING BLUE light. Release when the shared clock's SECONDS are even.",
       release: { kind: "secondsEven" },
     },
-    White: {
-      text: "FLASHING WHITE light. Release when the shared clock contains a 1 anywhere in MM:SS.",
+    Green: {
+      text: "FLASHING GREEN light. Release when the shared clock contains a 1 anywhere in MM:SS.",
       release: { kind: "clockContains", digit: 1 },
     },
     Yellow: {
@@ -151,13 +151,13 @@ export const LIGHT_TIMING_RULES: Record<Exclude<LightState, "OFF">, Record<Light
 };
 
 /** Ordering used when rendering the Info 2 table. */
-export const LIGHT_COLOR_ORDER: readonly LightColor[] = ["Red", "Blue", "White", "Yellow"];
+export const LIGHT_COLOR_ORDER: readonly LightColor[] = ["Red", "Blue", "Green", "Yellow"];
 export const LIGHT_STATE_ORDER: readonly Exclude<LightState, "OFF">[] = ["SOLID", "FLASHING"];
 
 /** Vocabularies the generator draws from. */
-export const BUTTON_COLORS: readonly ButtonColor[] = ["Red", "Blue", "White", "Yellow"];
+export const BUTTON_COLORS: readonly ButtonColor[] = ["Red", "Blue", "Green", "Yellow"];
 export const BUTTON_LABELS: readonly ButtonLabel[] = ["Abort", "Detonate", "Hold", "Press"];
-export const LIGHT_COLORS: readonly LightColor[] = ["Red", "Blue", "White", "Yellow"];
+export const LIGHT_COLORS: readonly LightColor[] = ["Red", "Blue", "Green", "Yellow"];
 /** OFF is more likely than a lit state so the "skip color" path is exercised often. */
 export const LIGHT_STATES: readonly LightState[] = ["OFF", "SOLID", "SOLID", "FLASHING"];
 

@@ -27,18 +27,16 @@ export const CONSTELLATIONS: readonly Constellation[] = [
   "Vela",
 ];
 
-/** Wind directions the module can deal (>= 10 so a full Standard manual is possible). */
+/** The 8 real-world compass directions (max 8, capped to the compass rose). */
 export const WIND_DIRECTIONS: readonly WindDirection[] = [
   "North",
-  "East",
-  "South",
-  "West",
   "NorthEast",
+  "East",
   "SouthEast",
+  "South",
   "SouthWest",
+  "West",
   "NorthWest",
-  "NorthNorthWest",
-  "SouthSouthEast",
 ];
 
 /** Info1_Baseline: the storm epicenter for each constellation. */
@@ -57,30 +55,26 @@ export const EPICENTER: Record<Constellation, string> = {
 
 /** Info2_Modifier: how the reading drifts off the epicenter (dx columns, dy rows). */
 export const DRIFT_DELTA: Record<WindDirection, readonly [number, number]> = {
-  North: [-1, -1],
-  East: [2, -1],
+  North: [0, -2],
+  NorthEast: [2, -2],
+  East: [2, 0],
+  SouthEast: [2, 2],
   South: [0, 2],
-  West: [-2, 1],
-  NorthEast: [1, -2],
-  SouthEast: [1, 2],
-  SouthWest: [-1, 2],
-  NorthWest: [-1, -1],
-  NorthNorthWest: [0, -2],
-  SouthSouthEast: [0, 3],
+  SouthWest: [-2, 2],
+  West: [-2, 0],
+  NorthWest: [-2, -2],
 };
 
 /** Human-readable drift description (Info 2). */
 export const DRIFT_RULE: Record<WindDirection, string> = {
-  North: "Drift 1 column left and 1 row up.",
-  East: "Drift 2 columns right and 1 row up.",
+  North: "Drift 2 rows up.",
+  NorthEast: "Drift 2 columns right and 2 rows up.",
+  East: "Drift 2 columns right.",
+  SouthEast: "Drift 2 columns right and 2 rows down.",
   South: "Drift 2 rows down.",
-  West: "Drift 2 columns left and 1 row down.",
-  NorthEast: "Drift 1 column right and 2 rows up.",
-  SouthEast: "Drift 1 column right and 2 rows down.",
-  SouthWest: "Drift 1 column left and 2 rows down.",
-  NorthWest: "Drift 1 column left and 1 row up.",
-  NorthNorthWest: "Drift 2 rows up.",
-  SouthSouthEast: "Drift 3 rows down.",
+  SouthWest: "Drift 2 columns left and 2 rows down.",
+  West: "Drift 2 columns left.",
+  NorthWest: "Drift 2 columns left and 2 rows up.",
 };
 
 export const mod08RadarConfig: ModuleConfig<"MOD_08_RADAR"> = {

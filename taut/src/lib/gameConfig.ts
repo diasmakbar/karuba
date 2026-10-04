@@ -49,6 +49,20 @@ export function shapeSorterObjectCount(difficulty: Difficulty): number {
   return difficulty === "BEGINNER" ? 2 : 5;
 }
 
+/** MOD_07 equalizer: how many sliders/bands to show (Beginner 3, Standard 5, Extreme 7). */
+export function equalizerBandCount(difficulty: Difficulty): number {
+  if (difficulty === "BEGINNER") return 3;
+  if (difficulty === "STANDARD") return 5;
+  return 7;
+}
+
+/** MOD_10 pressure valves: how many valves to show (Beginner 4, Standard 6, Extreme 8). */
+export function valveCount(difficulty: Difficulty): number {
+  if (difficulty === "BEGINNER") return 4;
+  if (difficulty === "STANDARD") return 6;
+  return 8;
+}
+
 /** Each player needs two *different* other players as informants, so 3 is the hard minimum. */
 export const MIN_PLAYERS_TO_START = 3;
 export const MAX_ROOM_NAME_LENGTH = 18;

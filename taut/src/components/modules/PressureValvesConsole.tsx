@@ -5,14 +5,18 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
-const VALVES: ValveId[] = ["A", "B", "C", "D"];
-
 /**
- * MOD_10_PRESSURE_VALVES — a starting pressure, serial and four valves. Info 1 gives the target
- * pressure for the serial; Info 2 gives each valve's flow. Answer: the set of valves to `{ valves }`.
+ * MOD_10_PRESSURE_VALVES — a starting pressure, serial and the dealt valves. Info 1 gives the
+ * target pressure for the serial; Info 2 gives each valve's flow. Answer: the set of open valves.
+ *
+ * The valves come from the per-instance `activeValves` dealt at generate time (4 / 6 / 8 by
+ * difficulty); never a hard-coded list.
  */
 export function PressureValvesConsole({ state, disabled, submit }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_10_PRESSURE_VALVES");
+  const valves: ValveId[] = Array.isArray(localVars.activeValves) && localVars.activeValves.length > 0
+    ? (localVars.activeValves as ValveId[])
+    : ["A", "B", "C", "D"];
   const [active, setActive] = useState<ValveId[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -49,7 +53,7 @@ export function PressureValvesConsole({ state, disabled, submit }: ModuleConsole
         <div className="serial">SN {localVars.serialNumber}</div>
       </div>
       <div className="valves">
-        {VALVES.map((valve) => (
+        {valves.map((valve) => (
           <button
             key={valve}
             type="button"

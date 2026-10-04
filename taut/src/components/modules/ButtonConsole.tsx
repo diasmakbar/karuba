@@ -5,19 +5,19 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
-/** CSS background for the big button per its colour. */
+/** CSS background for the big button per its colour. White is intentionally not used. */
 const BUTTON_FILL: Record<ButtonColor, string> = {
   Red: "#c0392b",
   Blue: "#2b6cb0",
-  White: "#e8e8e8",
+  Green: "#2e9e5b",
   Yellow: "#d4a017",
 };
 
-/** CSS background for the indicator LED per its colour. */
+/** CSS background for the indicator LED per its colour. White is intentionally not used. */
 const LIGHT_FILL: Record<LightColor, string> = {
   Red: "#c0392b",
   Blue: "#2b6cb0",
-  White: "#e8e8e8",
+  Green: "#2e9e5b",
   Yellow: "#d4a017",
 };
 
@@ -98,7 +98,7 @@ export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: M
           className="btn btn-block"
           style={{
             background: BUTTON_FILL[localVars.buttonColor],
-            color: localVars.buttonColor === "White" || localVars.buttonColor === "Yellow" ? "#111" : "#fff",
+            color: localVars.buttonColor === "Yellow" ? "#111" : "#fff",
             fontWeight: 700,
             flex: 1,
           }}

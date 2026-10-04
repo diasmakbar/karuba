@@ -84,6 +84,11 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
           const y1 = yFor(left);
           const y2 = yFor(right);
           const d = `M ${LEFT_X} ${y1} C ${MID_X} ${y1}, ${MID_X} ${y2}, ${RIGHT_X} ${y2}`;
+          // The two halves that spring apart once the wire is cut. Each is a cubic from a side
+          // pin to the centre; a gap opens between them so the break is visible mid-wire.
+          const midY = (y1 + y2) / 2;
+          const leftD = `M ${LEFT_X} ${y1} C ${MID_X} ${y1}, ${MID_X} ${y1}, ${MID_X} ${midY}`;
+          const rightD = `M ${MID_X} ${midY} C ${MID_X} ${y2}, ${MID_X} ${y2}, ${RIGHT_X} ${y2}`;
           const isCut = localVars.cutIndex === i;
           return (
             <g
@@ -101,7 +106,14 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
               }}
             >
               <path d={d} className="wire-hit" />
-              <path d={d} className={`wire-path ${isCut ? "is-cut" : ""}`} />
+              {isCut ? (
+                <>
+                  <path d={leftD} className="wire-path is-cut-left" />
+                  <path d={rightD} className="wire-path is-cut-right" />
+                </>
+              ) : (
+                <path d={d} className="wire-path" />
+              )}
             </g>
           );
         })}

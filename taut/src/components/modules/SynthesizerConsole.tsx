@@ -5,16 +5,21 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 
-const VIALS: VialId[] = ["Alpha", "Beta", "Gamma", "Delta"];
-
 /**
- * MOD_09_SYNTHESIZER — a target type plus four abstract vials. Info 1 lists the target's pH/temp
+ * MOD_09_SYNTHESIZER — a target type plus the dealt vials. Info 1 lists the target's pH/temp
  * requirements; Info 2 maps each vial to a pH/temp. Answer: `{ vial }`.
+ *
+ * The vial buttons come from the per-instance `vialIds` dealt at generate time (5/10 by
+ * difficulty); never a hard-coded list, so the answer is always an actual option.
  */
 export function SynthesizerConsole({ state, disabled, submit }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_09_SYNTHESIZER");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // RTDB drops empty arrays; fall back to a small default if the dealt list ever goes missing.
+  const vials: VialId[] = Array.isArray(localVars.vialIds) && localVars.vialIds.length > 0
+    ? (localVars.vialIds as VialId[])
+    : ["Alpha", "Beta", "Gamma", "Delta"];
 
   const pick = async (vial: VialId) => {
     if (disabled || pending || state.isSolved) return;
@@ -40,7 +45,7 @@ export function SynthesizerConsole({ state, disabled, submit }: ModuleConsolePro
         <div className="font-display">{localVars.targetType}</div>
       </div>
       <div className="pad-grid">
-        {VIALS.map((vial) => (
+        {vials.map((vial) => (
           <button
             key={vial}
             type="button"

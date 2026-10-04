@@ -4,15 +4,27 @@ import type { ModuleConfig } from "../contract";
 /**
  * Configuration for the Pressure Valves module (MOD_10).
  *
- * Flow rates, target pressures and the starting-pressure pool are data. Rebalance the puzzle
- * entirely from this file.
+ * Flow rates, target pressures and the starting-pressure pool are data. A difficulty shows a
+ * prefix of `VALVE_IDS` (4 / 6 / 8 valves). Rebalance the puzzle entirely from this file.
  */
 
-/** Valve ids on the panel. */
-export const VALVE_IDS: readonly ValveId[] = ["A", "B", "C", "D"];
+/**
+ * All valve ids, ordered. The runtime shows the first N (Beginner 4, Standard 6, Extreme 8), so
+ * the first four are the classic A-D set. Valve D vents (negative flow).
+ */
+export const VALVE_IDS: readonly ValveId[] = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 /** Info2_Modifier: flow rate of each valve, psi. Negative vents. */
-export const FLOW_RATE: Record<ValveId, number> = { A: 10, B: 25, C: 15, D: -5 };
+export const FLOW_RATE: Record<ValveId, number> = {
+  A: 10,
+  B: 25,
+  C: 15,
+  D: -5,
+  E: 20,
+  F: -10,
+  G: 5,
+  H: 30,
+};
 
 /** Info1_Baseline: target pressure keyed by serial parity. */
 export const TARGET_PRESSURE: Record<"even" | "odd", number> = { even: 75, odd: 90 };
