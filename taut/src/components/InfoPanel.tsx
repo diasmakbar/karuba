@@ -82,8 +82,12 @@ export function InfoPanel({ moduleName, ownerName, page, tables }: InfoPanelProp
                 </tr>
               </thead>
               <tbody>
+                {/*
+                 * Informants read every row aloud; the applicable row is never marked. Manuals
+                 * must not expose the owner's randomized state, so `row.highlight` is ignored.
+                 */}
                 {table.rows.map((row, index) => (
-                  <tr key={`${table.title}-${index}`} className={row.highlight ? "is-active" : ""}>
+                  <tr key={`${table.title}-${index}`}>
                     {row.cells.map((cell, cellIndex) => (
                       <td key={`${index}-${cellIndex}`}>{cell}</td>
                     ))}

@@ -13,9 +13,14 @@ export type Direction = "UP" | "RIGHT" | "DOWN" | "LEFT";
  * Module vocabularies (exactly as named in .ai_docs/modules)
  * ------------------------------------------------------------------ */
 export type MazeId = "Alpha" | "Beta" | "Gamma";
-export type Cipher = "XYZA" | "VBNM";
 /** What the holder physically did with the big button. */
 export type ButtonAction = "EARLY" | "HOLD_TO_TARGET" | "RELEASE_NOW";
+/** MOD_03 vocabularies for the cascading button ruleset. */
+export type ButtonColor = "Red" | "Blue" | "White" | "Yellow";
+export type ButtonLabel = "Abort" | "Detonate" | "Hold" | "Press";
+export type StripColor = "Red" | "Blue" | "White" | "Yellow";
+/** The two actions the cascading ruleset can resolve to. */
+export type ButtonDirective = "HOLD" | "DROP";
 export type HazardSymbol = "Biohazard" | "Radiation" | "Corrosive";
 export type ShapeId = "Triangle" | "Square" | "Hexagon" | "Circle";
 export type WarningLight = "FLASHING" | "SOLID";
@@ -65,7 +70,10 @@ export interface LocalVarsMap {
     serialNumber: string;
   };
   MOD_03_BUTTON: {
-    cipher: Cipher;
+    buttonColor: ButtonColor;
+    buttonLabel: ButtonLabel;
+    stripColor: StripColor;
+    flashingLight: boolean;
     serialNumber: string;
     isHolding: boolean;
     holdStartedAt: number | null;
