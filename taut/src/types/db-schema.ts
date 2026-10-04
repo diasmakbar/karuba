@@ -77,27 +77,28 @@ export type VialId =
   | "Kappa";
 export type ValveId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
 export type IntercomMessage =
-  | "KLAATU"
-  | "GORT"
-  | "VERATA"
-  | "SLEESTAK"
-  | "MOGAR"
-  | "ZOLTAN"
-  | "TRON"
-  | "VINZCLAV"
-  | "GOZER"
-  | "KEYMASTER";
+  | "KOSONG"
+  | "APA"
+  | "TUNGGU"
+  | "BENTAR"
+  | "HAH"
+  | "SPASI"
+  | "TITIK"
+  | "GAK ADA"
+  | "UDAH"
+  | "BELUM";
 export type IntercomResponse =
-  | "BARADA"
-  | "NIKTO"
-  | "SHREK"
-  | "FIONA"
-  | "DAGOTH"
-  | "ANNIHILATE"
-  | "SURRENDER"
-  | "CONFIRM"
-  | "PROCEED"
-  | "ABORT";
+  | "ISI"
+  | "ULANG"
+  | "LANJUT"
+  | "TEKAN"
+  | "BIARIN"
+  | "HAPUS"
+  | "KOMA"
+  | "TITIK"
+  | "TIDAK"
+  | "IYA"
+  | "ITU";
 export type Threat = "Laser" | "Plasma" | "Kinetic" | "Sonic" | "EMP" | "Acid" | "Railgun";
 export type RoomHazard = "Kitchen" | "Armory" | "Server" | "Laboratory" | "Reactor" | "Hangar" | "Vault";
 export type FilterState = "Active" | "Standby";
@@ -117,27 +118,27 @@ export type DocumentCode =
   | "Doc-33";
 export type TubeColor = "Red" | "Blue" | "Green" | "Yellow";
 export type PersonName =
-  | "Jane Smith"
-  | "John Doe"
-  | "Alan Turing"
-  | "Grace Hopper"
-  | "Ada Lovelace"
-  | "Katherine J."
-  | "Linus T."
-  | "Margaret H."
-  | "Dennis R."
-  | "Barbara L.";
+  | "Rizki Pratama"
+  | "Rizky Pratama"
+  | "Chairul Anwar"
+  | "Khairul Anwar"
+  | "Syifa Aulia"
+  | "Sifa Aulia"
+  | "Fikri Saputra"
+  | "Vikri Saputra"
+  | "Naufal Hakim"
+  | "Noval Hakim";
 export type Destination =
-  | "Maintenance"
-  | "Engineering"
-  | "Server Room"
-  | "Archives"
-  | "Observatory"
-  | "Lab"
-  | "Reactor"
-  | "Hangar"
-  | "Vault"
-  | "Bridge";
+  | "Break Room"
+  | "Brake Room"
+  | "Wait Room"
+  | "Weight Room"
+  | "Sensor Lab"
+  | "Censor Lab"
+  | "Council Hall"
+  | "Counsel Hall"
+  | "Site A"
+  | "Sight A";
 
 /** Five unlabeled power switches. */
 export type Switches = readonly [boolean, boolean, boolean, boolean, boolean];

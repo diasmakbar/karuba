@@ -19,7 +19,7 @@ export function IntercomConsole({ state, disabled, submit }: ModuleConsoleProps)
   // RTDB drops empty arrays; fall back to a small default if the dealt list ever goes missing.
   const responses: IntercomResponse[] = Array.isArray(localVars.responses) && localVars.responses.length > 0
     ? (localVars.responses as IntercomResponse[])
-    : ["BARADA", "NIKTO", "SHREK", "FIONA"];
+    : ["ISI", "ULANG", "LANJUT", "TEKAN"];
 
   const reply = async (response: IntercomResponse) => {
     if (disabled || pending || state.isSolved) return;
