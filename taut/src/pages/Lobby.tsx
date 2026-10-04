@@ -57,12 +57,14 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
   const canStart = isHost && everyoneReady && !busy;
   const timePerLevelSeconds = room.timePerLevelSeconds ?? DIFFICULTIES[room.difficulty].timePerLevelSeconds;
   const totalLevels = room.totalLevels ?? DIFFICULTIES[room.difficulty].levels;
+  const maxStrikes = room.maxStrikes ?? DIFFICULTIES[room.difficulty].maxStrikes;
   const moduleSelectionMode: ModuleSelectionMode = room.moduleSelectionMode ?? "RANDOM";
   const selectedModuleIds: ModuleId[] = room.selectedModuleIds?.length ? room.selectedModuleIds : ALL_MODULE_IDS;
-  const saveAdvanced = (next: Partial<{ timePerLevelSeconds: number; totalLevels: number; moduleSelectionMode: ModuleSelectionMode; selectedModuleIds: ModuleId[] }>) =>
+  const saveAdvanced = (next: Partial<{ timePerLevelSeconds: number; totalLevels: number; maxStrikes: number; moduleSelectionMode: ModuleSelectionMode; selectedModuleIds: ModuleId[] }>) =>
     act(() => setAdvancedSettings(roomCode, {
       timePerLevelSeconds,
       totalLevels,
+      maxStrikes,
       moduleSelectionMode,
       selectedModuleIds,
       ...next,
@@ -165,6 +167,25 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
                     <button type="button" className="btn btn-ghost" disabled={busy || !customLevels || Number(customLevels) < 1 || Number(customLevels) > 10} onClick={() => void saveAdvanced({ totalLevels: Math.floor(Number(customLevels)) })}>Set phases</button>
                   </div>
                   <span className="muted">Current: {totalLevels} {totalLevels === 1 ? "phase" : "phases"}</span>
+                </div>
+
+                <div className="field">
+                  <span className="tag">Maximum strikes</span>
+                  <div className="row">
+                    {[1, 2, 3, 4, 5, 6].map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        className={`chip ${maxStrikes === count ? "is-active" : ""}`}
+                        disabled={busy}
+                        aria-pressed={maxStrikes === count}
+                        onClick={() => void saveAdvanced({ maxStrikes: count })}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="muted">Current limit: {maxStrikes} {maxStrikes === 1 ? "strike" : "strikes"}</span>
                 </div>
 
                 <div className="field">

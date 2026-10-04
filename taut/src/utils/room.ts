@@ -220,7 +220,7 @@ export async function leaveLobby(code: string): Promise<void> {
 /** Host-only: deal level 1, assign informants and start the shared countdown. */
 export async function setAdvancedSettings(
   code: string,
-  settings: { timePerLevelSeconds: number; totalLevels: number; moduleSelectionMode: ModuleSelectionMode; selectedModuleIds: ModuleId[] },
+  settings: { timePerLevelSeconds: number; totalLevels: number; maxStrikes: number; moduleSelectionMode: ModuleSelectionMode; selectedModuleIds: ModuleId[] },
 ): Promise<void> {
   const uid = await requireUid();
   const snapshot = await get(ref(db, roomPath(code)));
@@ -233,6 +233,9 @@ export async function setAdvancedSettings(
   }
   if (!Number.isInteger(settings.totalLevels) || settings.totalLevels < 1 || settings.totalLevels > 10) {
     throw new Error("Phases must be between 1 and 10.");
+  }
+  if (!Number.isInteger(settings.maxStrikes) || settings.maxStrikes < 1 || settings.maxStrikes > 10) {
+    throw new Error("Maximum strikes must be between 1 and 10.");
   }
   if (settings.moduleSelectionMode !== "RANDOM" && settings.moduleSelectionMode !== "MANUAL") {
     throw new Error("Choose Random or Manual module selection.");
@@ -247,8 +250,7 @@ export async function setAdvancedSettings(
     totalLevels: settings.totalLevels,
     moduleSelectionMode: settings.moduleSelectionMode,
     selectedModuleIds: selected.length ? selected : ALL_MODULE_IDS,
-    // Keep the difficulty card's summary and strikes consistent with the actual settings.
-    maxStrikes: room.maxStrikes ?? DIFFICULTIES[room.difficulty].maxStrikes,
+    maxStrikes: settings.maxStrikes,
   });
 }
 
