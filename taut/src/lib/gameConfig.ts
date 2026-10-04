@@ -63,21 +63,11 @@ export function valveCount(difficulty: Difficulty): number {
   return 8;
 }
 
-/** MOD_12 safe zone: grid is NxN (Beginner 3, Standard 4, Extreme 6). */
-export function safeZoneGridSize(difficulty: Difficulty): number {
-  if (difficulty === "BEGINNER") return 3;
-  if (difficulty === "STANDARD") return 4;
-  return 6;
-}
-
-/**
- * MOD_12 safe zone: how many threats/rooms the manual lists per difficulty
- * (Beginner 3, Standard 5, Extreme 7).
- */
-export function safeZoneVocabSize(difficulty: Difficulty): number {
-  if (difficulty === "BEGINNER") return 3;
-  if (difficulty === "STANDARD") return 5;
-  return 7;
+/** MOD_12 Battleship: grid is NxN (Beginner 6, Standard 8, Extreme 10). */
+export function battleshipGridSize(difficulty: Difficulty): number {
+  if (difficulty === "BEGINNER") return 6;
+  if (difficulty === "STANDARD") return 8;
+  return 10;
 }
 
 /** Each player needs two *different* other players as informants, so 3 is the hard minimum. */

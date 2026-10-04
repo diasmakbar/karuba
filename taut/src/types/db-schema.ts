@@ -99,8 +99,6 @@ export type IntercomResponse =
   | "TIDAK"
   | "IYA"
   | "ITU";
-export type Threat = "Laser" | "Plasma" | "Kinetic" | "Sonic" | "EMP" | "Acid" | "Railgun";
-export type RoomHazard = "Kitchen" | "Armory" | "Server" | "Laboratory" | "Reactor" | "Hangar" | "Vault";
 export type FilterState = "Active" | "Standby";
 export type SorterColor = "Red" | "Green" | "Blue" | "Yellow";
 export type SorterShape = "Triangle" | "Square" | "Circle";
@@ -234,15 +232,15 @@ export interface LocalVarsMap {
     /** Per-instance reply options to show in Info 2. */
     responses: IntercomResponse[];
   };
-  MOD_12_SAFE_ZONE: {
-    threat: Threat;
-    room: RoomHazard;
-    /** Grid is gridSize x gridSize (columns A.., rows 1..gridSize). */
+  MOD_12_BATTLESHIP: {
+    targetShip: string;
+    incomingShot: string;
+    /** Grid is gridSize x gridSize (columns A..J, rows 1..gridSize). */
     gridSize: number;
-    /** Per-instance cells each listed threat covers. */
-    threatCells: Record<string, string[]>;
-    /** Per-instance cells each listed room covers. */
-    roomCells: Record<string, string[]>;
+    /** Each ship occupies a contiguous horizontal or vertical run of cells. */
+    shipDeployments: Record<string, string[]>;
+    /** Cells hit by each artillery shot; trajectories may be lines or compact clusters. */
+    shotTrajectories: Record<string, string[]>;
   };
   MOD_13_SHAPE_SORTER: {
     filterAlpha: FilterState;
@@ -279,7 +277,7 @@ export interface ModuleAnswerMap {
   MOD_09_SYNTHESIZER: { vial: VialId };
   MOD_10_PRESSURE_VALVES: { valves: ValveId[] };
   MOD_11_INTERCOM: { response: IntercomResponse };
-  MOD_12_SAFE_ZONE: { coord: string };
+  MOD_12_BATTLESHIP: { coord: string };
   MOD_13_SHAPE_SORTER: { objectIndex: number };
   MOD_14_PNEUMATIC_TUBE: { tube: TubeColor };
   MOD_15_BIOMETRIC_SCANNER: { action: "APPROVE" | "REJECT" };

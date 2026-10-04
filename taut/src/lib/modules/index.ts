@@ -11,7 +11,7 @@ import { mod08Radar } from "./mod08Radar";
 import { mod09Synthesizer } from "./mod09Synthesizer";
 import { mod10PressureValves } from "./mod10PressureValves";
 import { mod11Intercom } from "./mod11Intercom";
-import { mod12SafeZone } from "./mod12SafeZone";
+import { mod12Battleship } from "./mod12Battleship";
 import { mod13ShapeSorter } from "./mod13ShapeSorter";
 import { mod14PneumaticTube } from "./mod14PneumaticTube";
 import { mod15BiometricScanner } from "./mod15BiometricScanner";
@@ -29,7 +29,7 @@ export const MODULE_REGISTRY: { [K in ModuleId]: ModuleDefinition<K> } = {
   MOD_09_SYNTHESIZER: mod09Synthesizer,
   MOD_10_PRESSURE_VALVES: mod10PressureValves,
   MOD_11_INTERCOM: mod11Intercom,
-  MOD_12_SAFE_ZONE: mod12SafeZone,
+  MOD_12_BATTLESHIP: mod12Battleship,
   MOD_13_SHAPE_SORTER: mod13ShapeSorter,
   MOD_14_PNEUMATIC_TUBE: mod14PneumaticTube,
   MOD_15_BIOMETRIC_SCANNER: mod15BiometricScanner,
@@ -88,7 +88,7 @@ export { mod08RadarConfig } from "./config/mod08Radar.config";
 export { mod09SynthesizerConfig } from "./config/mod09Synthesizer.config";
 export { mod10PressureValvesConfig } from "./config/mod10PressureValves.config";
 export { mod11IntercomConfig } from "./config/mod11Intercom.config";
-export { mod12SafeZoneConfig } from "./config/mod12SafeZone.config";
+export { mod12BattleshipConfig } from "./config/mod12Battleship.config";
 export { mod13ShapeSorterConfig } from "./config/mod13ShapeSorter.config";
 export { mod14PneumaticTubeConfig } from "./config/mod14PneumaticTube.config";
 export { mod15BiometricScannerConfig } from "./config/mod15BiometricScanner.config";

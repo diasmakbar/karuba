@@ -7,9 +7,9 @@ import type { ModuleConfig } from "../contract";
 
 /** Incoming transmissions the module can deal (>= 10). */
 export const MESSAGES: readonly IntercomMessage[] = [
-  "KOSONG",   // Owner: "Layar gw KOSONG." Informan: "Kosong blank, apa tulisannya K-O-S-O-N-G?"
-  "APA",      // Owner: "Tulisannya APA." Informan: "Lah gw nanya lo, tulisannya apa?!"
-  "TUNGGU",   // Owner: "TUNGGU." Informan: "Oke gw tungguin... buruan sebut!"
+  "KOSONG",
+  "APA",
+  "TUNGGU",
   "BENTAR",
   "HAH",
   "SPASI",
@@ -35,13 +35,13 @@ export const DICTIONARY: Record<IntercomMessage, string> = {
 
 /** Info2_Modifier: the required reply for each meaning. */
 export const PROTOCOL: Record<string, IntercomResponse> = {
-  "Zero Data": "ISI",          // Owner: "Masa gw disuruh ISI? Gak ada keyboard!" Informan: "Tombolnya namanya ISI!"
+  "Zero Data": "ISI",
   "Query Unknown": "ULANG",
   "Standby Mode": "LANJUT",
-  "Awaiting Input": "TEKAN",   // Owner: "Pencet apa?" Informan: "TEKAN!" Owner: "Iya nekan apa?!"
+  "Awaiting Input": "TEKAN",
   "Signal Lost": "BIARIN",
   "Space Detected": "HAPUS",
-  "End of Line": "KOMA",       // Sengaja dituker biar bingung
+  "End of Line": "KOMA",
   "Target Unclear": "ITU",
   "Process Complete": "TIDAK",
   "Process Pending": "IYA",

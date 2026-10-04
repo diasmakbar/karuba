@@ -12,7 +12,7 @@ import { RadarConsole } from "./RadarConsole";
 import { SynthesizerConsole } from "./SynthesizerConsole";
 import { PressureValvesConsole } from "./PressureValvesConsole";
 import { IntercomConsole } from "./IntercomConsole";
-import { SafeZoneConsole } from "./SafeZoneConsole";
+import { BattleshipConsole } from "./BattleshipConsole";
 import { ShapeSorterConsole } from "./ShapeSorterConsole";
 import { PneumaticTubeConsole } from "./PneumaticTubeConsole";
 import { BiometricScannerConsole } from "./BiometricScannerConsole";
@@ -32,7 +32,7 @@ export const CONSOLE_REGISTRY: Record<ModuleId, ConsoleComponent> = {
   MOD_09_SYNTHESIZER: SynthesizerConsole,
   MOD_10_PRESSURE_VALVES: PressureValvesConsole,
   MOD_11_INTERCOM: IntercomConsole,
-  MOD_12_SAFE_ZONE: SafeZoneConsole,
+  MOD_12_BATTLESHIP: BattleshipConsole,
   MOD_13_SHAPE_SORTER: ShapeSorterConsole,
   MOD_14_PNEUMATIC_TUBE: PneumaticTubeConsole,
   MOD_15_BIOMETRIC_SCANNER: BiometricScannerConsole,

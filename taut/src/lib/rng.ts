@@ -40,9 +40,9 @@ export function endsWithEven(serialNumber: string): boolean {
   return Number.isFinite(last) && last % 2 === 0;
 }
 
-/** Grid coordinate helpers: columns A-F, rows 1-6. */
-export const GRID_COLUMNS = ["A", "B", "C", "D", "E", "F"] as const;
-export const GRID_ROWS = [1, 2, 3, 4, 5, 6] as const;
+/** Grid coordinate helpers: columns A-J, rows 1-10 (MOD_12 Battleship uses up to 10x10). */
+export const GRID_COLUMNS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
+export const GRID_ROWS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 export function coordFrom(columnIndex: number, rowIndex: number): string {
   return `${GRID_COLUMNS[columnIndex]}${GRID_ROWS[rowIndex]}`;
