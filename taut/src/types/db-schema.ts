@@ -18,7 +18,10 @@ export type ButtonAction = "EARLY" | "HOLD_TO_TARGET" | "RELEASE_NOW";
 /** MOD_03 vocabularies for the cascading button ruleset. */
 export type ButtonColor = "Red" | "Blue" | "White" | "Yellow";
 export type ButtonLabel = "Abort" | "Detonate" | "Hold" | "Press";
-export type StripColor = "Red" | "Blue" | "White" | "Yellow";
+/** Colour of the indicator light (ignored when `lightState` is "OFF"). */
+export type LightColor = "Red" | "Blue" | "White" | "Yellow";
+/** Indicator light state: dark, steady, or blinking. */
+export type LightState = "OFF" | "SOLID" | "FLASHING";
 /** The two actions the cascading ruleset can resolve to. */
 export type ButtonDirective = "HOLD" | "DROP";
 export type HazardSymbol = "Biohazard" | "Radiation" | "Corrosive";
@@ -72,8 +75,8 @@ export interface LocalVarsMap {
   MOD_03_BUTTON: {
     buttonColor: ButtonColor;
     buttonLabel: ButtonLabel;
-    stripColor: StripColor;
-    flashingLight: boolean;
+    lightColor: LightColor;
+    lightState: LightState;
     serialNumber: string;
     isHolding: boolean;
     holdStartedAt: number | null;

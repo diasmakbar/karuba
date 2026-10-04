@@ -745,6 +745,11 @@ body {
   animation: blink 0.8s steps(1, end) infinite;
 }
 
+/* A lit LED whose border matches its (inline) background, for coloured indicator lights. */
+.led.is-lit {
+  border-color: currentColor;
+}
+
 /* Start: muted hollow ring. */
 .cell.is-start {
   border-color: var(--text-secondary);

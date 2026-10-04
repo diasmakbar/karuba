@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { ButtonAction, ButtonColor, StripColor } from "../../types/db-schema";
+import type { ButtonAction, ButtonColor, LightColor, LightState } from "../../types/db-schema";
 import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { clockLabel } from "../../lib/modules/mod03Button";
@@ -14,19 +14,33 @@ const BUTTON_FILL: Record<ButtonColor, string> = {
   Yellow: "#d4a017",
 };
 
-/** CSS background for the side strip per its colour. */
-const STRIP_FILL: Record<StripColor, string> = {
+/** CSS background for the indicator LED per its colour. */
+const LIGHT_FILL: Record<LightColor, string> = {
   Red: "#c0392b",
   Blue: "#2b6cb0",
   White: "#e8e8e8",
   Yellow: "#d4a017",
 };
 
+/** LED class name by state: dark, steady, or blinking (lit states set the border via `is-lit`). */
+const LIGHT_CLASS: Record<LightState, string> = {
+  OFF: "",
+  SOLID: "is-lit",
+  FLASHING: "is-lit is-flashing",
+};
+
+/** Human-readable light label shown under the LED. */
+const LIGHT_LABEL: Record<LightState, string> = {
+  OFF: "LIGHT: OFF",
+  SOLID: "LIGHT: STEADY",
+  FLASHING: "LIGHT: FLASHING",
+};
+
 /**
- * MOD_03_BUTTON — a physical button with a colour, a label, a side strip and a flashing light.
- * The holder (owner) sees all of these; the two informants must ask for them and read their
- * manuals. The holder presses and holds; the release rule keys off the SHARED room clock.
- * Answer: `{ action, secondsLeft }` measured against the clock.
+ * MOD_03_BUTTON — a physical button with a colour, a label and a coloured indicator light.
+ * The holder (owner) sees the button colour, label, the light's colour and state, and the serial;
+ * the two informants must ask for them and read their manuals. The holder presses and holds; the
+ * release rule keys off the SHARED room clock. Answer: `{ action, secondsLeft }`.
  */
 export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_03_BUTTON");
@@ -78,38 +92,36 @@ export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: M
         <div className="font-display" style={{ fontSize: 40 }}>
           {clock}
         </div>
-        <span className="tag" style={{ color: localVars.flashingLight ? "#e67e22" : undefined }}>
-          {localVars.flashingLight ? "LIGHT: FLASHING" : "LIGHT: OFF"}
-        </span>
+        <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "center" }}>
+          <span
+            className={`led ${LIGHT_CLASS[localVars.lightState]}`.trim()}
+            style={
+              localVars.lightState === "OFF"
+                ? undefined
+                : { background: LIGHT_FILL[localVars.lightColor], color: LIGHT_FILL[localVars.lightColor] }
+            }
+            aria-label={LIGHT_LABEL[localVars.lightState]}
+          />
+          <span className="tag">{LIGHT_LABEL[localVars.lightState]}</span>
+        </div>
       </div>
 
-      <div className="row" style={{ gap: 10, alignItems: "stretch" }}>
-        <div
-          aria-hidden
-          style={{
-            width: 12,
-            borderRadius: 3,
-            background: STRIP_FILL[localVars.stripColor],
-            border: "1px solid rgba(0,0,0,0.4)",
-          }}
-        />
-        <button
-          type="button"
-          className="btn btn-block"
-          style={{
-            background: BUTTON_FILL[localVars.buttonColor],
-            color: localVars.buttonColor === "White" || localVars.buttonColor === "Yellow" ? "#111" : "#fff",
-            fontWeight: 700,
-          }}
-          disabled={disabled || pending || state.isSolved}
-          aria-pressed={holding}
-          onPointerDown={startHold}
-          onPointerUp={() => release("HOLD_TO_TARGET")}
-          onPointerLeave={() => (holding ? release("HOLD_TO_TARGET") : undefined)}
-        >
-          {holding ? "RELEASE" : localVars.buttonLabel.toUpperCase()}
-        </button>
-      </div>
+      <button
+        type="button"
+        className="btn btn-block"
+        style={{
+          background: BUTTON_FILL[localVars.buttonColor],
+          color: localVars.buttonColor === "White" || localVars.buttonColor === "Yellow" ? "#111" : "#fff",
+          fontWeight: 700,
+        }}
+        disabled={disabled || pending || state.isSolved}
+        aria-pressed={holding}
+        onPointerDown={startHold}
+        onPointerUp={() => release("HOLD_TO_TARGET")}
+        onPointerLeave={() => (holding ? release("HOLD_TO_TARGET") : undefined)}
+      >
+        {holding ? "RELEASE" : localVars.buttonLabel.toUpperCase()}
+      </button>
 
       <button
         type="button"

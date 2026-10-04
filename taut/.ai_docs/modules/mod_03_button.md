@@ -6,8 +6,8 @@ Dependencies: BaseModuleWrapper
 LocalVars:
   buttonColor: "Red" | "Blue" | "White" | "Yellow"
   buttonLabel: "Abort" | "Detonate" | "Hold" | "Press"
-  stripColor: "Red" | "Blue" | "White" | "Yellow"
-  flashingLight: boolean
+  lightColor: "Red" | "Blue" | "White" | "Yellow"   (ignored when lightState == "OFF")
+  lightState: "OFF" | "SOLID" | "FLASHING"
   serialNumber: string (3 digits)
   isHolding: boolean
   holdStartedAt: number | null
@@ -16,22 +16,25 @@ LocalVars:
 Info1_Baseline (Action cascade):
   The ordered ACTION_RULES table (config). Evaluated top-to-bottom; the first rule whose
   DEFINED conditions all match decides HOLD vs DROP. A condition property that is undefined
-  is a wildcard. No row is highlighted — the Informant must ask the owner for the button's
-  color, label, light status, and serial parity.
+  is a wildcard. Conditions read button color, label, serial parity and light state.
+  No row is highlighted — the Informant must ask the owner for the button's color, label,
+  the indicator light's state, and the serial parity.
 
 Info2_Modifier (Release timing):
-  The STRIP_TIMING_RULES table (config), keyed by strip color. Only consulted when the cascade
-  resolved to HOLD. No row is highlighted — the Informant must ask the owner for the strip color.
+  Keyed by the indicator light's state AND color.
+    - lightState == "OFF"  -> a single color-agnostic rule applies (color skipped).
+    - lightState == "SOLID" or "FLASHING" -> the light's color selects the rule.
+  No row is highlighted — the Informant must ask the owner for the light's color and state.
 
 [VALIDATION_LOGIC]
 TargetState: Apply(Info1_Baseline cascade, LocalVars) -> HOLD | DROP
 OnSubmit(action, secondsLeft):
   if action == EARLY -> STRIKE
   if directive == DROP -> SUCCESS iff action == RELEASE_NOW
-  if directive == HOLD  -> SUCCESS iff releaseSatisfied(STRIP_TIMING_RULES[stripColor], action, secondsLeft)
+  if directive == HOLD  -> SUCCESS iff releaseSatisfied(timingRuleFor(lightState, lightColor).release, action, secondsLeft)
 
 [UI_REQUIREMENTS]
 - Render a large interactable button colored by buttonColor, labelled by buttonLabel.
-- Render the side strip in stripColor and a flashing-light indicator.
+- Render a colored indicator LED: dark (OFF), steady (SOLID, `is-lit`), or blinking (FLASHING).
 - Render the serial number and the shared room clock.
 - The owner sees all of the above; the two Informant manuals never expose these variables.

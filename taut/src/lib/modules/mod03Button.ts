@@ -1,16 +1,20 @@
-import type { ButtonDirective, StripColor } from "../../types/db-schema";
+import type { ButtonDirective, LightColor, LightState } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
 import { endsWithEven, randomSerialNumber } from "../rng";
 import {
   ACTION_RULES,
   BUTTON_COLORS,
   BUTTON_LABELS,
-  STRIP_COLORS,
-  STRIP_ORDER,
-  STRIP_TIMING_RULES,
+  LIGHT_COLORS,
+  LIGHT_COLOR_ORDER,
+  LIGHT_STATES,
+  LIGHT_STATE_ORDER,
+  LIGHT_TIMING_RULES,
+  OFF_TIMING_RULE,
   mod03ButtonConfig,
   type ActionRuleConditions,
-  type StripRelease,
+  type LightTimingRule,
+  type ReleaseTiming,
 } from "./config/mod03Button.config";
 
 /* ------------------------------------------------------------------ *
@@ -43,8 +47,8 @@ export function secondsAreEven(secondsLeft: number): boolean {
 export interface ButtonIdentity {
   buttonColor: string;
   buttonLabel: string;
-  stripColor: StripColor;
-  flashingLight: boolean;
+  lightColor: LightColor;
+  lightState: LightState;
   serialNumber: string;
 }
 
@@ -55,7 +59,7 @@ export interface ButtonIdentity {
 export function actionRuleMatches(conditions: ActionRuleConditions, vars: ButtonIdentity): boolean {
   if (conditions.buttonColor !== undefined && conditions.buttonColor !== vars.buttonColor) return false;
   if (conditions.buttonLabel !== undefined && conditions.buttonLabel !== vars.buttonLabel) return false;
-  if (conditions.flashingLight !== undefined && conditions.flashingLight !== vars.flashingLight) return false;
+  if (conditions.lightState !== undefined && conditions.lightState !== vars.lightState) return false;
   if (conditions.serial !== undefined) {
     const parity = endsWithEven(vars.serialNumber) ? "even" : "odd";
     if (conditions.serial !== parity) return false;
@@ -79,9 +83,18 @@ export function resolveDirective(vars: ButtonIdentity): ButtonDirective {
  * Release-timing evaluation
  * ------------------------------------------------------------------ */
 
-/** Evaluate a strip-color release requirement against the holder's release attempt. */
+/**
+ * The release-timing rule for this button. When the light is OFF the color is meaningless, so a
+ * single color-agnostic rule applies; otherwise the color selects the rule within the state.
+ */
+export function timingRuleFor(lightState: LightState, lightColor: LightColor): LightTimingRule {
+  if (lightState === "OFF") return OFF_TIMING_RULE;
+  return LIGHT_TIMING_RULES[lightState][lightColor];
+}
+
+/** Evaluate a release-timing requirement against the holder's release attempt. */
 export function releaseSatisfied(
-  release: StripRelease,
+  release: ReleaseTiming,
   action: "RELEASE_NOW" | "HOLD_TO_TARGET",
   secondsLeft: number,
 ): boolean {
@@ -104,17 +117,21 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
   id: mod03ButtonConfig.id,
   name: mod03ButtonConfig.name,
   kind: mod03ButtonConfig.kind,
-  generate: (rng) => ({
-    buttonColor: rng.pick(BUTTON_COLORS),
-    buttonLabel: rng.pick(BUTTON_LABELS),
-    stripColor: rng.pick(STRIP_COLORS),
-    flashingLight: rng.bool(),
-    serialNumber: randomSerialNumber(rng),
-    isHolding: false,
-    holdStartedAt: null,
-  }),
+  generate: (rng) => {
+    const lightState = rng.pick(LIGHT_STATES);
+    return {
+      buttonColor: rng.pick(BUTTON_COLORS),
+      buttonLabel: rng.pick(BUTTON_LABELS),
+      // The color only matters when the light is lit; still roll one so state stays consistent.
+      lightColor: rng.pick(LIGHT_COLORS),
+      lightState,
+      serialNumber: randomSerialNumber(rng),
+      isHolding: false,
+      holdStartedAt: null,
+    };
+  },
   // Info 1: the ordered action cascade. No row is highlighted — the Informant must ask the
-  // owner for the color, label, light and serial parity, then stop at the first matching rule.
+  // owner for the color, label, light state and serial parity, then stop at the first match.
   info1: () => [
     {
       title: "Action cascade — check top to bottom (Info 1)",
@@ -126,26 +143,33 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
       note: "Stop at the first rule that matches. If it says HOLD, consult the release manual. If it says DROP, release immediately.",
     },
   ],
-  // Info 2: the strip-color release table. Again, no highlighting — the Informant asks the owner
-  // for the strip color beside the button.
+  // Info 2: the indicator-light release table. The OFF row is color-agnostic; the other states
+  // are listed per color. No highlighting — the Informant asks the owner for color + state.
   info2: () => [
     {
-      title: "Release timing by strip color (Info 2)",
-      columns: ["Strip color", "Release when…"],
-      rows: STRIP_ORDER.map((strip) => ({
-        cells: [strip, STRIP_TIMING_RULES[strip].text],
+      title: "Release timing — light OFF (Info 2)",
+      columns: ["Light state", "Release when…"],
+      rows: [{ cells: ["OFF (any color)", OFF_TIMING_RULE.text], highlight: false }],
+      note: "If the light is OFF, ignore its color and use this row.",
+    },
+    ...LIGHT_STATE_ORDER.map((state) => ({
+      title: `Release timing — ${state} light (Info 2)`,
+      columns: ["Light color", "Release when…"],
+      rows: LIGHT_COLOR_ORDER.map((color) => ({
+        cells: [color, LIGHT_TIMING_RULES[state][color].text],
         highlight: false,
       })),
       note: "Only read this if the first manual resolved to HOLD. Everyone reads the same shared room clock.",
-    },
+    })),
   ],
   verify: (vars, answer) => {
     const directive = resolveDirective(vars);
     // A wrong action (e.g. holding when told to DROP, or an early release) is a strike.
     if (answer.action === "EARLY") return false;
     if (directive === "DROP") return answer.action === "RELEASE_NOW";
-    // HOLD: validate the release time against the strip-color requirement.
-    return releaseSatisfied(STRIP_TIMING_RULES[vars.stripColor].release, answer.action, answer.secondsLeft);
+    // HOLD: validate the release time against the light state/color requirement.
+    const release = timingRuleFor(vars.lightState, vars.lightColor).release;
+    return releaseSatisfied(release, answer.action, answer.secondsLeft);
   },
   status: (vars) => (vars.isHolding ? "Holding — release per your informant" : "Idle — press and hold"),
 };
