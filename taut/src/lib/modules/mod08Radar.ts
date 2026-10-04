@@ -1,6 +1,6 @@
 import type { Constellation, WindDirection } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
-import { clampIndex, coordFrom, parseCoord } from "../rng";
+import { coordFrom, parseCoord } from "../rng";
 import { vocabSize } from "../gameConfig";
 import {
   CONSTELLATIONS,
@@ -16,14 +16,19 @@ import {
 export { EPICENTER };
 export { DRIFT_RULE };
 
+/** Wrap an index around the grid edges (the radar "continues" past the edge to the other side). */
+function wrapIndex(value: number, size: number): number {
+  return ((value % size) + size) % size;
+}
+
 /**
- * Clamping models the radar edge: a shift that would leave the grid simply stops
- * on that axis, so the target always stays on screen.
+ * The radar WRAPS at the edges: a drift that would leave the grid continues onto the opposite
+ * side, so the target is always on screen and fully determined by the epicenter + drift vector.
  */
 export function radarTarget(vars: { constellation: Constellation; windDirection: WindDirection }): string {
   const start = parseCoord(EPICENTER[vars.constellation]);
   const [dx, dy] = DRIFT_DELTA[vars.windDirection];
-  return coordFrom(clampIndex(start.col + dx, GRID_SIZE), clampIndex(start.row + dy, GRID_SIZE));
+  return coordFrom(wrapIndex(start.col + dx, GRID_SIZE), wrapIndex(start.row + dy, GRID_SIZE));
 }
 
 export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
@@ -63,7 +68,7 @@ export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
         cells: [wind, DRIFT_RULE[wind]],
         highlight: wind === vars.windDirection,
       })),
-      note: "If a shift would leave the grid, stop at the edge and continue the rest of the drift.",
+      note: "If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
     },
   ],
   verify: (vars, answer) => answer.coord === radarTarget(vars),

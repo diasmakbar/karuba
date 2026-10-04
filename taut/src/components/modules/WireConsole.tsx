@@ -16,6 +16,12 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_01_WIRE");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // Local index of the wire the player just cut with a correct answer. Held here (not only in
+  // Firebase) so the split-apart animation plays immediately, even though a solved single-step
+  // module writes no further localVars.
+  const [cutIndex, setCutIndex] = useState<number | null>(
+    typeof localVars.cutIndex === "number" ? localVars.cutIndex : null,
+  );
 
   const cut = async (wireIndex: number) => {
     if (disabled || pending || state.isSolved) return;
@@ -24,6 +30,8 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
     try {
       const outcome = await submit({ wireIndex });
       setFeedback(outcomeMessage(outcome));
+      // A correct cut splits THAT wire; a strike leaves the board untouched.
+      if (outcome === "SOLVED") setCutIndex(wireIndex);
     } finally {
       setPending(false);
     }
@@ -89,7 +97,7 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
           const midY = (y1 + y2) / 2;
           const leftD = `M ${LEFT_X} ${y1} C ${MID_X} ${y1}, ${MID_X} ${y1}, ${MID_X} ${midY}`;
           const rightD = `M ${MID_X} ${midY} C ${MID_X} ${y2}, ${MID_X} ${y2}, ${RIGHT_X} ${y2}`;
-          const isCut = localVars.cutIndex === i;
+          const isCut = cutIndex === i;
           return (
             <g
               key={i}

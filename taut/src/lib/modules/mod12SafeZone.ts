@@ -24,10 +24,15 @@ export function dangerousCells(vars: SafeZoneVars): string[] {
   return [...new Set([...THREAT_PATTERN[vars.threat], ...ROOM_HAZARD[vars.room]])];
 }
 
+/** All cells left uncovered by the threat + room hazard. */
+export function survivorCells(vars: SafeZoneVars): string[] {
+  const dangerous = dangerousCells(vars);
+  return CELLS_3.filter((cell) => !dangerous.includes(cell));
+}
+
 /** Exactly one cell survives every configured combination. */
 export function safeCell(vars: SafeZoneVars): string {
-  const dangerous = dangerousCells(vars);
-  return CELLS_3.find((cell) => !dangerous.includes(cell)) ?? "B2";
+  return survivorCells(vars)[0] ?? "B2";
 }
 
 export const mod12SafeZone: ModuleDefinition<"MOD_12_SAFE_ZONE"> = {
@@ -35,10 +40,16 @@ export const mod12SafeZone: ModuleDefinition<"MOD_12_SAFE_ZONE"> = {
   id: mod12SafeZoneConfig.id,
   name: mod12SafeZoneConfig.name,
   kind: mod12SafeZoneConfig.kind,
-  generate: (rng, _difficulty) => ({
-    threat: rng.pick(THREATS),
-    room: rng.pick(ROOMS),
-  }),
+  generate: (rng, _difficulty) => {
+    // Safety net: keep rolling until exactly one cell survives, so the puzzle is always solvable.
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const threat = rng.pick(THREATS);
+      const room = rng.pick(ROOMS);
+      if (survivorCells({ threat, room }).length === 1) return { threat, room };
+    }
+    // Config invariant should make this unreachable; fall back to a known-good pair.
+    return { threat: "Laser", room: "Kitchen" };
+  },
   info1: (vars) => [
     {
       title: "Weapon coverage (Info 1)",

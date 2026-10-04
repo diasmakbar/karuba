@@ -90,7 +90,7 @@ export const mod08RadarConfig: ModuleConfig<"MOD_08_RADAR"> = {
     driftRule: DRIFT_RULE,
     infoNotes: {
       info1: "Columns are A-E left to right, rows are 1-5 top to bottom.",
-      info2: "If a shift would leave the grid, stop at the edge and continue the rest of the drift.",
+      info2: "If a drift would leave the grid, WRAP around: exiting one edge continues from the opposite edge on that axis.",
     },
   },
 };
