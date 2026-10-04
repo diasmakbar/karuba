@@ -27,55 +27,45 @@ const WALLED_EDGES: Record<MazeId, string[]> = {
   ],
 };
 
+/** True when `a` and `b` share a walled edge (order-independent). */
+function hasWall(edges: Set<string>, a: string, b: string): boolean {
+  return edges.has(`${a}|${b}`) || edges.has(`${b}|${a}`);
+}
+
+/**
+ * Render a 6x6 map straight from `WALLED_EDGES` so the manual shown in Info 1 can never drift
+ * from the walls used by [`nextCoord()`]. Verticals live between columns, horizontals between rows.
+ */
+export function renderMaze(mazeId: MazeId): string[] {
+  const edges = new Set(WALLED_EDGES[mazeId]);
+  const lines: string[] = ["  A   B   C   D   E   F", "+---+---+---+---+---+---+"];
+  for (let r = 0; r < ROWS.length; r += 1) {
+    let cells = "|";
+    for (let c = 0; c < COLUMNS.length; c += 1) {
+      const here = `${COLUMNS[c]}${ROWS[r]}`;
+      const right = COLUMNS[c + 1] ? `${COLUMNS[c + 1]}${ROWS[r]}` : null;
+      cells += "   "; // 3-wide cell interior
+      cells += right && hasWall(edges, here, right) ? "|" : " ";
+    }
+    lines.push(`${cells} ${ROWS[r]}`); // trailing row label so players can name cells
+    if (r < ROWS.length - 1) {
+      let sep = "+";
+      for (let c = 0; c < COLUMNS.length; c += 1) {
+        const here = `${COLUMNS[c]}${ROWS[r]}`;
+        const below = `${COLUMNS[c]}${ROWS[r + 1]}`;
+        sep += (hasWall(edges, here, below) ? "---" : "   ") + "+";
+      }
+      lines.push(sep);
+    }
+  }
+  lines.push("+---+---+---+---+---+---+");
+  return lines;
+}
+
 export const MAZE_ARCHITECTURE: Record<MazeId, string[]> = {
-  Alpha: [
-    "  A   B   C   D   E   F",
-    "+---+---+---+---+---+---+",
-    "|       |           |   | 1",
-    "+---+   +---+   +   +   +",
-    "|               |       | 2",
-    "+   +   +   +   +   +---+",
-    "|   |       |           | 3",
-    "+   +---+   +---+   +   +",
-    "|                   |   | 4",
-    "+   +   +   +   +   +   +",
-    "|               |       | 5",
-    "+---+   +---+   +   +   +",
-    "|                       | 6",
-    "+---+---+---+---+---+---+"
-  ],
-  Beta: [
-    "  A   B   C   D   E   F",
-    "+---+---+---+---+---+---+",
-    "|           |           | 1",
-    "+   +   +   +   +   +   +",
-    "|   |                   | 2",
-    "+   +---+   +   +---+   +",
-    "|                   |   | 3",
-    "+   +   +   +---+   +   +",
-    "|       |           |   | 4",
-    "+   +   +   +   +   +   +",
-    "|   |       |           | 5",
-    "+   +   +   +   +---+---+",
-    "|                       | 6",
-    "+---+---+---+---+---+---+"
-  ],
-  Gamma: [
-    "  A   B   C   D   E   F",
-    "+---+---+---+---+---+---+",
-    "|   |                   | 1",
-    "+   +   +   +   +   +---+",
-    "|           |           | 2",
-    "+---+   +   +   +---+   +",
-    "|       |       |       | 3",
-    "+   +   +   +   +   +   +",
-    "|   |                   | 4",
-    "+   +---+   +   +   +   +",
-    "|       |           |   | 5",
-    "+   +   +   +---+   +   +",
-    "|                       | 6",
-    "+---+---+---+---+---+---+"
-  ],
+  Alpha: renderMaze("Alpha"),
+  Beta: renderMaze("Beta"),
+  Gamma: renderMaze("Gamma"),
 };
 
 /** Info2_Modifier: serialNumber-based control rotation */
@@ -193,15 +183,17 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
       note: "Ask the owner for the last digit of their serial number, then read them the matching row.",
     },
   ],
+  // A step is "correct" when the mapped move is legal (not a wall, not out of bounds).
+  // Reaching the exit is decided by `advance` (returning null = module finished).
   verify: (vars, answer) => {
     const command = commandFor(vars.serialNumber, answer.direction);
-    const next = nextCoord(vars.mazeId, vars.currentCoord, command);
-    return next !== null && next === vars.finishCoord;
+    return nextCoord(vars.mazeId, vars.currentCoord, command) !== null;
   },
   advance: (vars, answer) => {
     const command = commandFor(vars.serialNumber, answer.direction);
     const next = nextCoord(vars.mazeId, vars.currentCoord, command);
-    if (next === null || next === vars.finishCoord) return null;
+    if (next === null) return { ...vars }; // illegal move is already a strike in verify
+    if (next === vars.finishCoord) return null; // reached the exit -> solved
     return { ...vars, currentCoord: next };
   },
   status: (vars) => `Token at ${vars.currentCoord} · exit at ${vars.finishCoord}`,

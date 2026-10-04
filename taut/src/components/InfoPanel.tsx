@@ -13,7 +13,7 @@ interface InfoPanelProps {
  */
 /** ASCII maps/borders must keep their internal spacing; render them preformatted. */
 function looksPreformatted(cell: string): boolean {
-  return cell.includes("+---") || cell.trimStart().startsWith("|") || cell.startsWith("  ");
+  return /^[+|]/.test(cell) || / {2,}/.test(cell);
 }
 
 export function InfoPanel({ moduleName, ownerName, page, tables }: InfoPanelProps) {
