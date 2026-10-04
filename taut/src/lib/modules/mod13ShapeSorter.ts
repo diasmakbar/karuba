@@ -1,45 +1,56 @@
 import type { FilterState, SorterColor, SorterObject, SorterShape } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import {
+  ALPHA_REJECTS,
+  ALPHA_RULE,
+  BETA_KEEPS,
+  BETA_REJECTS,
+  BETA_RULE,
+  FILTER_STATES,
+  mod13ShapeSorterConfig,
+} from "./config/mod13ShapeSorter.config";
 
 /** Info1_Baseline: filter alpha rejects these colors. */
 export function passesAlpha(color: SorterColor, filterAlpha: FilterState): boolean {
-  return filterAlpha === "Active" ? color !== "Red" && color !== "Green" : color !== "Blue";
+  return !ALPHA_REJECTS[filterAlpha].includes(color);
 }
 
 /** Info2_Modifier: filter beta keeps only this geometry. */
 export function passesBeta(shape: SorterShape, filterBeta: FilterState): boolean {
-  return filterBeta === "Active" ? shape === "Triangle" : shape === "Circle";
+  return shape === BETA_KEEPS[filterBeta];
 }
 
-export function passesBoth(object: SorterObject, vars: { filterAlpha: FilterState; filterBeta: FilterState }): boolean {
+export function passesBoth(
+  object: SorterObject,
+  vars: { filterAlpha: FilterState; filterBeta: FilterState },
+): boolean {
   return passesAlpha(object.color, vars.filterAlpha) && passesBeta(object.shape, vars.filterBeta);
 }
 
-export function correctObjectIndex(vars: { filterAlpha: FilterState; filterBeta: FilterState; objects: SorterObject[] }): number {
+export function correctObjectIndex(vars: {
+  filterAlpha: FilterState;
+  filterBeta: FilterState;
+  objects: SorterObject[];
+}): number {
   return vars.objects.findIndex((object) => passesBoth(object, vars));
 }
 
-export const ALPHA_RULE: Record<FilterState, string> = {
-  Active: "Rejects RED and GREEN objects — anything else may pass.",
-  Standby: "Rejects BLUE objects — anything else may pass.",
-};
-
-export const BETA_RULE: Record<FilterState, string> = {
-  Active: "Requires exactly 3 sides — only a TRIANGLE passes.",
-  Standby: "Requires 0 sharp corners — only a CIRCLE passes.",
-};
+export { ALPHA_RULE };
+export { BETA_RULE };
 
 export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
-  id: "MOD_13_SHAPE_SORTER",
-  name: "Shape Sorter",
-  kind: "Filtering Component",
+  config: mod13ShapeSorterConfig,
+  id: mod13ShapeSorterConfig.id,
+  name: mod13ShapeSorterConfig.name,
+  kind: mod13ShapeSorterConfig.kind,
   generate: (rng) => {
-    const filterAlpha = rng.pick(["Active", "Standby"] as const);
-    const filterBeta = rng.pick(["Active", "Standby"] as const);
-    const survivorColor = filterAlpha === "Active" ? rng.pick(["Blue", "Yellow"] as const) : rng.pick(["Red", "Green", "Yellow"] as const);
-    const survivorShape: SorterShape = filterBeta === "Active" ? "Triangle" : "Circle";
-    const rejectedColor: SorterColor = filterAlpha === "Active" ? rng.pick(["Red", "Green"] as const) : "Blue";
-    const rejectedShapes: SorterShape[] = filterBeta === "Active" ? ["Square", "Circle"] : ["Triangle", "Square"];
+    const filterAlpha = rng.pick(FILTER_STATES);
+    const filterBeta = rng.pick(FILTER_STATES);
+    // Candidate colours/shapes for the surviving and rejected objects come from config sets.
+    const survivorColor = rng.pick(rng.shuffle(["Blue", "Yellow"] as const));
+    const survivorShape: SorterShape = BETA_KEEPS[filterBeta];
+    const rejectedColor: SorterColor = rng.pick(ALPHA_REJECTS[filterAlpha]);
+    const rejectedShapes: readonly SorterShape[] = BETA_REJECTS[filterBeta];
     return {
       filterAlpha,
       filterBeta,
@@ -55,7 +66,7 @@ export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
     {
       title: "Filter ALPHA status (Info 1)",
       columns: ["Status", "Behaviour"],
-      rows: (["Active", "Standby"] as const).map((state) => ({
+      rows: FILTER_STATES.map((state) => ({
         cells: [state, ALPHA_RULE[state]],
         highlight: state === vars.filterAlpha,
       })),
@@ -65,7 +76,7 @@ export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
     {
       title: "Filter BETA status (Info 2)",
       columns: ["Status", "Behaviour"],
-      rows: (["Active", "Standby"] as const).map((state) => ({
+      rows: FILTER_STATES.map((state) => ({
         cells: [state, BETA_RULE[state]],
         highlight: state === vars.filterBeta,
       })),

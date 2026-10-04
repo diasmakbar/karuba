@@ -1,12 +1,19 @@
 import type { Rng } from "../rng";
 import type { ModuleDefinition } from "./contract";
 import { pickDistinct } from "../rng";
+import {
+  LABELS,
+  STAGE_COUNT,
+  STAGE_RULES,
+  mod04SequenceProtocolConfig,
+  type StageAction,
+} from "./config/mod04SequenceProtocol.config";
 
 type HistoryEntry = { positionPressed: number; labelPressed: number };
 type SequenceVars = {
   /** Button labels as they appear left→right for the CURRENT stage, i.e. labels[0] is position 1. */
   physicalLabels: number[];
-  /** The digit shown for each of the 4 stages. */
+  /** The digit shown for each of the stages. */
   stageDisplays: number[];
   currentStage: number;
   history: HistoryEntry[];
@@ -22,11 +29,11 @@ function historyOf(vars: SequenceVars): HistoryEntry[] {
   return Array.isArray(vars.history) ? vars.history : [];
 }
 
-/** Labels for the current stage, defaulting to a fresh 1-4 order if Firebase dropped them. */
+/** Labels for the current stage, defaulting to a fresh order if Firebase dropped them. */
 function labelsOf(vars: SequenceVars): number[] {
-  return Array.isArray(vars.physicalLabels) && vars.physicalLabels.length === 4
+  return Array.isArray(vars.physicalLabels) && vars.physicalLabels.length === LABELS.length
     ? vars.physicalLabels
-    : [1, 2, 3, 4];
+    : [...LABELS];
 }
 
 /** Deterministic shuffle for a given seed — no external RNG needed inside the pure `advance`. */
@@ -51,7 +58,7 @@ function shuffleForSeed(seed: number): number[] {
       return copy;
     },
   };
-  return rng.shuffle([1, 2, 3, 4]);
+  return rng.shuffle([...LABELS]);
 }
 
 /** 1-based left→right position that holds the given label on the current stage. */
@@ -64,133 +71,77 @@ function labelAtPosition(vars: SequenceVars, position: number): number {
   return labelsOf(vars)[position - 1];
 }
 
+/** Resolve a config stage action to a concrete 1-based target position for the current vars. */
+function resolveAction(vars: SequenceVars, action: StageAction): number {
+  const history = historyOf(vars);
+  switch (action.kind) {
+    case "fixedPosition":
+      return action.position;
+    case "positionOfLabel":
+      return positionOfLabel(vars, action.label);
+    case "samePositionAsStage":
+      return history[action.stage - 1]?.positionPressed ?? 1;
+    case "sameLabelAsStage":
+      return history[action.stage - 1]
+        ? positionOfLabel(vars, history[action.stage - 1].labelPressed)
+        : 1;
+  }
+}
+
+/** The rule rows (all displays) for a given stage, straight from config. */
+export function stageRules(stage: number): readonly { display: number; text: string }[] {
+  return STAGE_RULES[stage] ?? [];
+}
+
+/** Build one Info table for a stage from the config ruleset. */
+function stageTable(title: string, stage: number, note: string) {
+  return {
+    title,
+    columns: ["Display", "Press"],
+    rows: stageRules(stage).map((item) => ({
+      cells: [String(item.display), item.text],
+      highlight: false,
+    })),
+    note,
+  };
+}
+
 /**
- * The authoritative target for the current stage, per the module gameplan.
- * Stage 1-2 rules live on Info 1; stage 3-4 rules live on Info 2.
+ * The authoritative target for the current stage, per the config ruleset.
+ * Stages 1-2 rules live on Info 1; stage 3-4 rules live on Info 2 (split is presentation-only).
  */
 export function targetPosition(vars: SequenceVars): number {
   const stage = vars.currentStage;
   const display = vars.stageDisplays[stage - 1];
-  const history = historyOf(vars);
-  const s1 = history[0];
-  const s2 = history[1];
-
-  if (stage === 1) {
-    switch (display) {
-      case 1:
-      case 2:
-        return 2;
-      case 3:
-        return 3;
-      case 4:
-        return 4;
-      default:
-        return -1;
-    }
-  }
-
-  if (stage === 2) {
-    switch (display) {
-      case 1:
-        return positionOfLabel(vars, 4);
-      case 2:
-        return s1 ? s1.positionPressed : 1;
-      case 3:
-        return 1;
-      case 4:
-        return s1 ? s1.positionPressed : 1;
-      default:
-        return -1;
-    }
-  }
-
-  if (stage === 3) {
-    switch (display) {
-      case 1:
-        return s2 ? positionOfLabel(vars, s2.labelPressed) : 1;
-      case 2:
-        return s1 ? positionOfLabel(vars, s1.labelPressed) : 1;
-      case 3:
-        return 3;
-      case 4:
-        return positionOfLabel(vars, 4);
-      default:
-        return -1;
-    }
-  }
-
-  if (stage === 4) {
-    switch (display) {
-      case 1:
-        return s1 ? s1.positionPressed : 1;
-      case 2:
-        return 1;
-      case 3:
-        return s2 ? s2.positionPressed : 1;
-      case 4:
-        return s2 ? s2.positionPressed : 1;
-      default:
-        return -1;
-    }
-  }
-
-  return -1;
+  if (stage < 1 || stage > STAGE_COUNT) return -1;
+  const rule = STAGE_RULES[stage]?.find((item) => item.display === display);
+  if (!rule) return -1;
+  return resolveAction(vars, rule.action);
 }
 
 export const mod04SequenceProtocol: ModuleDefinition<"MOD_04_SEQUENCE_PROTOCOL"> = {
-  id: "MOD_04_SEQUENCE_PROTOCOL",
-  name: "Sequence Protocol",
-  kind: "Memory Component",
+  config: mod04SequenceProtocolConfig,
+  id: mod04SequenceProtocolConfig.id,
+  name: mod04SequenceProtocolConfig.name,
+  kind: mod04SequenceProtocolConfig.kind,
   generate: (rng) => ({
-    physicalLabels: pickDistinct(rng, [1, 2, 3, 4], 4),
-    stageDisplays: [rng.int(4) + 1, rng.int(4) + 1, rng.int(4) + 1, rng.int(4) + 1],
+    physicalLabels: pickDistinct(rng, LABELS, LABELS.length),
+    stageDisplays: Array.from({ length: STAGE_COUNT }, () => rng.int(4) + 1),
     currentStage: 1,
     history: [],
     labelSeed: rng.int(100000) + 1,
   }),
   info1: () => [
-    {
-      title: "Stage 1 (Info 1)",
-      columns: ["Display", "Press"],
-      rows: [1, 2, 3, 4].map((digit) => ({
-        cells: [`${digit}`, stageOneRule(digit)],
-        highlight: false,
-      })),
-      note: "Positions are counted left to right (position 1 is the leftmost button). Labels are reshuffled every stage.",
-    },
-    {
-      title: "Stage 2 (Info 1)",
-      columns: ["Display", "Press"],
-      rows: [1, 2, 3, 4].map((digit) => ({
-        cells: [`${digit}`, stageTwoRule(digit)],
-        highlight: false,
-      })),
-      note: "Read out the rule for the digit the owner shows you.",
-    },
+    stageTable(`Stage 1 (Info 1)`, 1, "Positions are counted left to right (position 1 is the leftmost button). Labels are reshuffled every stage."),
+    stageTable(`Stage 2 (Info 1)`, 2, "Read out the rule for the digit the owner shows you."),
   ],
   info2: () => [
-    {
-      title: "Stage 3 (Info 2)",
-      columns: ["Display", "Press"],
-      rows: [1, 2, 3, 4].map((digit) => ({
-        cells: [`${digit}`, stageThreeRule(digit)],
-        highlight: false,
-      })),
-      note: "You may need the buttons pressed in stages 1 and 2 — ask the other informant.",
-    },
-    {
-      title: "Stage 4 (Info 2)",
-      columns: ["Display", "Press"],
-      rows: [1, 2, 3, 4].map((digit) => ({
-        cells: [`${digit}`, stageFourRule(digit)],
-        highlight: false,
-      })),
-      note: "You may need the buttons pressed earlier — coordinate with the other informant.",
-    },
+    stageTable(`Stage 3 (Info 2)`, 3, "You may need the buttons pressed in stages 1 and 2 — ask the other informant."),
+    stageTable(`Stage 4 (Info 2)`, 4, "You may need the buttons pressed earlier — coordinate with the other informant."),
   ],
   verify: (vars, answer) => {
     const stage = vars.currentStage;
-    if (stage < 1 || stage > 4) return stage >= 5;
+    if (stage < 1 || stage > STAGE_COUNT) return stage > STAGE_COUNT;
     return answer.position === targetPosition(vars);
   },
   advance: (vars, answer) => {
@@ -199,7 +150,7 @@ export const mod04SequenceProtocol: ModuleDefinition<"MOD_04_SEQUENCE_PROTOCOL">
     const history = historyOf(vars);
     const nextStage = vars.currentStage + 1;
     // Final stage: return null so the module is marked solved (runAdvance: null = finished).
-    if (nextStage > 4) return null;
+    if (nextStage > STAGE_COUNT) return null;
     const nextSeed = (vars.labelSeed ?? 1) + 1;
     return {
       ...vars,
@@ -212,68 +163,5 @@ export const mod04SequenceProtocol: ModuleDefinition<"MOD_04_SEQUENCE_PROTOCOL">
   },
   reset: (vars) => ({ ...vars, currentStage: 1, history: [] }),
   status: (vars) =>
-    `Stage ${Math.min(vars.currentStage, 4)} of 4 · display shows ${vars.stageDisplays[Math.min(vars.currentStage, 4) - 1]}`,
+    `Stage ${Math.min(vars.currentStage, STAGE_COUNT)} of ${STAGE_COUNT} · display shows ${vars.stageDisplays[Math.min(vars.currentStage, STAGE_COUNT) - 1]}`,
 };
-
-/* ------------------------------------------------------------------ *
- * Human-readable rules (informant-facing).
- * ------------------------------------------------------------------ */
-
-function stageOneRule(digit: number): string {
-  switch (digit) {
-    case 1:
-    case 2:
-      return "Press the button in the 2nd position.";
-    case 3:
-      return "Press the button in the 3rd position.";
-    case 4:
-      return "Press the button in the 4th position.";
-    default:
-      return "—";
-  }
-}
-
-function stageTwoRule(digit: number): string {
-  switch (digit) {
-    case 1:
-      return 'Press the button labeled "4".';
-    case 2:
-      return "Press the button in the same position as stage 1.";
-    case 3:
-      return "Press the button in the 1st position.";
-    case 4:
-      return "Press the button in the same position as stage 1.";
-    default:
-      return "—";
-  }
-}
-
-function stageThreeRule(digit: number): string {
-  switch (digit) {
-    case 1:
-      return "Press the button with the same LABEL as the stage-2 press.";
-    case 2:
-      return "Press the button with the same LABEL as the stage-1 press.";
-    case 3:
-      return "Press the button in the 3rd position.";
-    case 4:
-      return 'Press the button labeled "4".';
-    default:
-      return "—";
-  }
-}
-
-function stageFourRule(digit: number): string {
-  switch (digit) {
-    case 1:
-      return "Press the button in the same position as stage 1.";
-    case 2:
-      return "Press the button in the 1st position.";
-    case 3:
-      return "Press the button in the same position as stage 2.";
-    case 4:
-      return "Press the button in the same position as stage 2.";
-    default:
-      return "—";
-  }
-}

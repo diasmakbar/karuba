@@ -1,36 +1,35 @@
 import type { IntercomMessage, IntercomResponse } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import {
+  DICTIONARY,
+  FALLBACK_RESPONSE,
+  MESSAGES,
+  PROTOCOL,
+  RESPONSES,
+  mod11IntercomConfig,
+} from "./config/mod11Intercom.config";
 
 /** Info1_Baseline: dictionary of the incoming transmissions. */
-export const DICTIONARY: Record<IntercomMessage, string> = {
-  KLAATU: "Requesting Status",
-  GORT: "Hostile Presence",
-  VERATA: "Requesting Supply Drop",
-};
-
+export { DICTIONARY };
 /** Info2_Modifier: the required reply for each meaning. */
-export const PROTOCOL: Record<string, IntercomResponse> = {
-  "Requesting Status": "NIKTO",
-  "Hostile Presence": "BARADA",
-  "Requesting Supply Drop": "SHREK",
-};
-
-export const RESPONSES: readonly IntercomResponse[] = ["BARADA", "NIKTO", "SHREK", "FIONA"];
+export { PROTOCOL };
+export { RESPONSES };
 
 export function requiredResponse(message: IntercomMessage): IntercomResponse {
-  return PROTOCOL[DICTIONARY[message]] ?? "FIONA";
+  return PROTOCOL[DICTIONARY[message]] ?? FALLBACK_RESPONSE;
 }
 
 export const mod11Intercom: ModuleDefinition<"MOD_11_INTERCOM"> = {
-  id: "MOD_11_INTERCOM",
-  name: "Intercom",
-  kind: "Translation Component",
-  generate: (rng) => ({ incomingMessage: rng.pick(["KLAATU", "GORT", "VERATA"] as const) }),
+  config: mod11IntercomConfig,
+  id: mod11IntercomConfig.id,
+  name: mod11IntercomConfig.name,
+  kind: mod11IntercomConfig.kind,
+  generate: (rng) => ({ incomingMessage: rng.pick(MESSAGES) }),
   info1: (vars) => [
     {
       title: "Transmission dictionary (Info 1)",
       columns: ["Incoming word", "Meaning"],
-      rows: (["KLAATU", "GORT", "VERATA"] as const).map((word) => ({
+      rows: MESSAGES.map((word) => ({
         cells: [word, DICTIONARY[word]],
         highlight: word === vars.incomingMessage,
       })),

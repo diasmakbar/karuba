@@ -8,19 +8,25 @@ type Screen = "HOME" | "LOBBY" | "ROOM";
 
 const ROOM_KEY = "taut.room";
 
-/** `?dev=modules` opens the in-memory module sandbox instead of the normal flow. */
-function isDevSandbox(): boolean {
-  return new URLSearchParams(window.location.search).get("dev") === "modules";
+/** The dev sandbox lives on its own route: `<host>/dev_test`. */
+const DEV_TEST_PATH = "/dev_test";
+
+/** True when the current URL path targets the standalone dev-test page. */
+function isDevTestRoute(): boolean {
+  const path = window.location.pathname.replace(/\/+$/, "");
+  return path === DEV_TEST_PATH;
 }
 
 /**
  * Tiny screen state machine — no router needed for a three-screen game (plan §4.1).
  * The active room code is persisted so a refresh drops the player back into their room.
+ * The dev module sandbox is a dedicated route (`/dev_test`), fully separate from the
+ * production flow, which stays clean.
  */
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() => (readRoom() ? "LOBBY" : "HOME"));
   const [roomCode, setRoomCode] = useState<string | null>(() => readRoom());
-  const [dev, setDev] = useState(() => isDevSandbox());
+  const [isDevTest, setIsDevTest] = useState(() => isDevTestRoute());
 
   useEffect(() => {
     if (roomCode) window.localStorage.setItem(ROOM_KEY, roomCode);
@@ -39,16 +45,17 @@ export default function App() {
     setScreen("HOME");
   }, []);
 
-  const exitDev = useCallback(() => {
-    window.history.replaceState(null, "", window.location.pathname);
-    setDev(false);
+  /** Leave the dev route by navigating back to the root path. */
+  const exitDevTest = useCallback(() => {
+    window.history.replaceState(null, "", "/");
+    setIsDevTest(false);
   }, []);
 
-  if (dev) {
-    return <ModuleSandbox onExit={exitDev} />;
+  if (isDevTest) {
+    return <ModuleSandbox onExit={exitDevTest} />;
   }
   if (screen === "HOME" || !roomCode) {
-    return <Home onEnterRoom={enterRoom} onOpenDev={() => setDev(true)} />;
+    return <Home onEnterRoom={enterRoom} />;
   }
   if (screen === "ROOM") {
     return <Room roomCode={roomCode} onLeave={leave} onBackToLobby={backToLobby} />;

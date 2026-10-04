@@ -1,14 +1,22 @@
 import type { Cipher } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
 import { endsWithEven, randomSerialNumber } from "../rng";
+import {
+  CIPHER_TABLE,
+  CIPHERS,
+  COMMAND_ORDER,
+  TIMING_RULES,
+  mod03ButtonConfig,
+  type ButtonCommand,
+  type ReleaseCondition,
+} from "./config/mod03Button.config";
 
-export type ButtonCommand = "HOLD" | "PUSH" | "WAIT" | "DROP";
+export type { ButtonCommand };
 
 /** Info1_Baseline: the cipher decryption table keyed by serial parity. */
 export function decryptCipher(cipher: Cipher, serialNumber: string): ButtonCommand {
   const even = endsWithEven(serialNumber);
-  if (cipher === "XYZA") return even ? "HOLD" : "WAIT";
-  return even ? "PUSH" : "DROP";
+  return CIPHER_TABLE[cipher][even ? "even" : "odd"];
 }
 
 /** The MM:SS the room clock shows for a given number of seconds left. */
@@ -31,24 +39,32 @@ export function secondsAreEven(secondsLeft: number): boolean {
 
 /** Info2_Modifier: what the decrypted command actually requires from the holder. */
 export function timingRule(command: ButtonCommand): string {
-  switch (command) {
-    case "HOLD":
-      return "Press to start holding, keep holding, and release only while the shared clock CONTAINS the digit 4 anywhere in MM:SS.";
-    case "WAIT":
-      return "Press to start holding, keep holding, and release only while the shared clock CONTAINS the digit 1 anywhere in MM:SS.";
-    case "PUSH":
-      return "Press to start holding, then release only while the shared clock's SECONDS are even.";
-    case "DROP":
-      return "Release immediately — press and let go at once.";
+  return TIMING_RULES[command].text;
+}
+
+/** Evaluate a config release condition against the submitted answer. */
+function releaseConditionMet(
+  condition: ReleaseCondition,
+  action: "RELEASE_NOW" | "HOLD_TO_TARGET",
+  secondsLeft: number,
+): boolean {
+  switch (condition.kind) {
+    case "immediate":
+      return action === "RELEASE_NOW";
+    case "secondsEven":
+      return action === "RELEASE_NOW" && secondsAreEven(secondsLeft);
+    case "clockContains":
+      return action === "HOLD_TO_TARGET" && clockContains(secondsLeft, condition.digit);
   }
 }
 
 export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
-  id: "MOD_03_BUTTON",
-  name: "Big Red Button",
-  kind: "Timing Component",
+  config: mod03ButtonConfig,
+  id: mod03ButtonConfig.id,
+  name: mod03ButtonConfig.name,
+  kind: mod03ButtonConfig.kind,
   generate: (rng) => ({
-    cipher: rng.pick(["XYZA", "VBNM"] as const),
+    cipher: rng.pick(CIPHERS),
     serialNumber: randomSerialNumber(rng),
     isHolding: false,
     holdStartedAt: null,
@@ -56,10 +72,16 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
   info1: (vars) => [
     {
       title: "Cipher decryption (Info 1)",
-      columns: ["Serial ends in", "XYZA", "VBNM"],
+      columns: ["Serial ends in", ...CIPHERS],
       rows: [
-        { cells: ["EVEN digit", "HOLD", "PUSH"], highlight: endsWithEven(vars.serialNumber) },
-        { cells: ["ODD digit", "WAIT", "DROP"], highlight: !endsWithEven(vars.serialNumber) },
+        {
+          cells: ["EVEN digit", ...CIPHERS.map((cipher) => CIPHER_TABLE[cipher].even)],
+          highlight: endsWithEven(vars.serialNumber),
+        },
+        {
+          cells: ["ODD digit", ...CIPHERS.map((cipher) => CIPHER_TABLE[cipher].odd)],
+          highlight: !endsWithEven(vars.serialNumber),
+        },
       ],
       note: `The button reads "${vars.cipher}". Read the command it decrypts to out loud.`,
     },
@@ -70,8 +92,8 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
       {
         title: "Timing protocol (Info 2)",
         columns: ["Command", "Release rule"],
-        rows: (["HOLD", "WAIT", "PUSH", "DROP"] as const).map((item) => ({
-          cells: [item, timingRule(item)],
+        rows: COMMAND_ORDER.map((item) => ({
+          cells: [item, TIMING_RULES[item].text],
           highlight: item === command,
         })),
         note: "Everyone reads the same shared clock. Call out the full MM:SS as it ticks and trust the room clock.",
@@ -81,17 +103,7 @@ export const mod03Button: ModuleDefinition<"MOD_03_BUTTON"> = {
   verify: (vars, answer) => {
     const command = decryptCipher(vars.cipher, vars.serialNumber);
     if (answer.action === "EARLY") return false;
-    const releasedNow = answer.action === "RELEASE_NOW";
-    switch (command) {
-      case "DROP":
-        return releasedNow;
-      case "PUSH":
-        return releasedNow && secondsAreEven(answer.secondsLeft);
-      case "HOLD":
-        return answer.action === "HOLD_TO_TARGET" && clockContains(answer.secondsLeft, 4);
-      case "WAIT":
-        return answer.action === "HOLD_TO_TARGET" && clockContains(answer.secondsLeft, 1);
-    }
+    return releaseConditionMet(TIMING_RULES[command].condition, answer.action, answer.secondsLeft);
   },
   status: (vars) =>
     vars.isHolding

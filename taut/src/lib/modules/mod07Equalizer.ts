@@ -1,58 +1,96 @@
 import type { HardwareRevision, Sliders } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
 import { endsWithEven, randomSerialNumber } from "../rng";
+import {
+  REVISIONS,
+  REVISION_MODELS,
+  SLIDER_MAX,
+  SLIDER_MIN,
+  TARGET_PROFILE,
+  mod07EqualizerConfig,
+  type ChannelTransform,
+} from "./config/mod07Equalizer.config";
 
 /** Info1_Baseline: the target audio profile keyed by serial parity. */
-export const TARGET_PROFILE: Record<"even" | "odd", Sliders> = {
-  even: { bass: 4, mid: 2, treble: 5 },
-  odd: { bass: 1, mid: 5, treble: 3 },
-};
-
-/** Info2_Modifier: known firmware bugs on each hardware revision. */
+export { TARGET_PROFILE };
+/** Info2_Modifier: known firmware bugs on each hardware revision (descriptions). */
 export const HARDWARE_BUGS: Record<HardwareRevision, string> = {
-  "Rev 1.0": "Firmware clean — every slider outputs the position you set.",
-  "Rev 1.2": "Mid channel outputs 2 steps HIGH: set the mid slider 2 steps BELOW the target (never below 1).",
-  "Rev 1.4": "Bass channel is inverted: the output is 6 minus the physical position, so set bass to 6 minus the target.",
+  "Rev 1.0": REVISION_MODELS["Rev 1.0"].text,
+  "Rev 1.2": REVISION_MODELS["Rev 1.2"].text,
+  "Rev 1.4": REVISION_MODELS["Rev 1.4"].text,
 };
 
 function profileKey(serialNumber: string): "even" | "odd" {
   return endsWithEven(serialNumber) ? "even" : "odd";
 }
 
+/** Apply one channel transform: physical position -> reported output. */
+function applyTransform(transform: ChannelTransform, physical: number): number {
+  switch (transform.kind) {
+    case "identity":
+      return physical;
+    case "offsetClamped":
+      return Math.min(SLIDER_MAX, physical + transform.delta);
+    case "inverted":
+      return SLIDER_MAX + SLIDER_MIN - physical;
+  }
+}
+
+/** Invert a channel transform: reported output -> required physical position. */
+function invertTransform(transform: ChannelTransform, target: number): number {
+  switch (transform.kind) {
+    case "identity":
+      return target;
+    case "offsetClamped":
+      return Math.max(SLIDER_MIN, target - transform.delta);
+    case "inverted":
+      return SLIDER_MAX + SLIDER_MIN - target;
+  }
+}
+
 /** What the console screen reports for the given physical slider positions. */
 export function outputProfile(revision: HardwareRevision, physical: Sliders): Sliders {
+  const model = REVISION_MODELS[revision];
   return {
-    bass: revision === "Rev 1.4" ? 6 - physical.bass : physical.bass,
-    mid: revision === "Rev 1.2" ? Math.min(5, physical.mid + 2) : physical.mid,
-    treble: physical.treble,
+    bass: applyTransform(model.bass, physical.bass),
+    mid: applyTransform(model.mid, physical.mid),
+    treble: applyTransform(model.treble, physical.treble),
   };
 }
 
 /** The physical positions that produce the Info 1 profile despite the firmware bug. */
 export function requiredPositions(revision: HardwareRevision, serialNumber: string): Sliders {
   const target = TARGET_PROFILE[profileKey(serialNumber)];
+  const model = REVISION_MODELS[revision];
   return {
-    bass: revision === "Rev 1.4" ? 6 - target.bass : target.bass,
-    mid: revision === "Rev 1.2" ? Math.max(1, target.mid - 2) : target.mid,
-    treble: target.treble,
+    bass: invertTransform(model.bass, target.bass),
+    mid: invertTransform(model.mid, target.mid),
+    treble: invertTransform(model.treble, target.treble),
   };
 }
 
 export const mod07Equalizer: ModuleDefinition<"MOD_07_EQUALIZER"> = {
-  id: "MOD_07_EQUALIZER",
-  name: "Equalizer",
-  kind: "Math Component",
+  config: mod07EqualizerConfig,
+  id: mod07EqualizerConfig.id,
+  name: mod07EqualizerConfig.name,
+  kind: mod07EqualizerConfig.kind,
   generate: (rng) => ({
     serialNumber: randomSerialNumber(rng),
-    hardwareRevision: rng.pick(["Rev 1.0", "Rev 1.2", "Rev 1.4"] as const),
+    hardwareRevision: rng.pick(REVISIONS),
   }),
   info1: (vars) => [
     {
       title: "Target output profile (Info 1)",
       columns: ["Serial ends in", "Bass out", "Mid out", "Treble out"],
       rows: [
-        { cells: ["EVEN digit", "4", "2", "5"], highlight: profileKey(vars.serialNumber) === "even" },
-        { cells: ["ODD digit", "1", "5", "3"], highlight: profileKey(vars.serialNumber) === "odd" },
+        {
+          cells: ["EVEN digit", String(TARGET_PROFILE.even.bass), String(TARGET_PROFILE.even.mid), String(TARGET_PROFILE.even.treble)],
+          highlight: profileKey(vars.serialNumber) === "even",
+        },
+        {
+          cells: ["ODD digit", String(TARGET_PROFILE.odd.bass), String(TARGET_PROFILE.odd.mid), String(TARGET_PROFILE.odd.treble)],
+          highlight: profileKey(vars.serialNumber) === "odd",
+        },
       ],
       note: "These are the values the output screen must read — not necessarily the slider positions.",
     },
@@ -61,8 +99,8 @@ export const mod07Equalizer: ModuleDefinition<"MOD_07_EQUALIZER"> = {
     {
       title: "Hardware revision bugs (Info 2)",
       columns: ["Revision", "Known fault"],
-      rows: (["Rev 1.0", "Rev 1.2", "Rev 1.4"] as const).map((revision) => ({
-        cells: [revision, HARDWARE_BUGS[revision]],
+      rows: REVISIONS.map((revision) => ({
+        cells: [revision, REVISION_MODELS[revision].text],
         highlight: revision === vars.hardwareRevision,
       })),
       note: "Help the owner convert the target profile into physical slider positions.",

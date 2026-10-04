@@ -1,50 +1,44 @@
 import type { Constellation, WindDirection } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
 import { clampIndex, coordFrom, parseCoord } from "../rng";
+import {
+  CONSTELLATIONS,
+  DRIFT_DELTA,
+  DRIFT_RULE,
+  EPICENTER,
+  GRID_SIZE,
+  WIND_DIRECTIONS,
+  mod08RadarConfig,
+} from "./config/mod08Radar.config";
 
 /** Info1_Baseline: the storm epicenter for each constellation. */
-export const EPICENTER: Record<Constellation, string> = {
-  Ursa: "C3",
-  Orion: "A5",
-  Draco: "E1",
-};
-
-/** Info2_Modifier: how the reading drifts off the epicenter. */
-const DRIFT_DELTA: Record<WindDirection, [number, number]> = {
-  North: [-1, -1],
-  East: [2, -1],
-  South: [0, 2],
-};
-
-export const DRIFT_RULE: Record<WindDirection, string> = {
-  North: "Drift 1 column left and 1 row up.",
-  East: "Drift 2 columns right and 1 row up.",
-  South: "Drift 2 rows down.",
-};
+export { EPICENTER };
+export { DRIFT_RULE };
 
 /**
- * Clamping models the radar edge: a shift that would leave the 5x5 grid simply stops
+ * Clamping models the radar edge: a shift that would leave the grid simply stops
  * on that axis, so the target always stays on screen.
  */
 export function radarTarget(vars: { constellation: Constellation; windDirection: WindDirection }): string {
   const start = parseCoord(EPICENTER[vars.constellation]);
   const [dx, dy] = DRIFT_DELTA[vars.windDirection];
-  return coordFrom(clampIndex(start.col + dx, 5), clampIndex(start.row + dy, 5));
+  return coordFrom(clampIndex(start.col + dx, GRID_SIZE), clampIndex(start.row + dy, GRID_SIZE));
 }
 
 export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
-  id: "MOD_08_RADAR",
-  name: "Storm Radar",
-  kind: "Spatial Component",
+  config: mod08RadarConfig,
+  id: mod08RadarConfig.id,
+  name: mod08RadarConfig.name,
+  kind: mod08RadarConfig.kind,
   generate: (rng) => ({
-    constellation: rng.pick(["Ursa", "Orion", "Draco"] as const),
-    windDirection: rng.pick(["North", "East", "South"] as const),
+    constellation: rng.pick(CONSTELLATIONS),
+    windDirection: rng.pick(WIND_DIRECTIONS),
   }),
   info1: (vars) => [
     {
       title: "Epicenter chart (Info 1)",
       columns: ["Constellation on screen", "Epicenter"],
-      rows: (["Ursa", "Orion", "Draco"] as const).map((item) => ({
+      rows: CONSTELLATIONS.map((item) => ({
         cells: [item, EPICENTER[item]],
         highlight: item === vars.constellation,
       })),
@@ -55,7 +49,7 @@ export const mod08Radar: ModuleDefinition<"MOD_08_RADAR"> = {
     {
       title: "Drift pattern (Info 2)",
       columns: ["Wind arrow", "Drift from the epicenter"],
-      rows: (["North", "East", "South"] as const).map((wind) => ({
+      rows: WIND_DIRECTIONS.map((wind) => ({
         cells: [wind, DRIFT_RULE[wind]],
         highlight: wind === vars.windDirection,
       })),

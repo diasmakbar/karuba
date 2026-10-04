@@ -1,15 +1,21 @@
 import type { ValveId } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
 import { endsWithEven, randomSerialNumber } from "../rng";
+import {
+  FLOW_RATE,
+  START_PRESSURE_POOL,
+  TARGET_PRESSURE,
+  VALVE_IDS,
+  mod10PressureValvesConfig,
+} from "./config/mod10PressureValves.config";
 
 /** Info2_Modifier: flow rate of each valve, psi. */
-export const FLOW_RATE: Record<ValveId, number> = { A: 10, B: 25, C: 15, D: -5 };
-
-export const VALVE_IDS: readonly ValveId[] = ["A", "B", "C", "D"];
+export { FLOW_RATE };
+export { VALVE_IDS };
 
 /** Info1_Baseline: target pressure keyed by serial parity. */
 export function targetPressure(serialNumber: string): number {
-  return endsWithEven(serialNumber) ? 75 : 90;
+  return endsWithEven(serialNumber) ? TARGET_PRESSURE.even : TARGET_PRESSURE.odd;
 }
 
 export function resultingPressure(startPressure: number, active: readonly ValveId[] | undefined): number {
@@ -23,12 +29,13 @@ export function toggleValve(active: readonly ValveId[] | undefined, valve: Valve
 }
 
 export const mod10PressureValves: ModuleDefinition<"MOD_10_PRESSURE_VALVES"> = {
-  id: "MOD_10_PRESSURE_VALVES",
-  name: "Pressure Valves",
-  kind: "Math Component",
+  config: mod10PressureValvesConfig,
+  id: mod10PressureValvesConfig.id,
+  name: mod10PressureValvesConfig.name,
+  kind: mod10PressureValvesConfig.kind,
   generate: (rng) => ({
     serialNumber: randomSerialNumber(rng),
-    currentPressure: rng.pick([20, 25, 30, 35, 40, 45, 50]),
+    currentPressure: rng.pick(START_PRESSURE_POOL),
     valves: [],
   }),
   info1: (vars) => [
@@ -36,8 +43,8 @@ export const mod10PressureValves: ModuleDefinition<"MOD_10_PRESSURE_VALVES"> = {
       title: "Target pressure (Info 1)",
       columns: ["Serial ends in", "Target pressure"],
       rows: [
-        { cells: ["EVEN digit", "75 psi"], highlight: endsWithEven(vars.serialNumber) },
-        { cells: ["ODD digit", "90 psi"], highlight: !endsWithEven(vars.serialNumber) },
+        { cells: ["EVEN digit", `${TARGET_PRESSURE.even} psi`], highlight: endsWithEven(vars.serialNumber) },
+        { cells: ["ODD digit", `${TARGET_PRESSURE.odd} psi`], highlight: !endsWithEven(vars.serialNumber) },
       ],
       note: `The gauge currently reads ${vars.currentPressure} psi — the open valves must make up the difference.`,
     },

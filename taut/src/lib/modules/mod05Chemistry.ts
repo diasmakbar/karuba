@@ -1,27 +1,18 @@
 import type { HazardSymbol, ShapeId } from "../../types/db-schema";
 import type { ModuleDefinition } from "./contract";
+import {
+  ANTIDOTE,
+  HAZARD_SYMBOLS,
+  MIXTURES,
+  SHAPES,
+  VIAL_COLOR,
+  mod05ChemistryConfig,
+} from "./config/mod05Chemistry.config";
 
 /** Info1_Baseline: antidote for each hazard. */
-export const ANTIDOTE: Record<HazardSymbol, "ORANGE" | "GREEN" | "PURPLE"> = {
-  Biohazard: "ORANGE",
-  Radiation: "GREEN",
-  Corrosive: "PURPLE",
-};
-
+export { ANTIDOTE };
 /** Info2_Modifier: what each vial actually contains. */
-export const VIAL_COLOR: Record<ShapeId, "Red" | "Yellow" | "Blue" | "Clear"> = {
-  Triangle: "Red",
-  Square: "Yellow",
-  Hexagon: "Blue",
-  Circle: "Clear",
-};
-
-/** Two-part mixes; "Clear" is the solvent and never contributes a hue. */
-const MIXTURES: Record<"ORANGE" | "GREEN" | "PURPLE", ["Red" | "Yellow" | "Blue", "Red" | "Yellow" | "Blue"]> = {
-  ORANGE: ["Red", "Yellow"],
-  GREEN: ["Yellow", "Blue"],
-  PURPLE: ["Red", "Blue"],
-};
+export { VIAL_COLOR };
 
 export function mixtureLabel(hazard: HazardSymbol): string {
   const [a, b] = MIXTURES[ANTIDOTE[hazard]];
@@ -33,15 +24,16 @@ export function pressedColors(buttons: readonly ShapeId[]): string[] {
 }
 
 export const mod05Chemistry: ModuleDefinition<"MOD_05_CHEMISTRY"> = {
-  id: "MOD_05_CHEMISTRY",
-  name: "Chemistry Lab",
-  kind: "Association Component",
-  generate: (rng) => ({ hazardSymbol: rng.pick(["Biohazard", "Radiation", "Corrosive"] as const) }),
+  config: mod05ChemistryConfig,
+  id: mod05ChemistryConfig.id,
+  name: mod05ChemistryConfig.name,
+  kind: mod05ChemistryConfig.kind,
+  generate: (rng) => ({ hazardSymbol: rng.pick(HAZARD_SYMBOLS) }),
   info1: (vars) => [
     {
       title: "Antidote chart (Info 1)",
       columns: ["Hazard symbol", "Required antidote"],
-      rows: (["Biohazard", "Radiation", "Corrosive"] as const).map((hazard) => ({
+      rows: HAZARD_SYMBOLS.map((hazard) => ({
         cells: [hazard, ANTIDOTE[hazard]],
         highlight: hazard === vars.hazardSymbol,
       })),
@@ -54,7 +46,7 @@ export const mod05Chemistry: ModuleDefinition<"MOD_05_CHEMISTRY"> = {
       {
         title: "Vial contents (Info 2)",
         columns: ["Shape on the button", "Liquid inside"],
-        rows: (["Triangle", "Square", "Hexagon", "Circle"] as const).map((shape) => ({
+        rows: SHAPES.map((shape) => ({
           cells: [shape, VIAL_COLOR[shape]],
           highlight: (wanted as readonly string[]).includes(VIAL_COLOR[shape]),
         })),

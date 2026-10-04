@@ -1,5 +1,5 @@
 import type { AnyModuleState, LocalVarsMap, ModuleAnswerMap, ModuleId, ModuleState } from "../../types/db-schema";
-import type { AnyModuleDefinition, ModuleDefinition } from "./contract";
+import type { AnyModuleDefinition, AnyModuleConfig, ModuleConfig, ModuleDefinition } from "./contract";
 import { mod01Wire } from "./mod01Wire";
 import { mod02InvisibleMaze } from "./mod02InvisibleMaze";
 import { mod03Button } from "./mod03Button";
@@ -37,6 +37,20 @@ export const MODULE_REGISTRY: { [K in ModuleId]: ModuleDefinition<K> } = {
 
 export const ALL_MODULE_IDS: ModuleId[] = Object.keys(MODULE_REGISTRY) as ModuleId[];
 
+/**
+ * Every module's configuration, keyed by id. Derived from the definitions so a module's config
+ * is always the single source of truth. Tweak difficulty / rules here (or in the module's
+ * `config/*.config.ts` file) without touching executable logic.
+ */
+export const MODULE_CONFIG_REGISTRY: { [K in ModuleId]: ModuleConfig<K> } = Object.fromEntries(
+  (Object.keys(MODULE_REGISTRY) as ModuleId[]).map((id) => [id, MODULE_REGISTRY[id].config]),
+) as { [K in ModuleId]: ModuleConfig<K> };
+
+/** Type-erased config lookup for tooling / admin panels. */
+export function configById(id: ModuleId): AnyModuleConfig {
+  return MODULE_CONFIG_REGISTRY[id];
+}
+
 export function definitionFor<K extends ModuleId>(id: K): ModuleDefinition<K> {
   return MODULE_REGISTRY[id];
 }
@@ -60,4 +74,21 @@ export function narrowModuleState<K extends ModuleId>(
   return state as unknown as ModuleState<K> & { localVars: LocalVarsMap[K] };
 }
 
-export type { AnyModuleDefinition };
+export type { AnyModuleDefinition, AnyModuleConfig };
+
+// Re-export every per-module config so a module's tunables are reachable from one import site.
+export { mod01WireConfig } from "./config/mod01Wire.config";
+export { mod02InvisibleMazeConfig } from "./config/mod02InvisibleMaze.config";
+export { mod03ButtonConfig } from "./config/mod03Button.config";
+export { mod04SequenceProtocolConfig } from "./config/mod04SequenceProtocol.config";
+export { mod05ChemistryConfig } from "./config/mod05Chemistry.config";
+export { mod06PowerGridConfig } from "./config/mod06PowerGrid.config";
+export { mod07EqualizerConfig } from "./config/mod07Equalizer.config";
+export { mod08RadarConfig } from "./config/mod08Radar.config";
+export { mod09SynthesizerConfig } from "./config/mod09Synthesizer.config";
+export { mod10PressureValvesConfig } from "./config/mod10PressureValves.config";
+export { mod11IntercomConfig } from "./config/mod11Intercom.config";
+export { mod12SafeZoneConfig } from "./config/mod12SafeZone.config";
+export { mod13ShapeSorterConfig } from "./config/mod13ShapeSorter.config";
+export { mod14PneumaticTubeConfig } from "./config/mod14PneumaticTube.config";
+export { mod15BiometricScannerConfig } from "./config/mod15BiometricScanner.config";

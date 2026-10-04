@@ -22,7 +22,7 @@ function useSandboxClock(): number {
 
 /**
  * Dev-only sandbox: deals a single module, renders its console plus its Info 1 / Info 2 pages,
- * and verifies answers in memory. No Firebase at all. Reachable only via `?dev=modules`.
+ * and verifies answers in memory. No Firebase at all. Reachable only via the `/dev_test` route.
  */
 export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
   const [index, setIndex] = useState(0);
@@ -78,7 +78,7 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
     <main className="page">
       <header className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <div className="stack" style={{ gap: 2 }}>
-          <span className="tag">Dev sandbox · no Firebase</span>
+          <span className="tag">Dev test · /dev_test · no Firebase</span>
           <span className="hud-value font-display">{definition.name}</span>
         </div>
         <button type="button" className="btn btn-ghost" onClick={onExit}>

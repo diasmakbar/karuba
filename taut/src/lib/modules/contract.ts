@@ -33,11 +33,38 @@ export interface InfoTable {
 export type InfoPayload = readonly InfoTable[];
 
 /**
+ * Static, content-only shape of a module. Each module exports its own `ModuleConfig`
+ * from a dedicated `config/` file — identity, presentation text, difficulty knobs and
+ * every ruleset/table the logic reads. Behaviour (generate/info/verify/…) stays in the
+ * module implementation file and consumes the config, so difficulty or wording can be
+ * tuned without ever editing executable logic.
+ *
+ * `rules` is intentionally a free-form, serialisable bag: each module documents its own
+ * keys. Keeping it untyped lets a module add new tunable variables strictly through its
+ * config file.
+ */
+export interface ModuleConfig<K extends ModuleId> {
+  /** Stable id, must match the module's `ModuleDefinition.id`. */
+  id: K;
+  /** Human-readable name shown to players and in the dev test. */
+  name: string;
+  /** Short category label (e.g. "Logic Component"). */
+  kind: string;
+  /** Free-form difficulty parameters / rulesets. Pure data; consumed by the module. */
+  rules: Readonly<Record<string, unknown>>;
+}
+
+/**
  * A module is a pure contract: the host generates state, two info pages describe
  * how to read that state, and `verify` decides success vs strike. No module touches
  * Firebase — see utils/game.ts for the write side.
+ *
+ * `config` carries the module's identity and all tunable data; the executable fields
+ * below read from it. Behaviour code must never hard-code a value that belongs in config.
  */
 export interface ModuleDefinition<K extends ModuleId> {
+  /** The module's configuration (identity, presentation, difficulty knobs, rulesets). */
+  config: ModuleConfig<K>;
   id: K;
   name: string;
   kind: string;
@@ -61,6 +88,7 @@ export interface ModuleDefinition<K extends ModuleId> {
 }
 
 export type AnyModuleDefinition = { [K in ModuleId]: ModuleDefinition<K> }[ModuleId];
+export type AnyModuleConfig = { [K in ModuleId]: ModuleConfig<K> }[ModuleId];
 
 /* ------------------------------------------------------------------ *
  * Type-erased runners

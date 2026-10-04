@@ -1,49 +1,25 @@
 import type { Direction, MazeId } from "../../types/db-schema";
 import type { MazeGrid, ModuleDefinition } from "./contract";
 import { randomSerialNumber } from "../rng";
+import {
+  MAZE_COLUMNS,
+  MAZE_ROWS,
+  ROTATION_MAP,
+  WALLED_EDGES,
+  mod02InvisibleMazeConfig,
+} from "./config/mod02InvisibleMaze.config";
 
-const COLUMNS = ["A", "B", "C", "D", "E", "F"] as const;
-const ROWS = [1, 2, 3, 4, 5, 6] as const;
-
-/**
- * Walls are always on the EDGES between two cells — never "solid cells". A cell is only
- * impassable because every edge leading into it is walled, so the token can always find a way
- * around obstacles instead of being boxed in.
- *
- * Each entry `"<from>|<to>"` blocks movement between two orthogonally adjacent cells.
- */
-const WALLED_EDGES: Record<MazeId, string[]> = {
-  Alpha: [
-    "A1|A2", "B1|C1", "C1|C2", "D2|E2", "E1|F1", "F2|F3", 
-    "A3|B3", "B3|B4", "C3|D3", "D3|D4", "E4|F4", "A5|A6", "C5|C6", "D5|E5"
-  ],
-  Beta: [
-    "A2|B2", "B2|B3", "C1|D1", "E2|E3", "D3|D4", "E3|F3", 
-    "B4|C4", "A5|B5", "C5|D5", "E4|F4", "E5|E6", "F5|F6"
-  ],
-  Gamma: [
-    "A1|B1", "A2|A3", "C2|D2", "B3|C3", "D3|E3", "E2|E3", 
-    "F1|F2", "A4|B4", "B4|B5", "B5|C5", "D5|D6", "E5|F5"
-  ],
-};
+const COLUMNS = MAZE_COLUMNS;
+const ROWS = MAZE_ROWS;
 
 /**
- * A wall-barrier map for the manual, derived straight from `WALLED_EDGES` so the grid shown in
- * Info 1 can never drift from the walls used by [`nextCoord()`]. The panel renders each cell with
- * a thick border on any shared edge that is walled.
+ * A wall-barrier map for the manual, derived straight from the config's `WALLED_EDGES` so the
+ * grid shown in Info 1 can never drift from the walls used by [`nextCoord()`].
  */
 export const MAZE_ARCHITECTURE: Record<MazeId, MazeGrid> = {
   Alpha: { columns: COLUMNS, rows: ROWS, walls: WALLED_EDGES.Alpha },
   Beta: { columns: COLUMNS, rows: ROWS, walls: WALLED_EDGES.Beta },
   Gamma: { columns: COLUMNS, rows: ROWS, walls: WALLED_EDGES.Gamma },
-};
-
-/** Info2_Modifier: serialNumber-based control rotation */
-const ROTATION_MAP: Record<Direction, Record<"even" | "odd", Direction>> = {
-  UP: { even: "LEFT", odd: "RIGHT" },
-  RIGHT: { even: "UP", odd: "DOWN" },
-  DOWN: { even: "RIGHT", odd: "LEFT" },
-  LEFT: { even: "DOWN", odd: "UP" },
 };
 
 export function commandFor(serialNumber: string, pressed: Direction): Direction {
@@ -56,15 +32,15 @@ function hasValidPath(mazeId: MazeId, start: string, finish: string): boolean {
   const visited = new Set<string>();
   const queue: string[] = [start];
   visited.add(start);
-  
+
   while (queue.length > 0) {
     const current = queue.shift()!;
     if (current === finish) return true;
-    
+
     const col = COLUMNS.indexOf(current.charAt(0) as (typeof COLUMNS)[number]);
     const row = Number(current.slice(1));
     const deltas: Record<Direction, [number, number]> = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] };
-    
+
     for (const dir of Object.keys(deltas) as Direction[]) {
       const nextCol = col + deltas[dir][0];
       const nextRow = row + deltas[dir][1];
@@ -98,13 +74,14 @@ export function nextCoord(mazeId: MazeId, from: string, pressed: Direction): str
 }
 
 export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
-  id: "MOD_02_INVISIBLE_MAZE",
-  name: "Invisible Maze",
-  kind: "Pathfinding Component",
+  config: mod02InvisibleMazeConfig,
+  id: mod02InvisibleMazeConfig.id,
+  name: mod02InvisibleMazeConfig.name,
+  kind: mod02InvisibleMazeConfig.kind,
   generate: (rng) => {
     const mazeId = rng.pick(["Alpha", "Beta", "Gamma"] as const);
     const serialNumber = randomSerialNumber(rng);
-    
+
     let startCoord, finishCoord;
     let valid = false;
     let attempts = 0;
@@ -112,7 +89,7 @@ export const mod02InvisibleMaze: ModuleDefinition<"MOD_02_INVISIBLE_MAZE"> = {
     while (!valid && attempts < 1000) {
       startCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
       finishCoord = `${COLUMNS[rng.int(COLUMNS.length)]}${ROWS[rng.int(ROWS.length)]}`;
-      
+
       // Pastikan titik tidak sama, lalu pastikan jalurnya bisa diselesaikan
       if (startCoord !== finishCoord && hasValidPath(mazeId, startCoord, finishCoord)) {
         valid = true;
