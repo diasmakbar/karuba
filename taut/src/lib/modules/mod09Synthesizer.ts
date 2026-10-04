@@ -16,21 +16,27 @@ export { REQUIREMENTS };
 /** Info2_Modifier: what each inventory vial actually holds. */
 export { VIAL_CONTENTS };
 
+/** True when a vial's contents match a requirement on ALL three attributes. */
+function contentsMatch(a: Conditions, b: Conditions): boolean {
+  return a.ph === b.ph && a.temp === b.temp && a.viscosity === b.viscosity;
+}
+
 /**
  * The vial that satisfies the target. When a per-instance shortlist is supplied the search is
  * restricted to it (so the "correct" vial is always one the console actually shows); otherwise the
  * full inventory is searched. Falls back to the config fallback only when nothing matches.
+ *
+ * Matching on all three attributes means exactly one vial qualifies (see the config bijection),
+ * so the answer is unambiguous — no duplicate-content vial can silently satisfy the target.
  */
 export function matchingVial(targetType: SynthTarget, vials: readonly VialId[] = VIAL_IDS): VialId {
   const need = REQUIREMENTS[targetType];
-  const match = vials.find(
-    (vial) => VIAL_CONTENTS[vial].ph === need.ph && VIAL_CONTENTS[vial].temp === need.temp,
-  );
+  const match = vials.find((vial) => contentsMatch(VIAL_CONTENTS[vial], need));
   return match ?? FALLBACK_VIAL;
 }
 
 export function conditionLabel(conditions: Conditions): string {
-  return `${conditions.ph} pH · ${conditions.temp} Temp`;
+  return `${conditions.ph} pH · ${conditions.temp} Temp · ${conditions.viscosity}`;
 }
 
 export const mod09Synthesizer: ModuleDefinition<"MOD_09_SYNTHESIZER"> = {
@@ -67,7 +73,7 @@ export const mod09Synthesizer: ModuleDefinition<"MOD_09_SYNTHESIZER"> = {
         cells: [vial, conditionLabel(VIAL_CONTENTS[vial])],
         highlight: vial === matchingVial(vars.targetType, vars.vialIds),
       })),
-      note: "Both conditions must match exactly — read them out one at a time.",
+      note: "All three conditions must match exactly — read them out one at a time.",
     },
   ],
   verify: (vars, answer) => answer.vial === matchingVial(vars.targetType, vars.vialIds),
