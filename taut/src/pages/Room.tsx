@@ -8,6 +8,7 @@ import { useUid } from "../hooks/useUid";
 import { useCountdown } from "../hooks/useCountdown";
 import { definitionById } from "../lib/modules";
 import { runInfo } from "../lib/modules/contract";
+import { useT } from "../lib/i18n/useT";
 import type { AnyModuleState, LocalVarsMap, ModuleAnswerMap, ModuleId, PlayerState } from "../types/db-schema";
 import { asRecord, playerList, advanceLevel, resetToLobby } from "../utils/room";
 import { expireRoom, patchModuleVars, solvedModules, submitModuleAnswer, totalModules } from "../utils/game";
@@ -21,6 +22,7 @@ interface RoomProps {
 /** In-game screen: HUD, the owner's single module, and the manual pages they hold for others. */
 export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
   const uid = useUid();
+  const t = useT();
   const { room, loading, error, connected } = useRoom(roomCode);
   const countdown = useCountdown(room?.globalEndTime ?? null);
   const [busy, setBusy] = useState(false);
@@ -67,7 +69,7 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
   if (loading) {
     return (
       <main className="page page-center">
-        <p className="muted">Entering the room…</p>
+        <p className="muted">{t("room.enteringRoom")}</p>
       </main>
     );
   }
@@ -76,9 +78,9 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
     return (
       <main className="page page-center">
         <div className="card stack" style={{ maxWidth: 420 }}>
-          <p className="banner is-error">{error ?? "Room not found."}</p>
+          <p className="banner is-error">{error ?? t("room.roomNotFound")}</p>
           <button type="button" className="btn btn-block" onClick={onLeave}>
-            Back to home
+            {t("room.backHome")}
           </button>
         </div>
       </main>
@@ -134,7 +136,7 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
         {actionError ? <p className="banner is-error">{actionError}</p> : null}
 
         <section className="stack" style={{ gap: 6 }}>
-          <span className="tag">Your module</span>
+          <span className="tag">{t("room.yourModule")}</span>
           {myModule ? (
             <div className="module-grid">
               <ModuleConsole
@@ -147,20 +149,20 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
               />
             </div>
           ) : (
-            <p className="muted">No module assigned.</p>
+            <p className="muted">{t("room.noModule")}</p>
           )}
           {informantNames.length === 2 ? (
             <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-              Info 1 from <strong>{informantNames[0]}</strong> · Info 2 from <strong>{informantNames[1]}</strong>
+              {t("room.infoFrom", { a: informantNames[0], b: informantNames[1] })}
             </p>
           ) : null}
         </section>
 
         <section className="stack" style={{ gap: 10 }}>
-          <span className="tag">Manual pages you hold ({infoPages.length})</span>
+          <span className="tag">{t("room.manualPages", { count: infoPages.length })}</span>
           {infoPages.length === 0 ? (
             <p className="muted" style={{ margin: 0 }}>
-              Nobody is relying on you this round.
+              {t("room.nobodyRelying")}
             </p>
           ) : (
             <div className="info-section">
@@ -182,10 +184,10 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
         <div className="modal-backdrop">
           <div className="card stack" style={{ maxWidth: 420, width: "100%" }}>
             <h2 className="font-display" style={{ margin: 0 }}>
-              Level {room.level} cleared
+              {t("room.levelCleared", { level: room.level })}
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              {room.level} of {room.totalLevels} done. New modules and new informants next.
+              {t("room.levelClearedBody", { level: room.level, total: room.totalLevels })}
             </p>
             {isHost ? (
               <button
@@ -194,11 +196,11 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
                 disabled={busy}
                 onClick={() => run(() => advanceLevel(roomCode))}
               >
-                Start level {room.level + 1}
+                {t("room.startLevel", { level: room.level + 1 })}
               </button>
             ) : (
               <p className="muted" style={{ margin: 0 }}>
-                Waiting for the host…
+                {t("room.waitingHost")}
               </p>
             )}
           </div>

@@ -1,6 +1,7 @@
 import type { PlayerState, RoomState } from "../types/db-schema";
 import { playerList } from "../utils/room";
 import { solvedCount } from "../utils/game";
+import { useT } from "../lib/i18n/useT";
 
 interface ResultModalProps {
   room: RoomState;
@@ -17,17 +18,18 @@ function solvedLabel(player: PlayerState): string {
 
 /** Victory / defeat overlay shown once the room leaves the PLAYING state for good. */
 export function ResultModal({ room, isHost, onPlayAgain, onLeave, busy }: ResultModalProps) {
+  const t = useT();
   const won = room.status === "VICTORY";
   return (
     <div className="modal-backdrop">
       <div className="card stack" style={{ maxWidth: 420, width: "100%" }}>
         <h2 className="font-display" style={{ margin: 0 }}>
-          {won ? "Mission complete" : "Mission failed"}
+          {won ? t("result.complete") : t("result.failed")}
         </h2>
         <p className="muted" style={{ margin: 0 }}>
           {won
-            ? `All modules cleared on level ${room.level} of ${room.totalLevels}.`
-            : `The ship went down with ${room.strikeCount} strikes on the board.`}
+            ? t("result.completeBody", { level: room.level, total: room.totalLevels })
+            : t("result.failedBody", { count: room.strikeCount })}
         </p>
 
         <div className="stack" style={{ gap: 6 }}>
@@ -42,15 +44,15 @@ export function ResultModal({ room, isHost, onPlayAgain, onLeave, busy }: Result
         <div className="row" style={{ gap: 8 }}>
           {isHost ? (
             <button type="button" className="btn btn-block" disabled={busy} onClick={onPlayAgain}>
-              Play again
+              {t("result.backToWaiting")}
             </button>
           ) : (
             <p className="muted" style={{ margin: 0, alignSelf: "center" }}>
-              Waiting for the host…
+              {t("result.waitingHost")}
             </p>
           )}
           <button type="button" className="btn btn-ghost" disabled={busy} onClick={onLeave}>
-            Leave
+            {t("common.leave")}
           </button>
         </div>
       </div>

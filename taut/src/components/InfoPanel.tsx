@@ -1,4 +1,5 @@
 import type { InfoPayload, MazeGrid } from "../lib/modules/contract";
+import { useT } from "../lib/i18n/useT";
 
 interface InfoPanelProps {
   moduleName: string;
@@ -54,14 +55,15 @@ function MazeRow({ grid, row }: { grid: MazeGrid; row: number }) {
 }
 
 export function InfoPanel({ moduleName, ownerName, page, tables }: InfoPanelProps) {
+  const t = useT();
   return (
     <section className="info-card">
       <header className="info-card-head">
         <div>
           <h3 className="module-title">{moduleName}</h3>
-          <p className="info-owner">Held by {ownerName}</p>
+          <p className="info-owner">{t("info.heldBy", { name: ownerName })}</p>
         </div>
-        <span className={`badge is-${page}`}>Info {page}</span>
+        <span className={`badge is-${page}`}>{t("info.info", { page })}</span>
       </header>
 
       {tables.map((table) => (

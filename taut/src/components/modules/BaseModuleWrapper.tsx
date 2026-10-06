@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useT } from "../../lib/i18n/useT";
 
 interface BaseModuleWrapperProps {
   title: string;
@@ -26,6 +27,7 @@ export function BaseModuleWrapper({
   showGoalHint,
   children,
 }: BaseModuleWrapperProps) {
+  const t = useT();
   const [flash, setFlash] = useState<"strike" | "success" | null>(null);
   const prevSolved = useRef(isSolved);
   const prevStrike = useRef(strikeSignal);
@@ -62,7 +64,7 @@ export function BaseModuleWrapper({
       </header>
       {showGoalHint && goal ? (
         <p className="module-goal">
-          <span className="module-goal-tag">Goal</span>
+          <span className="module-goal-tag">{t("module.goal")}</span>
           {goal}
         </p>
       ) : null}

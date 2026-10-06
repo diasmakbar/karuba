@@ -5,6 +5,8 @@ import { useUid } from "../hooks/useUid";
 import { DIFFICULTIES, DIFFICULTY_IDS, MAX_PLAYERS_PER_ROOM, MIN_PLAYERS_TO_START } from "../lib/gameConfig";
 import { ALL_MODULE_IDS, definitionById } from "../lib/modules";
 import { playerList, setReady, setDifficulty, setAdvancedSettings, leaveLobby, startGame } from "../utils/room";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { useT } from "../lib/i18n/useT";
 
 interface LobbyProps {
   roomCode: string;
@@ -15,6 +17,7 @@ interface LobbyProps {
 /** Pre-game lobby: share the code, pick difficulty, ready up, host starts. Live-synced via Firebase. */
 export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
   const uid = useUid();
+  const t = useT();
   const { room, loading, error, connected } = useRoom(roomCode);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -26,7 +29,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
   if (loading) {
     return (
       <main className="page page-center">
-        <p className="muted">Connecting to room {roomCode}…</p>
+        <p className="muted">{t("common.connecting")}</p>
       </main>
     );
   }
@@ -35,9 +38,9 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
     return (
       <main className="page page-center">
         <div className="card stack" style={{ maxWidth: 420 }}>
-          <p className="banner is-error">{error ?? "Room not found."}</p>
+          <p className="banner is-error">{error ?? t("room.roomNotFound")}</p>
           <button type="button" className="btn btn-block" onClick={onLeave}>
-            Back to home
+            {t("room.backHome")}
           </button>
         </div>
       </main>
@@ -98,18 +101,21 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
       <div className="card stack" style={{ maxWidth: 480, width: "100%" }}>
         <header className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
           <div className="stack" style={{ gap: 2 }}>
-            <span className="tag">Room code</span>
+            <span className="tag">{t("lobby.roomCode")}</span>
             <span className="hud-value font-display">{roomCode}</span>
           </div>
-          <button type="button" className="btn btn-ghost" onClick={copyCode}>
-            {copied ? "Copied" : "Copy"}
-          </button>
+          <div className="row" style={{ gap: 8 }}>
+            <LanguageToggle />
+            <button type="button" className="btn btn-ghost" onClick={copyCode}>
+              {copied ? t("common.copied") : t("common.copy")}
+            </button>
+          </div>
         </header>
 
-        {!connected ? <p className="banner is-warn">Reconnecting…</p> : null}
+        {!connected ? <p className="banner is-warn">{t("common.reconnecting")}</p> : null}
 
         <div className="field">
-          <span className="tag">Difficulty</span>
+          <span className="tag">{t("lobby.difficulty")}</span>
           {isHost ? (
             <div className="chip-group">
               {DIFFICULTY_IDS.map((id) => (
@@ -137,40 +143,40 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
         {isHost ? (
           <section className="advanced-settings">
             <button type="button" className="btn btn-ghost btn-block advanced-toggle" aria-expanded={showAdvanced} onClick={() => setShowAdvanced((value) => !value)}>
-              <span>Advanced settings</span><span aria-hidden="true">{showAdvanced ? "−" : "+"}</span>
+              <span>{t("lobby.advanced")}</span><span aria-hidden="true">{showAdvanced ? "−" : "+"}</span>
             </button>
             {showAdvanced ? (
               <div className="stack advanced-content">
                 <div className="field">
-                  <span className="tag">Time per phase</span>
+                  <span className="tag">{t("lobby.timePerPhase")}</span>
                   <div className="row">
                     {[3, 5, 8, 10].map((minutes) => (
-                      <button key={minutes} type="button" className={`chip ${timePerLevelSeconds === minutes * 60 ? "is-active" : ""}`} disabled={busy} onClick={() => void saveAdvanced({ timePerLevelSeconds: minutes * 60 })}>{minutes} min</button>
+                      <button key={minutes} type="button" className={`chip ${timePerLevelSeconds === minutes * 60 ? "is-active" : ""}`} disabled={busy} onClick={() => void saveAdvanced({ timePerLevelSeconds: minutes * 60 })}>{minutes} {t("common.minutesShort")}</button>
                     ))}
                   </div>
                   <div className="row">
-                    <input aria-label="Custom minutes per phase" type="number" min={1} max={60} value={customTime} placeholder="Custom minutes (1–60)" onChange={(event) => setCustomTime(event.target.value)} />
-                    <button type="button" className="btn btn-ghost" disabled={busy || !customTime || Number(customTime) < 1 || Number(customTime) > 60} onClick={() => void saveAdvanced({ timePerLevelSeconds: Math.round(Number(customTime) * 60) })}>Set time</button>
+                    <input aria-label={t("lobby.customMinutes")} type="number" min={1} max={60} value={customTime} placeholder={t("lobby.customMinutes")} onChange={(event) => setCustomTime(event.target.value)} />
+                    <button type="button" className="btn btn-ghost" disabled={busy || !customTime || Number(customTime) < 1 || Number(customTime) > 60} onClick={() => void saveAdvanced({ timePerLevelSeconds: Math.round(Number(customTime) * 60) })}>{t("lobby.setTime")}</button>
                   </div>
-                  <span className="muted">Current: {Math.floor(timePerLevelSeconds / 60)} min</span>
+                  <span className="muted">{t("lobby.current", { value: Math.floor(timePerLevelSeconds / 60) })}</span>
                 </div>
 
                 <div className="field">
-                  <span className="tag">Phases</span>
+                  <span className="tag">{t("lobby.phases")}</span>
                   <div className="row">
                     {[1, 2].map((count) => (
-                      <button key={count} type="button" className={`chip ${totalLevels === count ? "is-active" : ""}`} disabled={busy} onClick={() => void saveAdvanced({ totalLevels: count })}>{count} {count === 1 ? "phase" : "phases"}</button>
+                      <button key={count} type="button" className={`chip ${totalLevels === count ? "is-active" : ""}`} disabled={busy} onClick={() => void saveAdvanced({ totalLevels: count })}>{count} {count === 1 ? t("common.phase") : t("common.phases")}</button>
                     ))}
                   </div>
                   <div className="row">
-                    <input aria-label="Custom phase count" type="number" min={1} max={10} value={customLevels} placeholder="Custom phases (1–10)" onChange={(event) => setCustomLevels(event.target.value)} />
-                    <button type="button" className="btn btn-ghost" disabled={busy || !customLevels || Number(customLevels) < 1 || Number(customLevels) > 10} onClick={() => void saveAdvanced({ totalLevels: Math.floor(Number(customLevels)) })}>Set phases</button>
+                    <input aria-label={t("lobby.customPhases")} type="number" min={1} max={10} value={customLevels} placeholder={t("lobby.customPhases")} onChange={(event) => setCustomLevels(event.target.value)} />
+                    <button type="button" className="btn btn-ghost" disabled={busy || !customLevels || Number(customLevels) < 1 || Number(customLevels) > 10} onClick={() => void saveAdvanced({ totalLevels: Math.floor(Number(customLevels)) })}>{t("lobby.setPhases")}</button>
                   </div>
-                  <span className="muted">Current: {totalLevels} {totalLevels === 1 ? "phase" : "phases"}</span>
+                  <span className="muted">{t("lobby.currentCount", { count: totalLevels, label: totalLevels === 1 ? t("common.phase") : t("common.phases") })}</span>
                 </div>
 
                 <div className="field">
-                  <span className="tag">Maximum strikes</span>
+                  <span className="tag">{t("lobby.maxStrikes")}</span>
                   <div className="row">
                     {[1, 2, 3, 4, 5, 6].map((count) => (
                       <button
@@ -184,20 +190,33 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
                         {count}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      className={`chip ${maxStrikes === 0 ? "is-active" : ""}`}
+                      disabled={busy}
+                      aria-pressed={maxStrikes === 0}
+                      onClick={() => void saveAdvanced({ maxStrikes: 0 })}
+                    >
+                      {t("lobby.noLimit")}
+                    </button>
                   </div>
-                  <span className="muted">Current limit: {maxStrikes} {maxStrikes === 1 ? "strike" : "strikes"}</span>
+                  <span className="muted">
+                    {maxStrikes === 0
+                      ? t("lobby.noLimitHelp")
+                      : t("lobby.currentLimit", { count: maxStrikes, label: maxStrikes === 1 ? t("common.strike") : t("common.strikes") })}
+                  </span>
                 </div>
 
                 <div className="field">
-                  <span className="tag">Module selection</span>
+                  <span className="tag">{t("lobby.moduleSelection")}</span>
                   <div className="chip-group">
                     {(["RANDOM", "MANUAL"] as const).map((mode) => (
-                      <button key={mode} type="button" className={`chip ${moduleSelectionMode === mode ? "is-active" : ""}`} disabled={busy} onClick={() => void saveAdvanced({ moduleSelectionMode: mode })}>{mode === "RANDOM" ? "Random" : "Manual pool"}</button>
+                      <button key={mode} type="button" className={`chip ${moduleSelectionMode === mode ? "is-active" : ""}`} disabled={busy} onClick={() => void saveAdvanced({ moduleSelectionMode: mode })}>{mode === "RANDOM" ? t("lobby.random") : t("lobby.manualPool")}</button>
                     ))}
                   </div>
                   {moduleSelectionMode === "MANUAL" ? (
                     <>
-                      <p className="muted" style={{ margin: 0, fontSize: 13 }}>Choose at least {players.length} modules so every player receives a different module (maximum {MAX_PLAYERS_PER_ROOM} players).</p>
+                      <p className="muted" style={{ margin: 0, fontSize: 13 }}>{t("lobby.manualHelp", { count: players.length, max: MAX_PLAYERS_PER_ROOM })}</p>
                       <div className="module-pool-grid">
                         {ALL_MODULE_IDS.map((id) => {
                           const checked = selectedModuleIds.includes(id);
@@ -205,7 +224,10 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
                           return <label key={id} className="module-pool-option"><input type="checkbox" checked={checked} disabled={busy} onChange={() => void saveAdvanced({ selectedModuleIds: next })} /><span>{definitionById(id).name}</span></label>;
                         })}
                       </div>
-                      <span className={selectedModuleIds.length < players.length ? "banner is-warn" : "muted"}>{selectedModuleIds.length} selected{selectedModuleIds.length < players.length ? ` — need ${players.length - selectedModuleIds.length} more` : ""}</span>
+                      <span className={selectedModuleIds.length < players.length ? "banner is-warn" : "muted"}>
+                        {t("lobby.selectedCount", { count: selectedModuleIds.length })}
+                        {selectedModuleIds.length < players.length ? ` — ${t("lobby.needMore", { count: players.length - selectedModuleIds.length })}` : ""}
+                      </span>
                     </>
                   ) : null}
                 </div>
@@ -216,17 +238,17 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
 
         <div className="stack" style={{ gap: 6 }}>
           <span className="tag">
-            Players ({players.length}) · {MIN_PLAYERS_TO_START}–{MAX_PLAYERS_PER_ROOM} players
+            {t("lobby.playersHeader", { count: players.length, min: MIN_PLAYERS_TO_START, max: MAX_PLAYERS_PER_ROOM })}
           </span>
           {players.map((player) => (
             <div key={player.id} className="player-row">
               <span>
                 {player.name}
-                {player.id === room.hostId ? " · host" : ""}
-                {player.id === uid ? " (you)" : ""}
+                {player.id === room.hostId ? ` · ${t("common.host")}` : ""}
+                {player.id === uid ? ` ${t("common.you")}` : ""}
               </span>
               <span className={`badge ${player.isReady ? "is-1" : ""}`}>
-                {player.isReady ? "Ready" : "Waiting"}
+                {player.isReady ? t("common.ready") : t("common.waiting")}
               </span>
             </div>
           ))}
@@ -234,7 +256,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
 
         {!everyoneReady ? (
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Everyone must be ready, with {MIN_PLAYERS_TO_START}–{MAX_PLAYERS_PER_ROOM} players, to start.
+            {t("lobby.allReadyHint", { min: MIN_PLAYERS_TO_START, max: MAX_PLAYERS_PER_ROOM })}
           </p>
         ) : null}
 
@@ -248,7 +270,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
               disabled={busy || !uid}
               onClick={() => uid && act(() => setReady(roomCode, !me.isReady))}
             >
-              {me.isReady ? "Not ready" : "I'm ready"}
+              {me.isReady ? t("lobby.notReady") : t("lobby.imReady")}
             </button>
           ) : null}
 
@@ -259,11 +281,11 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
               disabled={!canStart || (moduleSelectionMode === "MANUAL" && selectedModuleIds.length < players.length)}
               onClick={() => act(() => startGame(roomCode), onStart)}
             >
-              Start game
+              {t("lobby.start")}
             </button>
           ) : (
             <p className="muted" style={{ margin: 0, alignSelf: "center" }}>
-              Waiting for the host to start…
+              {t("lobby.waitingHost")}
             </p>
           )}
         </div>
@@ -274,7 +296,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
           disabled={busy}
           onClick={() => act(() => leaveLobby(roomCode), onLeave)}
         >
-          Leave
+          {t("common.leave")}
         </button>
       </div>
     </main>

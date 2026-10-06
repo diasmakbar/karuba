@@ -250,8 +250,9 @@ export async function setAdvancedSettings(
   if (!Number.isInteger(settings.totalLevels) || settings.totalLevels < 1 || settings.totalLevels > 10) {
     throw new Error("Phases must be between 1 and 10.");
   }
-  if (!Number.isInteger(settings.maxStrikes) || settings.maxStrikes < 1 || settings.maxStrikes > 10) {
-    throw new Error("Maximum strikes must be between 1 and 10.");
+  // 0 means "no limit": strikes are still recorded but can never end the game (see recordStrike).
+  if (!Number.isInteger(settings.maxStrikes) || settings.maxStrikes < 0 || settings.maxStrikes > 10) {
+    throw new Error("Maximum strikes must be 0 (no limit) or between 1 and 10.");
   }
   if (settings.moduleSelectionMode !== "RANDOM" && settings.moduleSelectionMode !== "MANUAL") {
     throw new Error("Choose Random or Manual module selection.");
