@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { useT } from "../../lib/i18n/useT";
 import { MODULE_GOALS } from "./goals";
 
 const SHAPES: ShapeId[] = ["Triangle", "Square", "Hexagon", "Circle"];
@@ -14,6 +15,7 @@ const SHAPES: ShapeId[] = ["Triangle", "Square", "Hexagon", "Circle"];
  * Answer: `{ buttonsPressed }`.
  */
 export function ChemistryConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_05_CHEMISTRY");
   const [pressed, setPressed] = useState<ShapeId[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function ChemistryConsole({ state, disabled, submit, difficulty }: Module
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen" data-hazard={localVars.hazardSymbol}>
-        <span className="tag">Hazard</span>
+        <span className="tag">{t("module.hazard")}</span>
         <div className="font-display">{localVars.hazardSymbol}</div>
       </div>
       <div className="pad-grid">
@@ -71,7 +73,7 @@ export function ChemistryConsole({ state, disabled, submit, difficulty }: Module
         disabled={disabled || pending || state.isSolved || pressed.length === 0}
         onClick={confirm}
       >
-        Mix ({pressed.length}/2)
+        {t("module.mix", { count: pressed.length })}
       </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

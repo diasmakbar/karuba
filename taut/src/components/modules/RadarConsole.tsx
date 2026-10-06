@@ -6,12 +6,14 @@ import { radarGridSize } from "../../lib/gameConfig";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 /**
  * MOD_08_RADAR — a 5x5 grid plus a constellation and a wind arrow. Info 1 gives the epicentre for
  * the constellation; Info 2 drifts it by the wind. Answer: `{ coord }`.
  */
 export function RadarConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_08_RADAR");
   const [selected, setSelected] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -43,9 +45,9 @@ export function RadarConsole({ state, disabled, submit, difficulty }: ModuleCons
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Constellation</span>
+        <span className="tag">{t("module.constellation")}</span>
         <div className="font-display">{localVars.constellation}</div>
-        <span className="tag">Wind</span>
+        <span className="tag">{t("module.wind")}</span>
         <div className="font-display">{localVars.windDirection}</div>
       </div>
       <div className="cell-grid radar-grid" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
@@ -72,7 +74,7 @@ export function RadarConsole({ state, disabled, submit, difficulty }: ModuleCons
         disabled={disabled || pending || state.isSolved || !selected}
         onClick={confirm}
       >
-        {selected ? `Confirm ${selected}` : "Select a cell"}
+        {selected ? t("module.confirm", { value: selected }) : t("module.select")}
       </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

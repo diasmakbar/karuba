@@ -4,6 +4,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 /**
  * MOD_15_BIOMETRIC_SCANNER — a person and a destination. Info 1 gives the clearance the
@@ -11,6 +12,7 @@ import { MODULE_GOALS } from "./goals";
  * Answer: `{ action }`.
  */
 export function BiometricScannerConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_15_BIOMETRIC_SCANNER");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -49,7 +51,7 @@ export function BiometricScannerConsole({ state, disabled, submit, difficulty }:
           disabled={disabled || pending || state.isSolved}
           onClick={() => decide("APPROVE")}
         >
-          Approve
+          {t("module.approve")}
         </button>
         <button
           type="button"
@@ -57,7 +59,7 @@ export function BiometricScannerConsole({ state, disabled, submit, difficulty }:
           disabled={disabled || pending || state.isSolved}
           onClick={() => decide("REJECT")}
         >
-          Reject
+          {t("module.reject")}
         </button>
       </div>
       <p className="module-feedback">{feedback}</p>

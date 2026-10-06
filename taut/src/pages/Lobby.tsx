@@ -8,6 +8,18 @@ import { playerList, setReady, setDifficulty, setAdvancedSettings, leaveLobby, s
 import { LanguageToggle } from "../components/LanguageToggle";
 import { useT } from "../lib/i18n/useT";
 
+/** Maps difficulty ids to their dictionary keys (keeps display text out of gameConfig). */
+const DIFFICULTY_LABEL_KEY: Record<Difficulty, string> = {
+  BEGINNER: "difficulty.beginner",
+  STANDARD: "difficulty.standard",
+  EXTREME: "difficulty.extreme",
+};
+const DIFFICULTY_BLURB_KEY: Record<Difficulty, string> = {
+  BEGINNER: "difficulty.beginnerBlurb",
+  STANDARD: "difficulty.standardBlurb",
+  EXTREME: "difficulty.extremeBlurb",
+};
+
 interface LobbyProps {
   roomCode: string;
   onStart: () => void;
@@ -126,17 +138,17 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
                   disabled={busy}
                   onClick={() => act(() => setDifficulty(roomCode, id as Difficulty))}
                 >
-                  {DIFFICULTIES[id].label}
+                  {t(DIFFICULTY_LABEL_KEY[id])}
                 </button>
               ))}
             </div>
           ) : (
             <p className="hud-value font-display" style={{ margin: 0 }}>
-              {DIFFICULTIES[room.difficulty].label}
+              {t(DIFFICULTY_LABEL_KEY[room.difficulty])}
             </p>
           )}
           <p className="muted" style={{ margin: "6px 0 0", fontSize: 13 }}>
-            {DIFFICULTIES[room.difficulty].blurb}
+            {t(DIFFICULTY_BLURB_KEY[room.difficulty])}
           </p>
         </div>
 

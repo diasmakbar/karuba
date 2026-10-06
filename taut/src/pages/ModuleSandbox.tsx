@@ -6,6 +6,7 @@ import { createRng } from "../lib/rng";
 import { ModuleConsole } from "../components/modules/registry";
 import { InfoPanel } from "../components/InfoPanel";
 import { DIFFICULTIES, DIFFICULTY_IDS } from "../lib/gameConfig";
+import { useT } from "../lib/i18n/useT";
 
 interface ModuleSandboxProps {
   onExit: () => void;
@@ -36,6 +37,7 @@ function formatClock(seconds: number): string {
  * and verifies answers in memory. No Firebase at all. Reachable only via the `/dev_test` route.
  */
 export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [seed, setSeed] = useState(0);
   const [difficulty, setDifficulty] = useState<Difficulty>("STANDARD");
@@ -93,11 +95,11 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
         <div className="dev-sandbox-brand" aria-hidden="true">◈</div>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8, flex: 1 }}>
         <div className="stack" style={{ gap: 2 }}>
-          <span className="tag">Dev test · /dev_test · no Firebase</span>
+          <span className="tag">{t("dev.label")}</span>
           <span className="hud-value font-display">{definition.name}</span>
         </div>
         <button type="button" className="btn btn-ghost" onClick={onExit}>
-          Exit dev
+          {t("dev.exit")}
         </button>
         </div>
       </header>
@@ -106,10 +108,10 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
         <div className={`dev-sandbox-clock ${secondsLeft <= 30 ? "is-critical" : ""}`} aria-live="polite">
           <span className="tag">Global timer</span>
           <strong className="dev-sandbox-clock-value">{formatClock(secondsLeft)}</strong>
-          <button type="button" className="btn btn-ghost dev-sandbox-clock-reset" onClick={sandboxClock.reset}>Reset 10:00</button>
+          <button type="button" className="btn btn-ghost dev-sandbox-clock-reset" onClick={sandboxClock.reset}>{t("dev.resetClock")}</button>
         </div>
         <div className="dev-sandbox-difficulty">
-          <span className="tag">Deal difficulty</span>
+          <span className="tag">{t("dev.dealDifficulty")}</span>
           <div className="chip-group">
             {DIFFICULTY_IDS.map((id) => (
               <button key={id} type="button" className={`chip ${difficulty === id ? "is-active" : ""}`} aria-pressed={difficulty === id} onClick={() => { setDifficulty(id); setSeed((value) => value + 1); }}>
@@ -123,7 +125,7 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
           className="btn btn-ghost"
           onClick={() => setIndex((i) => (i - 1 + ALL_MODULE_IDS.length) % ALL_MODULE_IDS.length)}
         >
-          ← Prev
+          {t("dev.prev")}
         </button>
         <span className="muted" style={{ alignSelf: "center" }}>
           {index + 1} / {ALL_MODULE_IDS.length} · {moduleId}
@@ -133,10 +135,10 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
           className="btn btn-ghost"
           onClick={() => setIndex((i) => (i + 1) % ALL_MODULE_IDS.length)}
         >
-          Next →
+          {t("dev.next")}
         </button>
         <button type="button" className="btn btn-ghost" onClick={() => setSeed((s) => s + 1)}>
-          Re-deal
+          {t("dev.redeal")}
         </button>
         {feedback ? (
           <span className={`badge ${feedback === "SOLVED" ? "is-1" : ""}`} style={{ alignSelf: "center" }}>
@@ -159,19 +161,16 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
 
         <section className="info-section dev-sandbox-manuals">
           <header className="dev-sandbox-section-head">
-            <span className="tag">Informant reference</span>
-            <h2 className="dev-sandbox-section-title">Manual pages</h2>
-            <p className="muted">The two pages an informant would read aloud.</p>
+            <span className="tag">{t("dev.informantReference")}</span>
+            <h2 className="dev-sandbox-section-title">{t("dev.manualPages")}</h2>
+            <p className="muted">{t("dev.manualBody")}</p>
           </header>
         <InfoPanel moduleName={definition.name} ownerName="Owner" page={1} tables={info1} />
         <InfoPanel moduleName={definition.name} ownerName="Owner" page={2} tables={info2} />
         </section>
       </div>
 
-      <p className="muted dev-sandbox-note">
-        Answers are verified in-memory with the same module logic the game uses. Strikes reset
-        state; a solved module stops accepting input. This page never touches Firebase.
-      </p>
+      <p className="muted dev-sandbox-note">{t("dev.note")}</p>
     </main>
   );
 }

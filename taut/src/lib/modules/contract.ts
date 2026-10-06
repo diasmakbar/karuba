@@ -1,5 +1,7 @@
 import type { Difficulty, LocalVarsMap, ModuleAnswerMap, ModuleId } from "../../types/db-schema";
 import type { Rng } from "../rng";
+import type { Language } from "../i18n";
+import { localizeInfo, localizeString } from "./i18n/localize";
 
 /**
  * One highlighted entry of a manual page. `highlight` marks the row that applies
@@ -125,16 +127,23 @@ export function runReset(definition: AnyModuleDefinition, vars: LocalVarsMap[Mod
   return (definition.reset as (v: LocalVarsMap[ModuleId]) => LocalVarsMap[ModuleId])(vars);
 }
 
-export function runStatus(definition: AnyModuleDefinition, vars: LocalVarsMap[ModuleId]): string | null {
+export function runStatus(
+  definition: AnyModuleDefinition,
+  vars: LocalVarsMap[ModuleId],
+  language: Language = "en",
+): string | null {
   if (!definition.status) return null;
-  return (definition.status as (v: LocalVarsMap[ModuleId]) => string)(vars);
+  const text = (definition.status as (v: LocalVarsMap[ModuleId]) => string)(vars);
+  return language === "en" ? text : localizeString(text, language);
 }
 
 export function runInfo(
   page: "info1" | "info2",
   definition: AnyModuleDefinition,
   vars: LocalVarsMap[ModuleId],
+  language: Language = "en",
 ): InfoPayload {
   const page_fn = page === "info1" ? definition.info1 : definition.info2;
-  return (page_fn as (v: LocalVarsMap[ModuleId]) => InfoPayload)(vars);
+  const payload = (page_fn as (v: LocalVarsMap[ModuleId]) => InfoPayload)(vars);
+  return language === "en" ? payload : localizeInfo(payload, language);
 }

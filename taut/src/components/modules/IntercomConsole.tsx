@@ -5,9 +5,11 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 /** MOD_11 owner console: choose the final message after the Info 1 → Info 2 → Info 1 chain. */
 export function IntercomConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_11_INTERCOM");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -36,7 +38,7 @@ export function IntercomConsole({ state, disabled, submit, difficulty }: ModuleC
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Incoming</span>
+        <span className="tag">{t("module.incoming")}</span>
         <div className="font-display">{localVars.incomingMessage}</div>
       </div>
       <div className="pad-grid">

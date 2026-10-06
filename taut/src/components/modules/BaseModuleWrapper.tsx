@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useT } from "../../lib/i18n/useT";
+import { useLanguage } from "../../contexts/languageContext";
+import { localizeString } from "../../lib/modules/i18n/localize";
 
 interface BaseModuleWrapperProps {
   title: string;
@@ -28,6 +30,8 @@ export function BaseModuleWrapper({
   children,
 }: BaseModuleWrapperProps) {
   const t = useT();
+  const { language } = useLanguage();
+  const localTitle = localizeString(title, language);
   const [flash, setFlash] = useState<"strike" | "success" | null>(null);
   const prevSolved = useRef(isSolved);
   const prevStrike = useRef(strikeSignal);
@@ -59,13 +63,13 @@ export function BaseModuleWrapper({
   return (
     <section className={`module ${isSolved ? "is-solved" : ""} ${flashClass}`}>
       <header className="module-head">
-        <h3 className="module-title">{title}</h3>
+        <h3 className="module-title">{localTitle}</h3>
         {isSolved ? <span className="solved-stamp">SOLVED</span> : null}
       </header>
       {showGoalHint && goal ? (
         <p className="module-goal">
           <span className="module-goal-tag">{t("module.goal")}</span>
-          {goal}
+          {localizeString(goal, language)}
         </p>
       ) : null}
       <div className="module-body" aria-disabled={disabled}>

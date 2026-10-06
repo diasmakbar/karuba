@@ -9,6 +9,7 @@ import { useCountdown } from "../hooks/useCountdown";
 import { definitionById } from "../lib/modules";
 import { runInfo } from "../lib/modules/contract";
 import { useT } from "../lib/i18n/useT";
+import { useLanguage } from "../contexts/languageContext";
 import type { AnyModuleState, LocalVarsMap, ModuleAnswerMap, ModuleId, PlayerState } from "../types/db-schema";
 import { asRecord, playerList, advanceLevel, resetToLobby } from "../utils/room";
 import { expireRoom, patchModuleVars, solvedModules, submitModuleAnswer, totalModules } from "../utils/game";
@@ -23,6 +24,7 @@ interface RoomProps {
 export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
   const uid = useUid();
   const t = useT();
+  const { language } = useLanguage();
   const { room, loading, error, connected } = useRoom(roomCode);
   const countdown = useCountdown(room?.globalEndTime ?? null);
   const [busy, setBusy] = useState(false);
@@ -57,14 +59,14 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
       if (!moduleState) continue;
       const definition = definitionById(moduleState.moduleId);
       if (owner.informant1Id === uid) {
-        pages.push({ moduleName: definition.name, ownerName: owner.name, page: 1, tables: runInfo("info1", definition, moduleState.localVars) });
+        pages.push({ moduleName: definition.name, ownerName: owner.name, page: 1, tables: runInfo("info1", definition, moduleState.localVars, language) });
       }
       if (owner.informant2Id === uid) {
-        pages.push({ moduleName: definition.name, ownerName: owner.name, page: 2, tables: runInfo("info2", definition, moduleState.localVars) });
+        pages.push({ moduleName: definition.name, ownerName: owner.name, page: 2, tables: runInfo("info2", definition, moduleState.localVars, language) });
       }
     }
     return pages;
-  }, [room, uid, players]);
+  }, [room, uid, players, language]);
 
   if (loading) {
     return (

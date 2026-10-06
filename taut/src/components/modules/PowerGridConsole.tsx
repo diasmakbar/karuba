@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { useT } from "../../lib/i18n/useT";
 import { MODULE_GOALS } from "./goals";
 
 /**
@@ -11,6 +12,7 @@ import { MODULE_GOALS } from "./goals";
  * base pattern for the serial; Info 2 says which switches the light toggles. Answer: `{ switches }`.
  */
 export function PowerGridConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_06_POWER_GRID");
   const [switches, setSwitches] = useState<boolean[]>([false, false, false, false, false]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -43,9 +45,9 @@ export function PowerGridConsole({ state, disabled, submit, difficulty }: Module
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Warning light</span>
+        <span className="tag">{t("module.warningLight")}</span>
         <div className={`led ${localVars.warningLight === "FLASHING" ? "is-flashing" : "is-on"}`} />
-        <div className="serial">SN {localVars.serialNumber}</div>
+        <div className="serial">{t("module.serial")} {localVars.serialNumber}</div>
       </div>
       <div className="switches">
         {switches.map((value, index) => (
@@ -57,7 +59,7 @@ export function PowerGridConsole({ state, disabled, submit, difficulty }: Module
             onClick={() => toggle(index)}
             aria-label={`Switch ${index + 1} ${value ? "on" : "off"}`}
           >
-            {value ? "ON" : "OFF"}
+            {value ? t("module.switchOn") : t("module.switchOff")}
           </button>
         ))}
       </div>
@@ -67,7 +69,7 @@ export function PowerGridConsole({ state, disabled, submit, difficulty }: Module
         disabled={disabled || pending || state.isSolved}
         onClick={confirm}
       >
-        Execute
+        {t("module.execute")}
       </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

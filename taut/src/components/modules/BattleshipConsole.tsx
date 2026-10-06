@@ -2,12 +2,14 @@ import { useState } from "react";
 import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { GRID_COLUMNS } from "../../lib/rng";
+import { useT } from "../../lib/i18n/useT";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
 
 /** Owner console: show target/shot identifiers and an empty coordinate grid only. */
 export function BattleshipConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_12_BATTLESHIP");
   const columns = GRID_COLUMNS.slice(0, localVars.gridSize);
   const rows = columns.map((_column, index) => index + 1);
@@ -36,9 +38,9 @@ export function BattleshipConsole({ state, disabled, submit, difficulty }: Modul
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">TARGET</span>
+        <span className="tag">{t("module.target")}</span>
         <div className="font-display">{localVars.targetShip}</div>
-        <span className="tag">INCOMING</span>
+        <span className="tag">{t("module.incoming")}</span>
         <div className="font-display">{localVars.incomingShot}</div>
       </div>
       <div className="cell-grid" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
@@ -52,7 +54,7 @@ export function BattleshipConsole({ state, disabled, submit, difficulty }: Modul
                 className={`cell ${selected === coord ? "is-active" : ""}`}
                 disabled={disabled || pending || state.isSolved}
                 onClick={() => setSelected(coord)}
-                aria-label={`Select ${coord}`}
+                aria-label={`${t("module.select")} ${coord}`}
               >
                 {coord}
               </button>
@@ -66,7 +68,7 @@ export function BattleshipConsole({ state, disabled, submit, difficulty }: Modul
         disabled={disabled || pending || state.isSolved || !selected}
         onClick={confirm}
       >
-        {selected ? `Confirm ${selected}` : "Select a coordinate"}
+        {selected ? t("module.confirm", { value: selected }) : t("module.select")}
       </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

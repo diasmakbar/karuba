@@ -4,6 +4,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 /**
  * MOD_13_SHAPE_SORTER — two filter states plus a dealt set of objects (colour + shape; 2 for
@@ -12,6 +13,7 @@ import { MODULE_GOALS } from "./goals";
  * both — `{ objectIndex }`.
  */
 export function ShapeSorterConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_13_SHAPE_SORTER");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -38,9 +40,9 @@ export function ShapeSorterConsole({ state, disabled, submit, difficulty }: Modu
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Filter Alpha</span>
+        <span className="tag">{t("module.filterAlpha")}</span>
         <div className="font-display">{localVars.filterAlpha}</div>
-        <span className="tag">Filter Beta</span>
+        <span className="tag">{t("module.filterBeta")}</span>
         <div className="font-display">{localVars.filterBeta}</div>
       </div>
       <div className="pad-grid">

@@ -4,6 +4,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 /**
  * MOD_04_SEQUENCE_PROTOCOL — a display digit and four numbered buttons in randomised order, with
@@ -11,6 +12,7 @@ import { MODULE_GOALS } from "./goals";
  * Info 2. A wrong press resets to stage 1. Answer: `{ position }`.
  */
 export function SequenceProtocolConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_04_SEQUENCE_PROTOCOL");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -40,7 +42,7 @@ export function SequenceProtocolConsole({ state, disabled, submit, difficulty }:
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Display</span>
+        <span className="tag">{t("module.display")}</span>
         <div className="font-display" style={{ fontSize: 34 }}>
           {display}
         </div>
@@ -66,7 +68,7 @@ export function SequenceProtocolConsole({ state, disabled, submit, difficulty }:
         ))}
       </div>
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        Stage {stage} of 4 · display shows {display}
+        {t("module.stage", { stage, total: 4 })} · {t("module.display")} {display}
       </p>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

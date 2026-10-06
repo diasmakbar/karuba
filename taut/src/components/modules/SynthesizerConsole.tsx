@@ -5,6 +5,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 /**
  * MOD_09_SYNTHESIZER — a target type plus the dealt vials. Info 1 lists the target's pH/temp
@@ -14,6 +15,7 @@ import { MODULE_GOALS } from "./goals";
  * difficulty); never a hard-coded list, so the answer is always an actual option.
  */
 export function SynthesizerConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_09_SYNTHESIZER");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -44,7 +46,7 @@ export function SynthesizerConsole({ state, disabled, submit, difficulty }: Modu
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Target</span>
+        <span className="tag">{t("module.target")}</span>
         <div className="font-display">{localVars.targetType}</div>
       </div>
       <div className="pad-grid">

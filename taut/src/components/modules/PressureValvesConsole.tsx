@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { useT } from "../../lib/i18n/useT";
 import { MODULE_GOALS } from "./goals";
 
 /**
@@ -14,6 +15,7 @@ import { MODULE_GOALS } from "./goals";
  * difficulty); never a hard-coded list.
  */
 export function PressureValvesConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_10_PRESSURE_VALVES");
   const valves: ValveId[] = Array.isArray(localVars.activeValves) && localVars.activeValves.length > 0
     ? (localVars.activeValves as ValveId[])
@@ -51,9 +53,9 @@ export function PressureValvesConsole({ state, disabled, submit, difficulty }: M
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
-        <span className="tag">Pressure</span>
+        <span className="tag">{t("module.pressure")}</span>
         <div className="font-display">{localVars.currentPressure}</div>
-        <div className="serial">SN {localVars.serialNumber}</div>
+        <div className="serial">{t("module.serial")} {localVars.serialNumber}</div>
       </div>
       <div className="valves">
         {valves.map((valve) => (
@@ -74,7 +76,7 @@ export function PressureValvesConsole({ state, disabled, submit, difficulty }: M
         disabled={disabled || pending || state.isSolved}
         onClick={confirm}
       >
-        Submit
+        {t("module.submit")}
       </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

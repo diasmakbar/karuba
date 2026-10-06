@@ -5,6 +5,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
 import { MODULE_GOALS } from "./goals";
+import { useT } from "../../lib/i18n/useT";
 
 const COLUMNS = ["A", "B", "C", "D", "E", "F"];
 const ROWS = [1, 2, 3, 4, 5, 6];
@@ -15,6 +16,7 @@ const ROWS = [1, 2, 3, 4, 5, 6];
  * `{ direction }`; the host advances the token, or strikes on a wall.
  */
 export function InvisibleMazeConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_02_INVISIBLE_MAZE");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -40,7 +42,7 @@ export function InvisibleMazeConsole({ state, disabled, submit, difficulty }: Mo
       goal={MODULE_GOALS.MOD_02_INVISIBLE_MAZE}
       showGoalHint={difficulty === "BEGINNER"}
     >
-      <div className="serial">SN {localVars.serialNumber}</div>
+      <div className="serial">{t("module.serial")} {localVars.serialNumber}</div>
       <div className="cell-grid maze-grid" style={{ gridTemplateColumns: `auto repeat(${COLUMNS.length}, 1fr)` }}>
         {/* Column legend header: A–F across the top. */}
         <span className="maze-axis" aria-hidden="true" />
@@ -91,7 +93,7 @@ export function InvisibleMazeConsole({ state, disabled, submit, difficulty }: Mo
         <span />
       </div>
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        Token {localVars.currentCoord} · exit {localVars.finishCoord}
+        {t("module.token", { token: localVars.currentCoord, exit: localVars.finishCoord })}
       </p>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>

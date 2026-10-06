@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { useT } from "../../lib/i18n/useT";
 import { MODULE_GOALS } from "./goals";
 
 /** CSS background for the big button per its colour. White is intentionally not used. */
@@ -43,6 +44,7 @@ const HOLD_THRESHOLD_MS = 1000;
  * Answer: `{ action, secondsLeft }`.
  */
 export function ButtonConsole({ state, disabled, submit, patch, secondsLeft, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_03_BUTTON");
   const [holding, setHolding] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export function ButtonConsole({ state, disabled, submit, patch, secondsLeft, dif
       goal={MODULE_GOALS.MOD_03_BUTTON}
       showGoalHint={difficulty === "BEGINNER"}
     >
-      <div className="serial">SN {localVars.serialNumber}</div>
+      <div className="serial">{t("module.serial")} {localVars.serialNumber}</div>
 
       <div className="row" style={{ alignItems: "center", justifyContent: "center", gap: 16, marginTop: 8 }}>
         <button

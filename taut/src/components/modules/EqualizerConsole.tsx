@@ -5,6 +5,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BANDS, BAND_LABELS } from "../../lib/modules/mod07Equalizer";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { useT } from "../../lib/i18n/useT";
 import { MODULE_GOALS } from "./goals";
 
 /**
@@ -15,6 +16,7 @@ import { MODULE_GOALS } from "./goals";
  * The bands come from the per-instance `bands` dealt at generate time (3 / 5 / 7 by difficulty).
  */
 export function EqualizerConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
+  const t = useT();
   const { localVars } = narrowModuleState(state, "MOD_07_EQUALIZER");
   const bands: BandId[] = Array.isArray(localVars.bands) && localVars.bands.length > 0
     ? (localVars.bands as BandId[])
@@ -54,7 +56,7 @@ export function EqualizerConsole({ state, disabled, submit, difficulty }: Module
       showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="serial">
-        SN {localVars.serialNumber} · {localVars.hardwareRevision}
+        {t("module.serial")} {localVars.serialNumber} · {localVars.hardwareRevision}
       </div>
       <div className="sliders">
         {bands.map((band) => (
@@ -80,7 +82,7 @@ export function EqualizerConsole({ state, disabled, submit, difficulty }: Module
         disabled={disabled || pending || state.isSolved}
         onClick={confirm}
       >
-        Submit
+        {t("module.submit")}
       </button>
       <p className="module-feedback">{feedback}</p>
     </BaseModuleWrapper>
