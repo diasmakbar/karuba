@@ -3,13 +3,14 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_04_SEQUENCE_PROTOCOL — a display digit and four numbered buttons in randomised order, with
  * four stage LEDs. The owner presses a position; stages 1-2 rules live on Info 1, stages 3-4 on
  * Info 2. A wrong press resets to stage 1. Answer: `{ position }`.
  */
-export function SequenceProtocolConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function SequenceProtocolConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_04_SEQUENCE_PROTOCOL");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -35,6 +36,8 @@ export function SequenceProtocolConsole({ state, disabled, submit }: ModuleConso
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_04_SEQUENCE_PROTOCOL}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">Display</span>

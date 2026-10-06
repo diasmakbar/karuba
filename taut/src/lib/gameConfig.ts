@@ -49,7 +49,7 @@ export function vocabSize(difficulty: Difficulty): number {
 
 /** MOD_13 shape sorter: how many candidate objects to deal (Beginner stays short). */
 export function shapeSorterObjectCount(difficulty: Difficulty): number {
-  return difficulty === "BEGINNER" ? 2 : 5;
+  return difficulty === "BEGINNER" ? 4 : 5;
 }
 
 /** MOD_07 equalizer: how many sliders/bands to show (Beginner 3, Standard 5, Extreme 7). */
@@ -66,6 +66,11 @@ export function valveCount(difficulty: Difficulty): number {
   return 8;
 }
 
+/** MOD_08 Radar: grid is NxN, capped at 8 so it never overflows a phone (Beginner 5, else 8). */
+export function radarGridSize(difficulty: Difficulty): number {
+  return difficulty === "BEGINNER" ? 5 : 8;
+}
+
 /** MOD_12 Battleship: grid is NxN (Beginner 6, Standard 8, Extreme 10). */
 export function battleshipGridSize(difficulty: Difficulty): number {
   if (difficulty === "BEGINNER") return 6;
@@ -73,8 +78,9 @@ export function battleshipGridSize(difficulty: Difficulty): number {
   return 10;
 }
 
-/** Each player needs two *different* other players as informants, so 3 is the hard minimum. */
+/** Each player needs two different informants; rooms support up to fifteen players. */
 export const MIN_PLAYERS_TO_START = 3;
+export const MAX_PLAYERS_PER_ROOM = 15;
 export const MAX_ROOM_NAME_LENGTH = 18;
 
 /** Room keys are 6 digits so they can be read out loud over the table. */

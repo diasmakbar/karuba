@@ -3,13 +3,14 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_15_BIOMETRIC_SCANNER — a person and a destination. Info 1 gives the clearance the
  * destination needs; Info 2 gives the person's clearance level. Approve iff clearance >= required.
  * Answer: `{ action }`.
  */
-export function BiometricScannerConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function BiometricScannerConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_15_BIOMETRIC_SCANNER");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -32,6 +33,8 @@ export function BiometricScannerConsole({ state, disabled, submit }: ModuleConso
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_15_BIOMETRIC_SCANNER}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">Person</span>

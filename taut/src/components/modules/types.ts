@@ -13,4 +13,6 @@ export interface ModuleConsoleProps {
   patch: (vars: LocalVarsMap[ModuleId]) => Promise<void>;
   /** Shared countdown seconds, derived from `globalEndTime` by the Room. Read-only clock. */
   secondsLeft: number;
+  /** Current difficulty controls beginner-only goal hints and difficulty-scaled rendering. */
+  difficulty: import("../../types/db-schema").Difficulty;
 }

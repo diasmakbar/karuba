@@ -4,6 +4,7 @@ import { narrowModuleState } from "../../lib/modules";
 import { definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_01_WIRE — three to six colourless wires drawn as connections between a left pin
@@ -12,7 +13,7 @@ import { outcomeMessage } from "./outcome";
  * number; Informant 1 reads the colors, Informant 2 reads the cutting manual.
  * Answer: `{ wireIndex }`.
  */
-export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function WireConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_01_WIRE");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -63,6 +64,8 @@ export function WireConsole({ state, disabled, submit }: ModuleConsoleProps) {
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_01_WIRE}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="serial">SN {localVars.serialNumber}</div>
       <svg

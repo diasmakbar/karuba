@@ -8,6 +8,8 @@ import {
   BETA_REJECTS,
   BETA_RULE,
   FILTER_STATES,
+  SORTER_COLORS,
+  SORTER_SHAPES,
   mod13ShapeSorterConfig,
 } from "./config/mod13ShapeSorter.config";
 
@@ -51,16 +53,19 @@ export const mod13ShapeSorter: ModuleDefinition<"MOD_13_SHAPE_SORTER"> = {
     // Candidate colours/shapes for the surviving and rejected objects come from config sets.
     const survivorColor = rng.pick(rng.shuffle(["Blue", "Yellow"] as const));
     const survivorShape: SorterShape = BETA_KEEPS[filterBeta];
-    const rejectedColor: SorterColor = rng.pick(ALPHA_REJECTS[filterAlpha]);
-    const rejectedShapes: readonly SorterShape[] = BETA_REJECTS[filterBeta];
     // Exactly one object passes BOTH filters; every other object fails at least one.
     const survivor: SorterObject = { color: survivorColor, shape: survivorShape };
-    const decoys: SorterObject[] = rng.shuffle<SorterObject>([
-      { color: rejectedColor, shape: survivorShape },
-      { color: survivorColor, shape: rng.pick(rejectedShapes) },
-      { color: rejectedColor, shape: rng.pick(rejectedShapes) },
-    ]);
-    const objects = rng.shuffle<SorterObject>([survivor, ...decoys.slice(0, Math.max(1, count - 1))]);
+    // Build every possible distinct decoy (fails alpha or fails beta), then shuffle and take the
+    // needed count. This guarantees `count` DISTINCT options with exactly one correct answer.
+    const allDecoys: SorterObject[] = [];
+    for (const color of SORTER_COLORS) {
+      for (const shape of SORTER_SHAPES) {
+        const candidate: SorterObject = { color, shape };
+        if (!passesBoth(candidate, { filterAlpha, filterBeta })) allDecoys.push(candidate);
+      }
+    }
+    const decoys = rng.shuffle(allDecoys).slice(0, Math.max(1, count - 1));
+    const objects = rng.shuffle<SorterObject>([survivor, ...decoys]);
     return { filterAlpha, filterBeta, objects };
   },
   info1: (vars) => [

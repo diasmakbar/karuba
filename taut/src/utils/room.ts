@@ -1,5 +1,5 @@
-import { db, get, ref, requireUid, set, update } from "../firebase";
-import { DIFFICULTIES, MIN_PLAYERS_TO_START, randomRoomCode } from "../lib/gameConfig";
+import { db, get, ref, requireUid, runTransaction, set, update } from "../firebase";
+import { DIFFICULTIES, MAX_PLAYERS_PER_ROOM, MIN_PLAYERS_TO_START, randomRoomCode } from "../lib/gameConfig";
 import { createRng, type Rng } from "../lib/rng";
 import { ALL_MODULE_IDS, MODULE_REGISTRY } from "../lib/modules";
 import type {
@@ -14,10 +14,14 @@ import type {
 
 export const roomPath = (code: string): string => `games/taut/${code}`;
 
+function cleanPlayerName(name: string): string {
+  return name.replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 18) || "Operative";
+}
+
 function createPlayer(uid: string, name: string): PlayerState {
   return {
     id: uid,
-    name: name.trim() || "Operative",
+    name: cleanPlayerName(name),
     joinedAt: Date.now(),
     isReady: false,
     informant1Id: "",
@@ -55,6 +59,9 @@ export function buildModulePlan(
   selectedModuleIds: readonly ModuleId[] = ALL_MODULE_IDS,
 ): Map<string, AnyModuleState> {
   const eligibleModules = [...new Set(moduleSelectionMode === "MANUAL" ? selectedModuleIds : ALL_MODULE_IDS)];
+  if (playerIds.length > MAX_PLAYERS_PER_ROOM) {
+    throw new Error(`A room supports at most ${MAX_PLAYERS_PER_ROOM} players.`);
+  }
   if (eligibleModules.length < playerIds.length) {
     throw new Error(`Select at least ${playerIds.length} distinct modules for ${playerIds.length} players.`);
   }
@@ -68,10 +75,9 @@ export function buildModulePlan(
 }
 
 /**
- * Balanced informant network (definition §3). For a cyclic shift `p[i] -> p[i+1]` every player
- * provides Info 1 to exactly one other and receives exactly one; a second, independent shift
- * gives the Info-2 edges. Each player's two informants are therefore always distinct and never
- * themselves — provided there are at least 3 players (which the lobby enforces).
+ * Balanced informant network (definition §3). Each column is a permutation of player IDs, with
+ * two distinct non-zero cyclic offsets so every player gets two distinct informants and provides
+ * each page exactly once. This works for any player count of 3 or more.
  */
 export function assignInformants(
   rng: Rng,
@@ -79,13 +85,12 @@ export function assignInformants(
 ): Map<string, [string, string]> {
   const order = rng.shuffle(ids);
   const n = order.length;
-  // Two independent cyclic shifts with different step sizes so the two informants never coincide.
-  const step1 = 1;
-  const step2 = Math.max(2, Math.floor(n / 2)) % n || 2 % n || 1;
-  const secondStep = step2 === 0 ? 1 : step2;
-  // Ensure the two shifts differ for small n (n >= 3). Fall back to +1 and +2 rotation.
-  const s1 = step1 % n;
-  const s2 = (secondStep === s1 ? s1 + 1 : secondStep) % n;
+  if (n < MIN_PLAYERS_TO_START) {
+    throw new Error(`Informant assignments require at least ${MIN_PLAYERS_TO_START} players.`);
+  }
+  // Distinct offsets preserve no-self assignments and distinct informants for every n >= 3.
+  const s1 = 1;
+  const s2 = 2;
   const assignment = new Map<string, [string, string]>();
   order.forEach((self, index) => {
     const informant1 = order[(index + s1) % n];
@@ -201,8 +206,19 @@ export async function joinRoom(code: string, name: string): Promise<string> {
 
   if (room.players?.[uid]) return clean;
   if (room.status !== "LOBBY") throw new Error("That game has already started.");
+  if (playerList(room).length >= MAX_PLAYERS_PER_ROOM) throw new Error(`Rooms are limited to ${MAX_PLAYERS_PER_ROOM} players.`);
 
-  await update(ref(db, roomPath(clean)), { [`players/${uid}`]: createPlayer(uid, name) });
+  let joinError: string | null = null;
+  const result = await runTransaction(ref(db, `${roomPath(clean)}/players`), (current) => {
+    const players = asRecord<PlayerState>(current);
+    if (players[uid]) return;
+    if (Object.keys(players).length >= MAX_PLAYERS_PER_ROOM) {
+      joinError = `Rooms are limited to ${MAX_PLAYERS_PER_ROOM} players.`;
+      return;
+    }
+    return { ...players, [uid]: createPlayer(uid, name) };
+  });
+  if (!result.committed) throw new Error(joinError ?? "Could not join this room. Try again.");
   return clean;
 }
 
@@ -242,6 +258,9 @@ export async function setAdvancedSettings(
   }
   const selected = [...new Set(settings.selectedModuleIds)].filter((id) => ALL_MODULE_IDS.includes(id));
   if (selected.length !== settings.selectedModuleIds.length) throw new Error("The selected module list contains invalid or duplicate entries.");
+  if (playerList(room).length > MAX_PLAYERS_PER_ROOM) {
+    throw new Error(`A room supports at most ${MAX_PLAYERS_PER_ROOM} players.`);
+  }
   if (settings.moduleSelectionMode === "MANUAL" && selected.length < playerList(room).length) {
     throw new Error(`Manual mode needs at least ${playerList(room).length} distinct modules for the current players.`);
   }
@@ -265,8 +284,8 @@ export async function startGame(code: string): Promise<void> {
   if (room.status !== "LOBBY") throw new Error("This game has already started.");
 
   const players = playerList(room);
-  if (players.length < MIN_PLAYERS_TO_START) {
-    throw new Error(`You need at least ${MIN_PLAYERS_TO_START} players to start.`);
+  if (players.length < MIN_PLAYERS_TO_START || players.length > MAX_PLAYERS_PER_ROOM) {
+    throw new Error(`A game needs ${MIN_PLAYERS_TO_START}–${MAX_PLAYERS_PER_ROOM} players.`);
   }
 
   const rng = createRng();

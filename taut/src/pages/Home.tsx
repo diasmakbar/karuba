@@ -59,7 +59,7 @@ export function Home({ onChooseIntent }: HomeProps) {
             Create a new game
           </button>
           <p className="muted text-center" style={{ margin: 0, fontSize: 12 }}>
-            Rooms need 3–6 players, each on a separate device.
+            Rooms need 3–15 players, each on a separate device.
           </p>
         </section>
       </div>
@@ -72,7 +72,7 @@ export function Home({ onChooseIntent }: HomeProps) {
               <button type="button" className="btn btn-ghost" onClick={() => setShowHowToPlay(false)}>Close</button>
             </header>
             <ol className="landing-steps">
-              <li>Join a room with 3–6 players, then ready up.</li>
+              <li>Join a room with 3–15 players, then ready up.</li>
               <li>Each player receives a module and two different informants.</li>
               <li>Ask your informants for their separate manual pages. Share information verbally—your manuals are not visible to you.</li>
               <li>Solve your module before the shared timer expires. The team wins by clearing every phase.</li>
@@ -113,7 +113,7 @@ export function NameStep({ intent, onBack, onEnterRoom }: NameStepProps) {
         </header>
         <label className="field">
           <span className="tag">Your name</span>
-          <input autoFocus type="text" value={name} maxLength={MAX_ROOM_NAME_LENGTH} placeholder="Operative" onChange={(event) => setName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} />
+          <input autoFocus type="text" value={name} maxLength={MAX_ROOM_NAME_LENGTH} autoComplete="nickname" placeholder="Operative" onChange={(event) => setName(event.target.value.replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " "))} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} />
         </label>
         {error ? <p className="banner is-error">{error}</p> : null}
         <button type="button" className="btn btn-block landing-primary" disabled={!name.trim() || busy} onClick={() => void submit()}>

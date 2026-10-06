@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { Direction } from "../../types/db-schema";
 import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 const COLUMNS = ["A", "B", "C", "D", "E", "F"];
 const ROWS = [1, 2, 3, 4, 5, 6];
@@ -13,7 +14,7 @@ const ROWS = [1, 2, 3, 4, 5, 6];
  * describe the hidden walls (Info 1) and the serial-number rotation (Info 2). Each step submits
  * `{ direction }`; the host advances the token, or strikes on a wall.
  */
-export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function InvisibleMazeConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_02_INVISIBLE_MAZE");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -36,26 +37,39 @@ export function InvisibleMazeConsole({ state, disabled, submit }: ModuleConsoleP
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_02_INVISIBLE_MAZE}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="serial">SN {localVars.serialNumber}</div>
-      <div className="cell-grid" style={{ gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)` }}>
-        {ROWS.map((row) =>
-          COLUMNS.map((column) => {
-            const coord = `${column}${row}`;
-            // On solve the token snaps into the exit so the winning press visibly lands there.
-            const token = (state.isSolved ? localVars.finishCoord : localVars.currentCoord) === coord;
-            const isFinish = localVars.finishCoord === coord;
-            const isStart = localVars.startCoord === coord;
-            const classes = ["cell", isStart ? "is-start" : "", isFinish ? "is-finish" : "", token ? "is-token" : ""];
-            // Token glyph wins on overlap; S/F only show when the token is not on that cell.
-            const glyph = token ? "◉" : isFinish ? "F" : isStart ? "S" : "";
-            return (
-              <div key={coord} className={classes.join(" ")} title={coord}>
-                {glyph}
-              </div>
-            );
-          }),
-        )}
+      <div className="cell-grid maze-grid" style={{ gridTemplateColumns: `auto repeat(${COLUMNS.length}, 1fr)` }}>
+        {/* Column legend header: A–F across the top. */}
+        <span className="maze-axis" aria-hidden="true" />
+        {COLUMNS.map((column) => (
+          <span key={`head-${column}`} className="maze-axis">
+            {column}
+          </span>
+        ))}
+        {ROWS.map((row) => (
+          <Fragment key={`row-${row}`}>
+            {/* Row legend: 1–6 down the left. */}
+            <span className="maze-axis">{row}</span>
+            {COLUMNS.map((column) => {
+              const coord = `${column}${row}`;
+              // On solve the token snaps into the exit so the winning press visibly lands there.
+              const token = (state.isSolved ? localVars.finishCoord : localVars.currentCoord) === coord;
+              const isFinish = localVars.finishCoord === coord;
+              const isStart = localVars.startCoord === coord;
+              const classes = ["cell", isStart ? "is-start" : "", isFinish ? "is-finish" : "", token ? "is-token" : ""];
+              // Token glyph wins on overlap; S/F only show when the token is not on that cell.
+              const glyph = token ? "◉" : isFinish ? "F" : isStart ? "S" : "";
+              return (
+                <div key={coord} className={classes.join(" ")} title={coord}>
+                  {glyph}
+                </div>
+              );
+            })}
+          </Fragment>
+        ))}
       </div>
       <div className="dpad">
         <span />

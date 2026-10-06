@@ -4,12 +4,13 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_06_POWER_GRID — five unlabelled switches, a serial and a warning light. Info 1 gives the
  * base pattern for the serial; Info 2 says which switches the light toggles. Answer: `{ switches }`.
  */
-export function PowerGridConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function PowerGridConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_06_POWER_GRID");
   const [switches, setSwitches] = useState<boolean[]>([false, false, false, false, false]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -38,6 +39,8 @@ export function PowerGridConsole({ state, disabled, submit }: ModuleConsoleProps
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_06_POWER_GRID}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">Warning light</span>

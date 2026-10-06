@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_09_SYNTHESIZER — a target type plus the dealt vials. Info 1 lists the target's pH/temp
@@ -12,7 +13,7 @@ import { outcomeMessage } from "./outcome";
  * The vial buttons come from the per-instance `vialIds` dealt at generate time (5/10 by
  * difficulty); never a hard-coded list, so the answer is always an actual option.
  */
-export function SynthesizerConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function SynthesizerConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_09_SYNTHESIZER");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -39,6 +40,8 @@ export function SynthesizerConsole({ state, disabled, submit }: ModuleConsolePro
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_09_SYNTHESIZER}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">Target</span>

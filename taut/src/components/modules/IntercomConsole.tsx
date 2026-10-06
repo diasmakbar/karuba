@@ -4,9 +4,10 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /** MOD_11 owner console: choose the final message after the Info 1 → Info 2 → Info 1 chain. */
-export function IntercomConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function IntercomConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_11_INTERCOM");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,6 +32,8 @@ export function IntercomConsole({ state, disabled, submit }: ModuleConsoleProps)
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_11_INTERCOM}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">Incoming</span>

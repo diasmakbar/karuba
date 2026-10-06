@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 const SHAPES: ShapeId[] = ["Triangle", "Square", "Hexagon", "Circle"];
 
@@ -12,7 +13,7 @@ const SHAPES: ShapeId[] = ["Triangle", "Square", "Hexagon", "Circle"];
  * Info 2 maps each shape to a colour, so the owner presses the shapes that mix to the antidote.
  * Answer: `{ buttonsPressed }`.
  */
-export function ChemistryConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function ChemistryConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_05_CHEMISTRY");
   const [pressed, setPressed] = useState<ShapeId[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -44,6 +45,8 @@ export function ChemistryConsole({ state, disabled, submit }: ModuleConsoleProps
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_05_CHEMISTRY}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen" data-hazard={localVars.hazardSymbol}>
         <span className="tag">Hazard</span>

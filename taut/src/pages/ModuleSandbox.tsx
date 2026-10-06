@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AnyModuleState, LocalVarsMap, ModuleAnswerMap, ModuleId } from "../types/db-schema";
+import type { AnyModuleState, Difficulty, LocalVarsMap, ModuleAnswerMap, ModuleId } from "../types/db-schema";
 import { ALL_MODULE_IDS, definitionById } from "../lib/modules";
 import { runAdvance, runInfo, runReset, runVerify } from "../lib/modules/contract";
 import { createRng } from "../lib/rng";
 import { ModuleConsole } from "../components/modules/registry";
 import { InfoPanel } from "../components/InfoPanel";
+import { DIFFICULTIES, DIFFICULTY_IDS } from "../lib/gameConfig";
 
 interface ModuleSandboxProps {
   onExit: () => void;
@@ -37,6 +38,7 @@ function formatClock(seconds: number): string {
 export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
   const [index, setIndex] = useState(0);
   const [seed, setSeed] = useState(0);
+  const [difficulty, setDifficulty] = useState<Difficulty>("STANDARD");
   const moduleId: ModuleId = ALL_MODULE_IDS[index];
   const definition = definitionById(moduleId);
 
@@ -45,8 +47,8 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
   const initial: AnyModuleState = useMemo(() => {
     void seed;
     const rng = createRng();
-    return { moduleId, isSolved: false, localVars: definition.generate(rng, "STANDARD") } as unknown as AnyModuleState;
-  }, [moduleId, seed, definition]);
+    return { moduleId, isSolved: false, localVars: definition.generate(rng, difficulty) } as unknown as AnyModuleState;
+  }, [moduleId, seed, difficulty, definition]);
 
   const [state, setState] = useState<AnyModuleState>(initial);
   const [isSolved, setIsSolved] = useState(false);
@@ -106,6 +108,16 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
           <strong className="dev-sandbox-clock-value">{formatClock(secondsLeft)}</strong>
           <button type="button" className="btn btn-ghost dev-sandbox-clock-reset" onClick={sandboxClock.reset}>Reset 10:00</button>
         </div>
+        <div className="dev-sandbox-difficulty">
+          <span className="tag">Deal difficulty</span>
+          <div className="chip-group">
+            {DIFFICULTY_IDS.map((id) => (
+              <button key={id} type="button" className={`chip ${difficulty === id ? "is-active" : ""}`} aria-pressed={difficulty === id} onClick={() => { setDifficulty(id); setSeed((value) => value + 1); }}>
+                {DIFFICULTIES[id].label}
+              </button>
+            ))}
+          </div>
+        </div>
         <button
           type="button"
           className="btn btn-ghost"
@@ -141,6 +153,7 @@ export function ModuleSandbox({ onExit }: ModuleSandboxProps) {
           submit={submit}
           patch={patch}
           secondsLeft={secondsLeft}
+          difficulty={difficulty}
         />
         </div>
 

@@ -6,6 +6,10 @@ interface BaseModuleWrapperProps {
   disabled: boolean;
   /** Bumped by the parent when a strike happens anywhere in the room, to flash feedback. */
   strikeSignal: number;
+  /** One-line objective. Only shown to the owner in BEGINNER rooms as a new-player hint. */
+  goal?: string;
+  /** When true (BEGINNER difficulty), the goal hint is displayed. */
+  showGoalHint?: boolean;
   children: ReactNode;
 }
 
@@ -18,6 +22,8 @@ export function BaseModuleWrapper({
   isSolved,
   disabled,
   strikeSignal,
+  goal,
+  showGoalHint,
   children,
 }: BaseModuleWrapperProps) {
   const [flash, setFlash] = useState<"strike" | "success" | null>(null);
@@ -54,6 +60,12 @@ export function BaseModuleWrapper({
         <h3 className="module-title">{title}</h3>
         {isSolved ? <span className="solved-stamp">SOLVED</span> : null}
       </header>
+      {showGoalHint && goal ? (
+        <p className="module-goal">
+          <span className="module-goal-tag">Goal</span>
+          {goal}
+        </p>
+      ) : null}
       <div className="module-body" aria-disabled={disabled}>
         {children}
       </div>

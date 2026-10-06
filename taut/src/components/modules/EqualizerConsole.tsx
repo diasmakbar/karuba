@@ -5,6 +5,7 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BANDS, BAND_LABELS } from "../../lib/modules/mod07Equalizer";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_07_EQUALIZER — a difficulty-scaled set of sliders (1-5) plus a serial and hardware
@@ -13,7 +14,7 @@ import { outcomeMessage } from "./outcome";
  *
  * The bands come from the per-instance `bands` dealt at generate time (3 / 5 / 7 by difficulty).
  */
-export function EqualizerConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function EqualizerConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_07_EQUALIZER");
   const bands: BandId[] = Array.isArray(localVars.bands) && localVars.bands.length > 0
     ? (localVars.bands as BandId[])
@@ -49,6 +50,8 @@ export function EqualizerConsole({ state, disabled, submit }: ModuleConsoleProps
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_07_EQUALIZER}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="serial">
         SN {localVars.serialNumber} · {localVars.hardwareRevision}

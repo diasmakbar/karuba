@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /** CSS background for the big button per its colour. White is intentionally not used. */
 const BUTTON_FILL: Record<ButtonColor, string> = {
@@ -41,7 +42,7 @@ const HOLD_THRESHOLD_MS = 1000;
  * The release's timing (validated against the light state/colour) is decided by the module.
  * Answer: `{ action, secondsLeft }`.
  */
-export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: ModuleConsoleProps) {
+export function ButtonConsole({ state, disabled, submit, patch, secondsLeft, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_03_BUTTON");
   const [holding, setHolding] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -89,6 +90,8 @@ export function ButtonConsole({ state, disabled, submit, patch, secondsLeft }: M
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_03_BUTTON}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="serial">SN {localVars.serialNumber}</div>
 

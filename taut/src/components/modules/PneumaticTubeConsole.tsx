@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 const TUBES: TubeColor[] = ["Red", "Blue", "Green", "Yellow"];
 const SWATCH: Record<TubeColor, string> = {
@@ -17,7 +18,7 @@ const SWATCH: Record<TubeColor, string> = {
  * MOD_14_PNEUMATIC_TUBE — a document code plus four coloured tubes. Info 1 gives the document's
  * department; Info 2 maps the department to a tube. Answer: `{ tube }`.
  */
-export function PneumaticTubeConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function PneumaticTubeConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_14_PNEUMATIC_TUBE");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -40,6 +41,8 @@ export function PneumaticTubeConsole({ state, disabled, submit }: ModuleConsoleP
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_14_PNEUMATIC_TUBE}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="serial">{localVars.documentCode}</div>
       <div className="pad-grid">

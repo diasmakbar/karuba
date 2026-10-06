@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Difficulty, ModuleId, ModuleSelectionMode } from "../types/db-schema";
 import { useRoom } from "../hooks/useRoom";
 import { useUid } from "../hooks/useUid";
-import { DIFFICULTIES, DIFFICULTY_IDS, MIN_PLAYERS_TO_START } from "../lib/gameConfig";
+import { DIFFICULTIES, DIFFICULTY_IDS, MAX_PLAYERS_PER_ROOM, MIN_PLAYERS_TO_START } from "../lib/gameConfig";
 import { ALL_MODULE_IDS, definitionById } from "../lib/modules";
 import { playerList, setReady, setDifficulty, setAdvancedSettings, leaveLobby, startGame } from "../utils/room";
 
@@ -197,7 +197,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
                   </div>
                   {moduleSelectionMode === "MANUAL" ? (
                     <>
-                      <p className="muted" style={{ margin: 0, fontSize: 13 }}>Choose at least {players.length} modules so every player receives a different module.</p>
+                      <p className="muted" style={{ margin: 0, fontSize: 13 }}>Choose at least {players.length} modules so every player receives a different module (maximum {MAX_PLAYERS_PER_ROOM} players).</p>
                       <div className="module-pool-grid">
                         {ALL_MODULE_IDS.map((id) => {
                           const checked = selectedModuleIds.includes(id);
@@ -216,7 +216,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
 
         <div className="stack" style={{ gap: 6 }}>
           <span className="tag">
-            Players ({players.length}) · minimum {MIN_PLAYERS_TO_START}
+            Players ({players.length}) · {MIN_PLAYERS_TO_START}–{MAX_PLAYERS_PER_ROOM} players
           </span>
           {players.map((player) => (
             <div key={player.id} className="player-row">
@@ -234,7 +234,7 @@ export function Lobby({ roomCode, onStart, onLeave }: LobbyProps) {
 
         {!everyoneReady ? (
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Everyone must be ready, with at least {MIN_PLAYERS_TO_START} players, to start.
+            Everyone must be ready, with {MIN_PLAYERS_TO_START}–{MAX_PLAYERS_PER_ROOM} players, to start.
           </p>
         ) : null}
 

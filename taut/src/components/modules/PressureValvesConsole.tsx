@@ -4,6 +4,7 @@ import type { ModuleConsoleProps } from "./types";
 import { narrowModuleState, definitionById } from "../../lib/modules";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /**
  * MOD_10_PRESSURE_VALVES — a starting pressure, serial and the dealt valves. Info 1 gives the
@@ -12,7 +13,7 @@ import { outcomeMessage } from "./outcome";
  * The valves come from the per-instance `activeValves` dealt at generate time (4 / 6 / 8 by
  * difficulty); never a hard-coded list.
  */
-export function PressureValvesConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function PressureValvesConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_10_PRESSURE_VALVES");
   const valves: ValveId[] = Array.isArray(localVars.activeValves) && localVars.activeValves.length > 0
     ? (localVars.activeValves as ValveId[])
@@ -46,6 +47,8 @@ export function PressureValvesConsole({ state, disabled, submit }: ModuleConsole
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_10_PRESSURE_VALVES}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">Pressure</span>

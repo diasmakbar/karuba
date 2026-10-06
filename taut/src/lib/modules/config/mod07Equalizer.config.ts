@@ -17,15 +17,15 @@ export const SLIDER_MAX = 5;
  * All equalizer bands, ordered low → high. The runtime shows the first N (Beginner 3, Standard 5,
  * Extreme 7), so the first three are the classic bass / mid / treble trio.
  */
-export const BANDS: readonly BandId[] = ["bass", "lowMid", "mid", "highMid", "treble", "presence", "air"];
+export const BANDS: readonly BandId[] = ["bass", "mid", "treble", "lowMid", "highMid", "presence", "air"];
 
 /** Display labels for each band. */
 export const BAND_LABELS: Record<BandId, string> = {
-  bass: "Bass",
+  bass: "Low",
   lowMid: "Low Mid",
   mid: "Mid",
+  treble: "High",
   highMid: "High Mid",
-  treble: "Treble",
   presence: "Presence",
   air: "Air",
 };

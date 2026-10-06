@@ -143,6 +143,7 @@ export function Room({ roomCode, onLeave, onBackToLobby }: RoomProps) {
                 submit={submit}
                 patch={patch}
                 secondsLeft={countdown.secondsLeft}
+                difficulty={room.difficulty}
               />
             </div>
           ) : (

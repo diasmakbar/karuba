@@ -4,9 +4,10 @@ import { narrowModuleState, definitionById } from "../../lib/modules";
 import { GRID_COLUMNS } from "../../lib/rng";
 import { BaseModuleWrapper } from "./BaseModuleWrapper";
 import { outcomeMessage } from "./outcome";
+import { MODULE_GOALS } from "./goals";
 
 /** Owner console: show target/shot identifiers and an empty coordinate grid only. */
-export function BattleshipConsole({ state, disabled, submit }: ModuleConsoleProps) {
+export function BattleshipConsole({ state, disabled, submit, difficulty }: ModuleConsoleProps) {
   const { localVars } = narrowModuleState(state, "MOD_12_BATTLESHIP");
   const columns = GRID_COLUMNS.slice(0, localVars.gridSize);
   const rows = columns.map((_column, index) => index + 1);
@@ -31,6 +32,8 @@ export function BattleshipConsole({ state, disabled, submit }: ModuleConsoleProp
       isSolved={state.isSolved}
       disabled={disabled}
       strikeSignal={0}
+      goal={MODULE_GOALS.MOD_12_BATTLESHIP}
+      showGoalHint={difficulty === "BEGINNER"}
     >
       <div className="screen">
         <span className="tag">TARGET</span>
